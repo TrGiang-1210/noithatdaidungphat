@@ -1,0 +1,19 @@
+// ✅ Bắt buộc thêm nếu dùng map.get hoặc color.adjust
+@use "sass:map";
+@use "sass:color";
+
+// SETUP
+@use "variables" as *;
+@use "setup.scss";
+
+// COMPONENTS
+// @use "./components/component";
+
+// LAYOUTS
+// @use "./layouts/layout";
+
+// PAGES
+// @use "./pages/page";
+
+// LIBRARY
+// @use "./libary/libary";
