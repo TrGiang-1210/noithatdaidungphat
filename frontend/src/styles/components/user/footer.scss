@@ -1,0 +1,103 @@
+.ddp-footer {
+  background: #333;
+  color: #fff;
+  padding-top: 40px;
+  font-family: sans-serif;
+
+  /* Khung căn giữa */
+  .container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 16px;
+  }
+
+  /* Grid 4 cột */
+  .footer-grid {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 40px;
+    flex-wrap: wrap;
+  }
+
+  .footer-col {
+    flex: 1;
+    min-width: 230px;
+
+    .footer-title {
+      font-size: 18px;
+      font-weight: bold;
+      margin-bottom: 12px;
+      color: #d6a041;
+    }
+
+    ul {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+
+      li {
+        margin-bottom: 8px;
+        font-size: 14px;
+
+        a {
+          color: #fff;
+          text-decoration: none;
+
+          &:hover {
+            color: #d6a041;
+          }
+        }
+      }
+    }
+  }
+
+  /* Logo & mô tả */
+  .footer-logo img {
+    width: 120px;
+    margin-bottom: 10px;
+  }
+
+  .footer-desc {
+    font-size: 14px;
+    line-height: 1.5;
+    margin-bottom: 15px;
+  }
+
+  .footer-hotline {
+    display: flex;
+    align-items: center;
+    font-size: 16px;
+    color: #ffeb3b;
+
+    .phone-icon {
+      margin-right: 6px;
+    }
+  }
+
+  /* Footer bottom */
+  .footer-bottom {
+    text-align: center;
+    background: #222;
+    padding: 14px 0;
+    font-size: 14px;
+    margin-top: 30px;
+    border-top: 1px solid #444;
+  }
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .ddp-footer .footer-grid {
+    flex-direction: column;
+    text-align: center;
+  }
+
+  .ddp-footer .footer-col {
+    min-width: 100%;
+  }
+
+  .ddp-footer .footer-hotline {
+    justify-content: center;
+  }
+}
