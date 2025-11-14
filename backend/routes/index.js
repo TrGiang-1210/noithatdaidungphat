@@ -2,7 +2,12 @@ const express = require('express');
 const router = express.Router();
 const homeController = require('../controllers/homeController');
 const categoryController = require('../controllers/categoryController');
-const auth = require('../middlewares/auth'); // <-- thêm dòng này
+// bypass auth for development: log + provide dummy req.user
+const auth = (req, res, next) => {
+  console.log('[DEV] auth bypassed for', req.method, req.originalUrl);
+  req.user = { id: 'dev', role: 'dev' }; // controllers expecting req.user won't reject
+  next();
+};
 
 
 // Home
