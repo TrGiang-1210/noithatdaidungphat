@@ -1,0 +1,143 @@
+.ddp-header {
+  width: 100%;
+  background: #fff;
+  border-bottom: 1px solid #ddd;
+  font-family: sans-serif;
+
+  /* Căn giữa toàn bộ header với max-width */
+  .container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 16px;
+  }
+
+  .topbar {
+    background: #f5f5f5;
+    text-align: center;
+    padding: 6px 0;
+    font-size: 14px;
+    color: #333;
+  }
+
+  .header-main {
+    @extend .container;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 0;
+    gap: 20px; /* Tạo khoảng cách đều giữa các cột */
+
+    /* Logo */
+    .logo {
+      display: flex;
+      align-items: center;
+
+      img {
+        width: 140px;
+        display: block;
+      }
+    }
+
+    /* Search Box */
+    .search-box {
+      flex: 1; /* Chiếm không gian còn lại */
+      max-width: 500px; /* Không quá to */
+      display: flex;
+      align-items: center;
+
+      input {
+        flex: 1;
+        padding: 10px;
+        border: 1px solid #d6a041;
+        border-right: none;
+        border-radius: 4px 0 0 4px;
+      }
+
+      button {
+        width: 45px;
+        background: #d6a041;
+        color: white;
+        border: none;
+        border-radius: 0 4px 4px 0;
+        font-size: 26.8px;
+      }
+    }
+
+    /* User */
+    .user-box {
+      display: flex;
+      align-items: center;
+      cursor: pointer;
+      gap: 6px;
+
+      .user-icon {
+        font-size: 26px;
+      }
+      .user-text {
+        font-size: 14px;
+        white-space: nowrap;
+      }
+    }
+
+    /* Cart */
+    .cart-box {
+      position: relative;
+      font-size: 24px;
+      display: flex;
+      align-items: center;
+
+      .badge {
+        position: absolute;
+        top: -5px;
+        right: -8px;
+        background: red;
+        color: white;
+        border-radius: 50%;
+        font-size: 11px;
+        padding: 2px 6px;
+      }
+    }
+
+    /* Hotline */
+    .hotline {
+      display: flex;
+      align-items: center;
+      color: #d91b00;
+      font-size: 18px;
+      white-space: nowrap;
+
+      .phone-icon {
+        margin-right: 4px;
+      }
+    }
+  }
+
+  /* MENU */
+  .nav-yellow {
+    background: #a87422;
+    color: white;
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 0 16px;
+
+      display: flex;
+      align-items: center;
+      justify-content: flex-start;
+      gap: 10px;
+    }
+
+    .menu-item {
+      padding: 10px 15px;
+      font-size: 15px;
+      cursor: pointer;
+      white-space: nowrap; // KHÔNG xuống dòng
+      display: inline-flex; // bắt buộc nằm ngang
+
+      &:hover {
+        background: #875e1c;
+      }
+    }
+  }
+}

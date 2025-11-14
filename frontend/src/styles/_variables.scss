@@ -1,0 +1,158 @@
+// Sass module imports
+@use "sass:map";
+
+//CUSTOMIZE
+$max-width: 1200px;
+
+// COLOR
+$primary-color: #053a8e;
+$second-color: #39b6ff;
+$third-color: #1ac1d4;
+$fourth-color: #00a3e4;
+$red-color: #d70018;
+$text-color: #212b36;
+
+// FONTFAMILY
+$font-family-primary: "Roboto", sans-serif;
+
+// FONTSIZE
+$font-size-xs: 12px;
+$font-size-sm: 14px;
+$font-size-md: 16px;
+$font-size-lg: 20px;
+$font-size-xl: 24px;
+$font-size-xxl: 32px;
+
+$font-sizes: (
+  xs: 12px,
+  sm: 14px,
+  md: 16px,
+  lg: 20px,
+  xl: 24px,
+  xxl: 32px,
+);
+
+@mixin font-size($key) {
+  font-size: map.get($font-sizes, $key);
+}
+
+// BOX-SHADOW
+$box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+
+// SPACE
+$gap-default: 12px;
+
+// PADDING
+$padding-xs: 4px;
+$padding-sm: 8px;
+$padding-md: 16px;
+$padding-lg: 24px;
+$padding-xl: 32px;
+$padding-search: 8px 35px 8px 35px;
+
+$padding-sizes: (
+  xs: 4px,
+  sm: 8px,
+  md: 16px,
+  lg: 24px,
+  xl: 32px,
+);
+
+@mixin padding($key) {
+  padding: map.get($padding-sizes, $key);
+}
+
+@each $key, $value in $padding-sizes {
+  .p-#{$key} {
+    padding: $value;
+  }
+
+  .pt-#{$key} {
+    padding-top: $value;
+  }
+
+  .pr-#{$key} {
+    padding-right: $value;
+  }
+
+  .pb-#{$key} {
+    padding-bottom: $value;
+  }
+
+  .pl-#{$key} {
+    padding-left: $value;
+  }
+}
+
+// BREAKPOINTS
+$breakpoints: (
+  sm: 480px,
+  md: 768px,
+  lg: 1024px,
+);
+
+.card {
+  padding: $padding-sm;
+
+  @media (min-width: map.get($breakpoints, md)) {
+    padding: $padding-md;
+  }
+
+  @media (min-width: map.get($breakpoints, lg)) {
+    padding: $padding-lg;
+  }
+}
+
+// Border styles
+$border-width-thin: 1px;
+$border-width-medium: 2px;
+$border-width-thick: 4px;
+
+$border-style-solid: solid;
+$border-style-dashed: dashed;
+$border-style-dotted: dotted;
+
+$border-color-light: #e0e0e0;
+$border-color-dark: #333;
+
+$border-styles: (
+  thin: 1px solid #e0e0e0,
+  medium: 2px solid #999,
+  thick: 4px solid #333,
+);
+
+@mixin border($key) {
+  border: map.get($border-styles, $key);
+}
+
+$border-radius: (
+  thin: 4px,
+  medium: 8px,
+  thick: 12px,
+  circle: 50%,
+);
+
+@mixin border-radius($key) {
+  border-radius: map.get($border-radius, $key);
+}
+
+// Font weight
+$font-weight-xs: 100;
+$font-weight-sm: 200;
+$font-weight-md: 300;
+$font-weight-lg: 500;
+$font-weight-xl: 700;
+$font-weight-xxl: 1000;
+
+$font-weight: (
+  xs: 100,
+  sm: 300,
+  md: 500,
+  lg: 700,
+  xl: 1000,
+  xxl: 2000,
+);
+
+@mixin font-weight($key) {
+  font-weight: map.get($font-weight, $key);
+}

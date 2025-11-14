@@ -1,0 +1,9 @@
+.user-layout {
+  min-height: 100vh;       /* Chiều cao tối thiểu = chiều cao màn hình */
+  display: flex;           /* Chuyển sang flex */
+  flex-direction: column;  /* Xếp theo chiều dọc */
+}
+
+.user-content {
+  flex: 1;                 /* Tự giãn ra đẩy footer xuống cuối */
+}
