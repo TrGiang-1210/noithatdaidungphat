@@ -1,16 +1,16 @@
 import { Route, Routes } from "react-router-dom";
 //user layout
 import AuthLayout from "@/layouts/auth.layout";
-import HomePage from "@/pages/user/home";
+import Home from "@/pages/user/home";
 
 
 const MainRouter = () => {
   return (
     <Routes>
     {/* User layout */}
-      <Route epath="/" element={<AuthLayout />}>
-        <Route index element={<HomePage />} />
-        <Route path="home" element={<HomePage />} />
+      <Route path="/" element={<AuthLayout />}>
+        <Route index element={<Home />} />
+        <Route path="home" element={<Home />} />
       </Route>
     </Routes>
   );

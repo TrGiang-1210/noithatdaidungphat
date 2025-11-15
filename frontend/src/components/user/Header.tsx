@@ -14,7 +14,7 @@ const Header: React.FC = () => {
       <div className="header-main container">
         {/* Logo */}
         <div className="logo">
-          <img src="/logoddp.png" alt="DDP" />
+          <img src="./src/assets/logo-ddp-removebg.png" alt="DDP" />
         </div>
 
         {/* Search */}
@@ -38,7 +38,7 @@ const Header: React.FC = () => {
         {/* Hotline */}
         <div className="hotline">
           <span className="phone-icon">📱</span>
-          <span className="phone-number">0944 333 966</span>
+          <span className="phone-number">0941038839</span>
         </div>
       </div>
 
