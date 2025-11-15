@@ -50,11 +50,31 @@
         }
       }
     }
+
+    /* Phần mới cho 2 cửa hàng */
+    .store-info {
+      h4 {
+        font-size: 16px;
+        font-weight: bold;
+        margin: 15px 0 8px;
+        color: #d6a041;
+      }
+
+      ul {
+        margin-bottom: 15px;
+      }
+    }
+
+    .working-hours {
+      font-size: 14px;
+      margin-top: 15px;
+      text-align: left; /* Hoặc center nếu responsive */
+    }
   }
 
   /* Logo & mô tả */
   .footer-logo img {
-    width: 120px;
+    width: 100px;
     margin-bottom: 10px;
   }
 
@@ -95,6 +115,10 @@
 
   .ddp-footer .footer-col {
     min-width: 100%;
+
+    .working-hours {
+      text-align: center;
+    }
   }
 
   .ddp-footer .footer-hotline {
