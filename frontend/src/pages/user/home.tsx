@@ -53,29 +53,31 @@ const Home: React.FC = () => {
   /* Load data – chỉ 1 lần */
   /* --------------------------------------------------------------------- */
   useEffect(() => {
-  const loadHome = async () => {
-    try {
-      // 1. Lấy categories từ /api/home
-      const homeData = await fetchHomeData();
-      setCategories(Array.isArray(homeData.categories) ? homeData.categories : []);
+    const loadHome = async () => {
+      try {
+        // 1. Lấy categories từ /api/home
+        const homeData = await fetchHomeData();
+        setCategories(
+          Array.isArray(homeData.categories) ? homeData.categories : []
+        );
 
-      // 2. LẤY TOÀN BỘ SẢN PHẨM từ /api/products
-      const allProducts = await fetchAllProducts();
-      setProducts(Array.isArray(allProducts) ? allProducts : []);
+        // 2. LẤY TOÀN BỘ SẢN PHẨM từ /api/products
+        const allProducts = await fetchAllProducts();
+        setProducts(Array.isArray(allProducts) ? allProducts : []);
 
-      setLoadingCategories(false);
-      setLoadingProducts(false);
-    } catch (err) {
-      console.error("Error:", err);
-      setCategories([]);
-      setProducts([]);
-      setLoadingCategories(false);
-      setLoadingProducts(false);
-    }
-  };
+        setLoadingCategories(false);
+        setLoadingProducts(false);
+      } catch (err) {
+        console.error("Error:", err);
+        setCategories([]);
+        setProducts([]);
+        setLoadingCategories(false);
+        setLoadingProducts(false);
+      }
+    };
 
-  loadHome();
-}, []);
+    loadHome();
+  }, []);
 
   /* --------------------------------------------------------------------- */
   /* Auto slide */
@@ -93,7 +95,9 @@ const Home: React.FC = () => {
   const transitionSlide = (newSlide: number) => {
     if (sliderWrapperRef.current) {
       sliderWrapperRef.current.style.transition = "transform 0.5s ease";
-      sliderWrapperRef.current.style.transform = `translateX(-${newSlide * 100}%)`;
+      sliderWrapperRef.current.style.transform = `translateX(-${
+        newSlide * 100
+      }%)`;
     }
     setCurrentSlide(newSlide);
   };
@@ -119,7 +123,8 @@ const Home: React.FC = () => {
     if (sliderWrapperRef.current) {
       sliderWrapperRef.current.style.transition = "none";
     }
-    if (animationFrameRef.current) cancelAnimationFrame(animationFrameRef.current);
+    if (animationFrameRef.current)
+      cancelAnimationFrame(animationFrameRef.current);
   };
 
   const handleTouchMove = (e: React.TouchEvent | React.MouseEvent) => {
@@ -127,12 +132,15 @@ const Home: React.FC = () => {
     currentXRef.current = "touches" in e ? e.touches[0].clientX : e.clientX;
     const deltaX = currentXRef.current - startXRef.current;
 
-    if (animationFrameRef.current) cancelAnimationFrame(animationFrameRef.current);
+    if (animationFrameRef.current)
+      cancelAnimationFrame(animationFrameRef.current);
     animationFrameRef.current = requestAnimationFrame(() => {
       if (sliderWrapperRef.current) {
         const currentTranslate = -currentSlide * 100;
         const offset = (deltaX / sliderWrapperRef.current!.clientWidth) * 100;
-        sliderWrapperRef.current!.style.transform = `translateX(${currentTranslate + offset}%)`;
+        sliderWrapperRef.current!.style.transform = `translateX(${
+          currentTranslate + offset
+        }%)`;
       }
     });
   };
@@ -151,7 +159,9 @@ const Home: React.FC = () => {
       // snap back
       if (sliderWrapperRef.current) {
         sliderWrapperRef.current.style.transition = "transform 0.3s ease-out";
-        sliderWrapperRef.current.style.transform = `translateX(-${currentSlide * 100}%)`;
+        sliderWrapperRef.current.style.transform = `translateX(-${
+          currentSlide * 100
+        }%)`;
       }
     }
   };
@@ -227,23 +237,28 @@ const Home: React.FC = () => {
             ) : products.length > 0 ? (
               products.map((product) => (
                 <div className="product-card" key={product._id}>
-                  <Link to={`/product/${product.slug}`}>
+                  <Link
+                    to={`/product/${product.slug}`}
+                    className="product-link"
+                  >
                     <img
                       src={product.images?.[0] ?? "placeholder.jpg"}
                       alt={product.name}
                       className="product-img"
                     />
                     <h3 className="product-name">{product.name}</h3>
-                  </Link>
 
-                  <div className="product-price">
-                    <span className="price-sale">
-                      {product.priceSale.toLocaleString()}₫
-                    </span>
-                    <span className="price-original">
-                      {product.priceOriginal.toLocaleString()}₫
-                    </span>
-                  </div>
+                    <div className="product-price">
+                      <span className="price-sale">
+                        {product.priceSale.toLocaleString()}₫
+                      </span>
+                      {product.priceOriginal > product.priceSale && (
+                        <span className="price-original">
+                          {product.priceOriginal.toLocaleString()}₫
+                        </span>
+                      )}
+                    </div>
+                  </Link>
                 </div>
               ))
             ) : (

@@ -1,4 +1,5 @@
 const Product = require('../models/Product');
+const mongoose = require('mongoose');
 
 class ProductService {
 
@@ -19,16 +20,20 @@ class ProductService {
 
   // Thêm sau getById
 static async getByIdOrSlug(identifier) {
-  let product;
-  if (mongoose.Types.ObjectId.isValid(identifier)) {
-    product = await Product.findById(identifier);
-  } else {
-    product = await Product.findOne({ slug: identifier });
-  }
-  if (!product) throw new Error('Product not found');
-  return product;
-}
+    let product;
 
+    // Nếu là ObjectId hợp lệ (24 ký tự hex) → tìm bằng _id
+    if (mongoose.Types.ObjectId.isValid(identifier)) {
+      product = await Product.findById(identifier);
+    } 
+    // Ngược lại → tìm bằng slug
+    else {
+      product = await Product.findOne({ slug: identifier });
+    }
+
+    if (!product) throw new Error('Product not found');
+    return product;
+  }
   // Tạo sản phẩm
   static async create(data) {
     return await Product.create(data);
