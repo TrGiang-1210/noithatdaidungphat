@@ -15,12 +15,12 @@ const Header: React.FC = () => {
   useEffect(() => {
     const fetchCategories = async () => {
       try {
-        const response = await fetch('http://localhost:5000/api/categories');
+        const response = await fetch("http://localhost:5000/api/categories");
         const data = await response.json();
         setCategories(data);
         setLoading(false);
       } catch (error) {
-        console.error('Error fetching categories:', error);
+        console.error("Error fetching categories:", error);
         setLoading(false);
       }
     };
@@ -34,7 +34,13 @@ const Header: React.FC = () => {
       </div>
       <div className="header-main container">
         <div className="logo">
-          <img src="./src/assets/logo-ddp-removebg.png" alt="DDP" /> {/* Giả sử logo mới */}
+          {/* Bấm logo sẽ về trang chủ */}
+          <Link to="/">
+            <img
+              src="./src/assets/logo-ddp-removebg.png"
+              alt="Nội Thất Dại Dũng Phát - Trang chủ"
+            />
+          </Link>
         </div>
         <div className="search-box">
           <input type="text" placeholder="Tìm kiếm sản phẩm..." />
@@ -42,7 +48,9 @@ const Header: React.FC = () => {
         </div>
         <div className="actions">
           <div className="user-box">
-            <span className="user-icon" aria-hidden>👤</span>
+            <span className="user-icon" aria-hidden>
+              👤
+            </span>
             <span className="user-box-text">Đăng ký/Đăng nhập</span>
           </div>
           <div className="cart-box">
