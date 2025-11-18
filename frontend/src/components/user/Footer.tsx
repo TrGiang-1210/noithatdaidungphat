@@ -1,8 +1,32 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import "@/styles/components/user/footer.scss";
 
+interface Category {
+  _id: string;
+  name: string;
+  slug: string;
+}
+
 const Footer: React.FC = () => {
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        const response = await fetch('http://localhost:5000/api/categories');
+        const data = await response.json();
+        setCategories(data);
+        setLoading(false);
+      } catch (error) {
+        console.error('Error fetching categories:', error);
+        setLoading(false);
+      }
+    };
+    fetchCategories();
+  }, []);
+
   return (
     <footer className="ddp-footer">
       <div className="container footer-grid">
@@ -10,7 +34,7 @@ const Footer: React.FC = () => {
         {/* Cột 1 — Logo + mô tả */}
         <div className="footer-col">
           <div className="footer-logo">
-            <img src="./src/assets/logo-ddp-removebg.png" alt="ddp" />
+            <img src="./src/assets/logo-ddp-removebg.png" alt="ddp" /> {/* Giả sử logo mới */}
           </div>
           <p className="footer-desc">
             Nội Thất Đại Dũng Phát — cung cấp sản phẩm nội thất chất lượng, bền đẹp, giá tốt cho gia đình, khách sạn, văn phòng.
@@ -32,17 +56,20 @@ const Footer: React.FC = () => {
           </ul>
         </div>
 
-        {/* Cột 3 — Danh mục */}
+        {/* Cột 3 — Danh mục (làm động) */}
         <div className="footer-col">
           <h3 className="footer-title">Danh mục sản phẩm</h3>
-          <ul>
-            <li><Link to="/giuong-ngu">Giường Ngủ</Link></li>
-            <li><Link to="/tu-quan-ao">Tủ Quần Áo</Link></li>
-            <li><Link to="/sofa-go">Bộ Sofa Gỗ</Link></li>
-            <li><Link to="/ke-tivi">Kệ Tivi</Link></li>
-            <li><Link to="/tu-ruou">Tủ Rượu</Link></li>
-            <li><Link to="/phong-tho">Phòng Thờ</Link></li>
-          </ul>
+          {loading ? (
+            <p>Đang tải...</p>
+          ) : categories.length > 0 ? (
+            <ul>
+              {categories.slice(0, 6).map((cat) => ( // Giới hạn 6 để gọn
+                <li key={cat._id}><Link to={`/${cat.slug}`}>{cat.name}</Link></li>
+              ))}
+            </ul>
+          ) : (
+            <p>Không có danh mục</p>
+          )}
         </div>
 
         {/* Cột 4 — Liên hệ (chỉnh sửa để hỗ trợ 2 cửa hàng) */}
