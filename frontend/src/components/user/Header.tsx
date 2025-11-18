@@ -1,62 +1,73 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import "@/styles/components/user/header.scss";
 
+interface Category {
+  _id: string;
+  name: string;
+  slug: string;
+}
+
 const Header: React.FC = () => {
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        const response = await fetch('http://localhost:5000/api/categories');
+        const data = await response.json();
+        setCategories(data);
+        setLoading(false);
+      } catch (error) {
+        console.error('Error fetching categories:', error);
+        setLoading(false);
+      }
+    };
+    fetchCategories();
+  }, []);
+
   return (
     <header className="ddp-header">
-      {/* TOP BAR */}
       <div className="topbar">
         Nội Thất Dại Dũng Phát, Uy Tín - Chất Lượng - Chính Hãng
       </div>
-
-      {/* HEADER MAIN */}
       <div className="header-main container">
-        {/* Logo */}
         <div className="logo">
-          <img src="./src/assets/logo-ddp-removebg.png" alt="DDP" />
+          <img src="./src/assets/logo-ddp-removebg.png" alt="DDP" /> {/* Giả sử logo mới */}
         </div>
-
-        {/* Search */}
         <div className="search-box">
-          <input type="text" placeholder="Bạn cần tìm gì?" />
+          <input type="text" placeholder="Tìm kiếm sản phẩm..." />
           <button>🔍</button>
         </div>
-
-        {/* User */}
-        <div className="user-box">
-          <div className="user-icon">👤</div>
-          <div className="user-text">Đăng ký / đăng nhập</div>
-        </div>
-
-        {/* Cart */}
-        <div className="cart-box">
-          <div className="cart-icon">🛒</div>
-          <span className="badge">1</span>
-        </div>
-
-        {/* Hotline */}
-        <div className="hotline">
-          <span className="phone-icon">📱</span>
-          <span className="phone-number">0941038839</span>
+        <div className="actions">
+          <div className="user-box">
+            <span className="user-icon" aria-hidden>👤</span>
+            <span className="user-box-text">Đăng ký/Đăng nhập</span>
+          </div>
+          <div className="cart-box">
+            <div className="cart-icon">🛒</div>
+            <span className="badge">1</span>
+          </div>
+          <div className="hotline">
+            <span className="phone-icon">📞</span>
+            <span className="phone-number">0941038839</span>
+          </div>
         </div>
       </div>
-
-      {/* MENU DƯỚI */}
-      <nav className="nav-yellow">
+      <nav className="nav-menu">
         <div className="container">
-          <div className="menu-item">Danh mục sản phẩm</div>
-          <div className="menu-item">Giường Ngủ</div>
-          <div className="menu-item">Tủ Quần Áo</div>
-          <div className="menu-item">Bộ Sofa Gỗ</div>
-          <div className="menu-item">Bàn Trang Điểm</div>
-          <div className="menu-item">Tủ Rượu</div>
-          <div className="menu-item">Tủ Giày</div>
-          <div className="menu-item">Kệ Tivi</div>
-          <div className="menu-item">Nệm</div>
-          <div className="menu-item">Bộ Bàn Ăn</div>
-          <div className="menu-item">Phòng Thờ</div>
-          <div className="menu-item">Tủ Bếp</div>
+          {loading ? (
+            <div>Đang tải...</div>
+          ) : (
+            <>
+              {categories.map((cat) => (
+                <Link key={cat._id} to={`/${cat.slug}`} className="menu-item">
+                  {cat.name}
+                </Link>
+              ))}
+            </>
+          )}
         </div>
       </nav>
     </header>
