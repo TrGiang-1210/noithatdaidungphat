@@ -1,8 +1,8 @@
 .ddp-footer {
-  background: #333;
+  background: #001F3F; // Primary (xanh dương đậm)
   color: #fff;
   padding-top: 40px;
-  font-family: sans-serif;
+  font-family: 'Roboto', sans-serif;
 
   /* Khung căn giữa */
   .container {
@@ -28,7 +28,7 @@
       font-size: 18px;
       font-weight: bold;
       margin-bottom: 12px;
-      color: #d6a041;
+      color: #D2B48C; // Accent (nâu gỗ nhạt)
     }
 
     ul {
@@ -45,7 +45,7 @@
           text-decoration: none;
 
           &:hover {
-            color: #d6a041;
+            color: #D2B48C; // Accent
           }
         }
       }
@@ -57,7 +57,7 @@
         font-size: 16px;
         font-weight: bold;
         margin: 15px 0 8px;
-        color: #d6a041;
+        color: #D2B48C; // Accent
       }
 
       ul {
@@ -82,13 +82,14 @@
     font-size: 14px;
     line-height: 1.5;
     margin-bottom: 15px;
+    color: #F5F5F5; // Secondary cho text phụ
   }
 
   .footer-hotline {
     display: flex;
     align-items: center;
     font-size: 16px;
-    color: #ffeb3b;
+    color: #D2B48C; // Accent
 
     .phone-icon {
       margin-right: 6px;
@@ -98,7 +99,7 @@
   /* Footer bottom */
   .footer-bottom {
     text-align: center;
-    background: #222;
+    background: #003366; // Biến thể tối hơn của Primary
     padding: 14px 0;
     font-size: 14px;
     margin-top: 30px;

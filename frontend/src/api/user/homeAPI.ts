@@ -1,5 +1,6 @@
 import axios from 'axios';
 import type { Category } from './categoryAPI';
+import type { Product } from './productAPI';
 
 // fallback Product type (nếu productAPI chưa export type Product)
 export type Product = {
