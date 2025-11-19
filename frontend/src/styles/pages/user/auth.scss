@@ -1,0 +1,250 @@
+// =================================================
+// AUTH PAGE - Đăng ký (trái) + Đăng nhập (phải)
+// Dự án mới 2025 - Siêu đẹp, hiện đại, responsive
+// =================================================
+
+.auth-layout {
+  display: flex;
+  min-height: 100vh;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  position: relative;
+  align-items: center;
+  justify-content: center;
+  gap: 50px;
+  padding: 40px 20px;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+  overflow: hidden;
+
+  // Hiệu ứng nền nhẹ (tùy chọn)
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100"><circle cx="50" cy="50" r="40" fill="none" stroke="rgba(255,255,255,0.05)" stroke-width="2"/></svg>') repeat;
+    pointer-events: none;
+  }
+}
+
+// ==================== CARD CHUNG ====================
+.auth-card {
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(12px);
+  border-radius: 24px;
+  padding: 48px 40px;
+  width: 100%;
+  max-width: 440px;
+  box-shadow: 0 25px 60px rgba(0, 0, 0, 0.3);
+  position: relative;
+  transition: all 0.4s ease;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+
+  &:hover {
+    transform: translateY(-12px);
+    box-shadow: 0 35px 80px rgba(0, 0, 0, 0.4);
+  }
+
+  h2 {
+    font-size: 30px;
+    font-weight: 700;
+    text-align: center;
+    margin-bottom: 10px;
+    background: linear-gradient(to right, #e74c3c, #c0392b);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .subtitle {
+    text-align: center;
+    color: #777;
+    font-size: 15px;
+    margin-bottom: 32px;
+  }
+}
+
+// Màu viền trên đầu mỗi card
+.register-side { border-top: 6px solid #e74c3c; }
+.login-side    { border-top: 6px solid #3498db; }
+
+// ==================== FORM ====================
+.auth-form {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+// Input chung
+.auth-form input {
+  width: 90%;
+  padding: 16px 18px;
+  border: 2px solid #e0e0e0;
+  border-radius: 14px;
+  font-size: 15px;
+  background: #fdfdfd;
+  transition: all 0.3s ease;
+
+  &:focus {
+    outline: none;
+    border-color: #e74c3c;
+    background: white;
+    box-shadow: 0 0 0 5px rgba(231, 76, 60, 0.15);
+  }
+
+  &::placeholder {
+    color: #aaa;
+  }
+}
+
+// Password group (có icon mắt)
+.password-group {
+  position: relative;
+
+  input {
+    padding-right: 20px;
+  }
+
+  button {
+    position: absolute;
+    right: 14px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    color: #999;
+    cursor: pointer;
+    padding: 6px;
+    border-radius: 50%;
+    transition: all 0.2s;
+
+    &:hover {
+      color: #e74c3c;
+      background: rgba(231, 76, 60, 0.1);
+    }
+  }
+}
+
+// Nút submit
+.submit-btn {
+  width: 100%;
+  padding: 18px;
+  margin-top: 10px;
+  border: none;
+  border-radius: 14px;
+  font-size: 18px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  color: white;
+
+  &.register-btn {
+    background: linear-gradient(to right, #e74c3c, #c0392b);
+    &:hover { background: linear-gradient(to right, #c0392b, #a93226); transform: translateY(-3px); }
+  }
+
+  &.login-btn {
+    background: linear-gradient(to right, #3498db, #2980b9);
+    &:hover { background: linear-gradient(to right, #2980b9, #1f6ea8); transform: translateY(-3px); }
+  }
+
+  &:active {
+    transform: translateY(0);
+  }
+}
+
+// Error message
+.error-message {
+  background: #ffebee;
+  color: #e74c3c;
+  padding: 14px 16px;
+  border-radius: 12px;
+  font-size: 14px;
+  text-align: center;
+  border: 1px solid #ffcdd2;
+  margin-bottom: 10px;
+}
+
+// Footer text + link
+.footer-text {
+  text-align: center;
+  margin-top: 24px;
+  font-size: 14.5px;
+  color: #666;
+
+  a {
+    font-weight: 600;
+    text-decoration: none;
+    transition: all 0.2s;
+
+    &:hover {
+      text-decoration: underline;
+    }
+  }
+
+  &.forgotten a {
+    color: #3498db;
+  }
+}
+
+// ==================== BANNER TRÁI & PHẢI (giữ nguyên từ cũ) ====================
+.side-banner-link {
+  position: fixed;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 10;
+  transition: transform 0.4s ease;
+
+  &:hover {
+    transform: translateY(-50%) scale(1.06);
+  }
+
+  &.left  { left: 30px; }
+  &.right { right: 30px; }
+
+  .side-banner {
+    width: 150px;
+    height: 520px;
+    border-radius: 20px;
+    overflow: hidden;
+    box-shadow: 0 20px 50px rgba(0,0,0,0.4);
+
+    img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+  }
+}
+
+// ==================== RESPONSIVE ====================
+@media (max-width: 1100px) {
+  .auth-layout { gap: 30px; }
+  .side-banner-link .side-banner { width: 120px; height: 450px; }
+}
+
+@media (max-width: 992px) {
+  .auth-layout {
+    flex-direction: column;
+    gap: 40px;
+    padding: 60px 20px;
+  }
+
+  .auth-card:hover {
+    transform: none;
+  }
+
+  .side-banner-link {
+    display: none; // Ẩn banner 2 bên trên tablet
+  }
+}
+
+@media (max-width: 480px) {
+  .auth-card {
+    padding: 40px 28px;
+    border-radius: 18px;
+  }
+
+  h2 { font-size: 26px; }
+  .submit-btn { padding: 16px; font-size: 17px; }
+}

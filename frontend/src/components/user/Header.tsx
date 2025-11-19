@@ -30,11 +30,17 @@ const Header: React.FC = () => {
     };
     fetchCategories();
 
+    let ticking = false;
     // THÊM ĐOẠN NÀY: detect scroll
     const handleScroll = () => {
-      const scrollPosition = window.scrollY;
-      // Nếu cuộn xuống quá 50px thì ẩn dropdown (có thể chỉnh thành 10px, 100px tùy ý)
-      setIsAtTop(scrollPosition < 10);
+      if (!ticking) {
+        window.requestAnimationFrame(() => {
+          const scrollPosition = window.scrollY;
+          setIsAtTop(scrollPosition <= 10); // <= 10 để tránh flicker
+          ticking = false;
+        });
+        ticking = true;
+      }
     };
 
     // Kiểm tra ngay lúc load (tránh flash)
@@ -66,10 +72,12 @@ const Header: React.FC = () => {
         </div>
         <div className="actions">
           <div className="user-box">
-            <span className="user-icon" aria-hidden>
-              👤
-            </span>
-            <span className="user-box-text">Đăng ký/Đăng nhập</span>
+            <Link to="/tai-khoan-ca-nhan" className="user-link">
+              <span className="user-icon" aria-hidden>
+                👤
+              </span>
+              <span className="user-box-text">Đăng ký/Đăng nhập</span>
+            </Link>
           </div>
           <div className="cart-box">
             <div className="cart-icon">🛒</div>
@@ -83,7 +91,7 @@ const Header: React.FC = () => {
       </div>
 
       {/* Luôn hiện - kể cả khi cuộn */}
-      <nav className="nav-menu">
+      <nav className={`nav-menu ${!isAtTop ? "fixed-when-scrolled" : ""}`}>
         <div className="container nav-container">
           {/* DANH MỤC SẢN PHẨM - CÓ DROPDOWN */}
           <div
@@ -112,7 +120,7 @@ const Header: React.FC = () => {
 
           {/* ===== THÊM CÁC MENU MỚI TỪ ĐÂY ===== */}
           <div className="main-menu-items">
-            <Link to="/about" className="menu-item">
+            <Link to="/gioi-thieu" className="menu-item">
               Giới thiệu
             </Link>
           </div>
