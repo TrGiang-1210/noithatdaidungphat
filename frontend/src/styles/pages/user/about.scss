@@ -1,0 +1,81 @@
+// src/styles/pages/about.scss
+
+.about-page {
+  // Không padding 2 bên nữa, để full như header
+  width: 100%;
+  max-width: 1200px;     // giống hệt header
+  margin: 0 auto;        // căn giữa
+  padding: 40px 16px;    // chỉ giữ trên/dưới + chút lề nhỏ 2 bên cho mobile đẹp
+  font-family: system-ui, -apple-system, sans-serif;
+  line-height: 1.8;
+  color: #333;
+
+  // Nếu màn hình lớn hơn 1200px thì vẫn giữ max-width và căn giữa
+  @media (min-width: 1240px) {
+    padding: 40px 0;     // màn to thì bỏ hẳn lề 2 bên luôn, bành tràn viền như header
+  }
+
+  h1 {
+    text-align: center;
+    font-size: 2.6rem;
+    margin: 20px 0 50px;
+    color: #b8965a;
+    font-weight: 700;
+  }
+
+  .banner-img {
+    width:  100%;
+    height   : auto;
+    border-radius: 12px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+    margin-bottom: 60px;
+  }
+
+  .section {
+    margin-bottom: 60px;
+
+    h2 {
+      font-size: 1.9rem;
+      color: #b8965a;
+      margin: 0 0 25px 0;
+      padding-bottom: 12px;
+      border-bottom: 3px solid #b8965a;
+      display: inline-block;
+    }
+    p {
+      margin: 18px 0;
+      font-size: 1.12rem;
+    }
+
+    ul {
+      padding-left: 28px;
+      li {
+        margin: 14px 0;
+        font-size: 1.1rem;
+      }
+    }
+  }
+
+  .highlight {
+    background: linear-gradient(135deg, #b8965a, #d4b27a);
+    color: white;
+    padding: 25px;
+    border-radius: 12px;
+    font-weight: bold;
+    text-align: center;
+    margin: 35px 0;
+    font-size: 1.2rem;
+    box-shadow: 0 8px 25px rgba(184, 150, 90, 0.3);
+  }
+
+  .contact-info {
+    background: #f9f5f0;
+    padding: 40px;
+    border-radius: 16px;
+    text-align: center;
+    p {
+      margin: 15px 0;
+      font-size: 1.15rem;
+    }
+  }
+}

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import "@/styles/components/user/header.scss";
 
 interface Category {
@@ -12,6 +12,10 @@ const Header: React.FC = () => {
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
   const [isAtTop, setIsAtTop] = useState(true);
+
+  const location = useLocation();
+  const isHomePage = location.pathname === "/" || location.pathname === "/home";
+
   useEffect(() => {
     const fetchCategories = async () => {
       try {
@@ -30,7 +34,7 @@ const Header: React.FC = () => {
     const handleScroll = () => {
       const scrollPosition = window.scrollY;
       // Nếu cuộn xuống quá 50px thì ẩn dropdown (có thể chỉnh thành 10px, 100px tùy ý)
-      setIsAtTop(scrollPosition < 80);
+      setIsAtTop(scrollPosition < 10);
     };
 
     // Kiểm tra ngay lúc load (tránh flash)
@@ -41,7 +45,8 @@ const Header: React.FC = () => {
   }, []);
 
   return (
-    <header className="ddp-header">
+    <header className={`ddp-header ${isAtTop ? "at-top" : "scrolled"}`}>
+      {/* Ẩn khi cuộn */}
       <div className="topbar">
         Nội Thất Dại Dũng Phát, Uy Tín - Chất Lượng - Chính Hãng
       </div>
@@ -76,17 +81,20 @@ const Header: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* Luôn hiện - kể cả khi cuộn */}
       <nav className="nav-menu">
-        <div className="container">
+        <div className="container nav-container">
           {/* DANH MỤC SẢN PHẨM - CÓ DROPDOWN */}
-          <div 
-  className={`category-main-item ${isAtTop ? "show-dropdown-at-top" : ""}`}
->
+          <div
+            className={`category-main-item ${
+              isAtTop && isHomePage ? "show-dropdown-at-top" : ""
+            }`}
+          >
             <div className="category-trigger">
               <span className="menu-icon">☰</span>
               DANH MỤC SẢN PHẨM
             </div>
-
             <div className="category-dropdown">
               {loading ? (
                 <div className="loading">Đang tải...</div>
@@ -102,8 +110,13 @@ const Header: React.FC = () => {
             </div>
           </div>
 
-          {/* Các menu khác nếu có (giữ nguyên hoặc thêm sau) */}
-          {/* Ví dụ: <Link to="/khuyen-mai" className="menu-item">KHUYẾN MÃI</Link> */}
+          {/* ===== THÊM CÁC MENU MỚI TỪ ĐÂY ===== */}
+          <div className="main-menu-items">
+            <Link to="/about" className="menu-item">
+              Giới thiệu
+            </Link>
+          </div>
+          {/* ===== HẾT PHẦN THÊM ===== */}
         </div>
       </nav>
     </header>
