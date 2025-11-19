@@ -22,11 +22,11 @@
     text-align: center;
     padding: 8px 0;
     font-size: 14px;
-    color: #333333;
+    color: #333;
     transition: opacity 0.4s ease, transform 0.4s ease;
   }
 
-  /* ==================== HEADER MAIN (logo + search + actions) ==================== */
+  /* ==================== HEADER MAIN ==================== */
   .header-main {
     display: flex;
     align-items: center;
@@ -34,9 +34,7 @@
     padding: 12px 0;
     transition: opacity 0.4s ease, transform 0.4s ease;
 
-    .logo img {
-      width: 100px;
-    }
+    .logo img { width: 100px; }
 
     .search-box {
       flex: 1;
@@ -67,51 +65,8 @@
       gap: 20px;
       align-items: center;
 
-      .user-box,
-      .cart-box,
-      .hotline {
-        font-size: 24px;
-        color: #001f3f;
-      }
-
-      .user-box {
-        display: inline-flex;
-        align-items: center;
-        gap: 6px;
-        cursor: pointer; // Thêm dòng này
-        transition: all 0.3s ease; // Hiệu ứng mượt
-
-        .user-link {
-          display: flex;
-          align-items: center;
-          gap: 6px;
-          color: #001f3f;
-          text-decoration: none; // Bỏ gạch chân
-          padding: 8px 12px; // Tăng vùng click
-          border-radius: 8px;
-          transition: all 0.3s ease;
-
-          &:hover {
-            background: rgba(0, 31, 63, 0.1); // Hover nền nhẹ
-            transform: translateY(-1px);
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-          }
-        }
-
-        .user-icon {
-          font-size: 24px;
-        }
-
-        .user-box-text {
-          font-size: 14px;
-          color: #001f3f;
-          font-weight: 500;
-        }
-      }
-
       .cart-box {
         position: relative;
-
         .badge {
           background: red;
           color: #fff;
@@ -128,26 +83,46 @@
         font-size: 16px;
         white-space: nowrap;
       }
+
+      /* ==================== USER BOX CHUNG ==================== */
+      .user-box {
+        position: relative; /* quan trọng cho dropdown absolute */
+
+        .user-link {
+          display: flex;
+          align-items: center;
+          gap: 6px;
+          color: #001f3f;
+          text-decoration: none;
+          padding: 8px 12px;
+          border-radius: 8px;
+          transition: all 0.3s ease;
+
+          &:hover {
+            background: rgba(0, 31, 63, 0.1);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+          }
+        }
+
+        .user-icon { font-size: 24px; }
+        .user-box-text { font-size: 14px; font-weight: 500; color: #001f3f; }
+      }
     }
   }
 
-  /* ==================== KHI CỦỢN XUỐNG - CHỈ ẨN MỜ, KHÔNG THAY ĐỔI CHIỀU CAO ==================== */
+  /* ==================== ẨN KHI CUỘN ==================== */
   &.scrolled {
-    .topbar,
-    .header-main {
+    .topbar, .header-main {
       opacity: 0;
       transform: translateY(-20px);
-      pointer-events: none; /* tránh click nhầm khi đang ẩn */
+      pointer-events: none;
     }
-
-    .nav-menu {
-      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);
-    }
+    .nav-menu { box-shadow: 0 4px 15px rgba(0,0,0,0.15); }
   }
 
   &.at-top {
-    .topbar,
-    .header-main {
+    .topbar, .header-main {
       opacity: 1;
       transform: translateY(0);
       pointer-events: all;
@@ -155,33 +130,32 @@
   }
 }
 
-/* ==================== NAV MENU - LUÔN HIỆN (kể cả khi cuộn) ==================== */
+/* ==================== NAV MENU ==================== */
 .nav-menu {
   background: #001f3f;
   transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
   position: sticky;
-  top: -100px; /* Ẩn bớt 1 phần lúc đầu trang (sẽ hiện lại khi fixed) */
+  top: -100px;
   z-index: 999;
-  margin-top: -1px; /* Tránh gap nhỏ */
+  margin-top: -1px;
 
   &.fixed-when-scrolled {
-    position: fixed; /* Đổi sang fixed để bay lên sát đỉnh */
-    top: 0; /* Dính sát đỉnh màn hình */
+    position: fixed;
+    top: 0;
     left: 0;
     right: 0;
     z-index: 9999;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+    box-shadow: 0 4px 20px rgba(0,0,0,0.2);
   }
 
   .nav-container {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    position: relative;
     padding: 0 16px;
   }
 
-  /* DANH MỤC CHÍNH (có dropdown) */
+  /* Danh mục chính */
   .category-main-item {
     position: relative;
     flex-shrink: 0;
@@ -198,13 +172,9 @@
       font-size: 15px;
       transition: background 0.3s;
 
-      .menu-icon {
-        font-size: 26px;
-      }
+      .menu-icon { font-size: 26px; }
 
-      &:hover {
-        background: rgba(255, 255, 255, 0.1);
-      }
+      &:hover { background: rgba(255,255,255,0.1); }
     }
 
     .category-dropdown {
@@ -213,7 +183,7 @@
       left: 0;
       background: #fdf8e8;
       width: 320px;
-      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
+      box-shadow: 0 10px 30px rgba(0,0,0,0.25);
       border-radius: 0 0 12px 12px;
       opacity: 0;
       visibility: hidden;
@@ -245,20 +215,11 @@
         color: white;
       }
 
-      .cat-name {
-        flex: 1;
-        font-weight: 500;
-        font-size: 15px;
-      }
-
-      .arrow {
-        font-size: 26px;
-        font-weight: bold;
-      }
+      .cat-name { flex: 1; font-weight: 500; font-size: 15px; }
+      .arrow { font-size: 26px; font-weight: bold; }
     }
   }
 
-  /* MENU CHÍNH (Giới thiệu, Sản phẩm, v.v.) */
   .main-menu-items {
     display: flex;
     gap: 38px;
@@ -275,43 +236,88 @@
     text-decoration: none;
     transition: color 0.3s ease;
 
-    &:hover {
-      color: #d6a041;
-    }
-
-    &.active {
-      color: #d6a041;
-    }
+    &:hover, &.active { color: #d6a041; }
   }
 
-  /* ==================== MOBILE ==================== */
   @media (max-width: 992px) {
-    .nav-container {
-      flex-direction: column;
-      align-items: stretch;
-    }
+    .nav-container { flex-direction: column; align-items: stretch; }
+    .main-menu-items { justify-content: center; gap: 0; background: rgba(0,0,0,0.15); }
+    .menu-item { padding: 14px 20px; text-align: center; border-bottom: 1px solid rgba(255,255,255,0.1); }
+    .category-dropdown { position: static; opacity: 1; visibility: visible; transform: none; box-shadow: none; width: 100%; pointer-events: all; border-radius: 0; }
+  }
+}
 
-    .main-menu-items {
-      justify-content: center;
-      gap: 0;
-      background: rgba(0, 0, 0, 0.15);
-    }
+/* ==================== USER DROPDOWN KHI ĐĂNG NHẬP (HOVER) ==================== */
+.user-box {
+  position: relative;
+}
 
-    .menu-item {
-      padding: 14px 20px;
-      text-align: center;
-      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-    }
+.user-logged-in {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  padding: 8px 12px;
+  border-radius: 8px;
+  transition: all 0.3s;
 
-    .category-dropdown {
-      position: static;
-      opacity: 1;
-      visibility: visible;
-      transform: none;
-      box-shadow: none;
-      width: 100%;
-      pointer-events: all;
-      border-radius: 0;
+  &:hover {
+    background: rgba(0, 31, 63, 0.1);
+
+    .arrow-down {
+      transform: rotate(180deg);
     }
   }
+
+  .arrow-down {
+    font-size: 10px;
+    transition: transform 0.3s;
+  }
+}
+
+.user-dropdown {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  background: white;
+  min-width: 240px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+  padding: 12px 0;
+  margin-top: 8px;
+  z-index: 1000;
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(-10px);
+  transition: all 0.3s ease;
+  pointer-events: none;
+}
+
+.user-box:hover .user-dropdown {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+  pointer-events: all;
+}
+
+.user-dropdown .dropdown-item {
+  padding: 10px 20px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 14px;
+  color: #333;
+  transition: background 0.2s;
+
+  &:hover { background: #f8f9fa; }
+
+  &.edit-profile { color: #d6a041; font-weight: 500; }
+  &.logout { color: #e74c3c; font-weight: 500; cursor: pointer; }
+}
+
+.user-dropdown hr {
+  margin: 8px 0;
+  border: none;
+  border-top: 1px solid #eee;
 }

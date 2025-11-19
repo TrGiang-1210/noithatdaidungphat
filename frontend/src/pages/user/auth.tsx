@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import '@/styles/pages/user/auth.scss'; // file scss mới mình vừa gửi
-import { loginUser } from '@/api/user/userAPI';
-import { registerUser } from '@/api/user/userAPI';
+import { loginUser, registerUser } from '@/api/user/userAPI';
 import { Eye, EyeOff } from 'lucide-react';
+import { ToastContainer } from 'react-toastify';
+import { toast } from 'react-toastify'; // <--- THÊM DÒNG NÀY VÀO ĐẦU FILE
+import 'react-toastify/dist/ReactToastify.css';
 
 const AuthPage: React.FC = () => {
   const [showPasswordLogin, setShowPasswordLogin] = useState(false);
@@ -27,46 +29,65 @@ const AuthPage: React.FC = () => {
 
   // ========== XỬ LÝ ĐĂNG NHẬP ==========
   const handleLogin = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setErrorLogin('');
-    try {
-      const res = await loginUser({ email: emailLogin, password: passLogin });
-      localStorage.setItem('token', res.token);
-      localStorage.setItem('user', JSON.stringify(res.user));
+  e.preventDefault();
+  setErrorLogin('');
+  try {
+    const res = await loginUser({ email: emailLogin, password: passLogin });
 
-      if (res.user.role === 'admin') {
-        navigate('/admin/dashboard');
-      } else {
-        navigate('/');
-      }
-    } catch (err: any) {
-      setErrorLogin(err.response?.data?.message || 'Đăng nhập thất bại!');
+    // === LƯU TOKEN + USER ĐỂ HEADER HIỆN TÊN ===
+    localStorage.setItem('token', res.token);
+    localStorage.setItem('user', JSON.stringify(res.user)); // <-- QUAN TRỌNG!!!
+
+    toast.success(`Xin chào ${res.user.name.split(' ')[0]}! 🎉`); // <-- thông báo đẹp
+
+    // Redirect đúng role
+    if (res.user.role === 'admin') {
+      navigate('/admin/dashboard');
+    } else {
+      navigate('/');
+      window.location.reload(); // <-- reload 1 lần để header hiện tên ngay lập tức
     }
-  };
+  } catch (err: any) {
+    setErrorLogin(err.response?.data?.message || 'Email hoặc mật khẩu sai!');
+    toast.error('Đăng nhập thất bại!'); // <-- thêm toast lỗi
+  }
+};
 
   // ========== XỬ LÝ ĐĂNG KÝ ==========
   const handleRegister = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setErrorReg('');
+  e.preventDefault();
+  setErrorReg('');
 
-    if (passReg !== confirmReg) {
-      setErrorReg('Mật khẩu xác nhận không khớp!');
-      return;
-    }
+  if (passReg !== confirmReg) {
+    setErrorReg('Mật khẩu xác nhận không khớp!');
+    return;
+  }
 
-    try {
-      await registerUser({
-        name: nameReg,
-        phone: phoneReg,
-        email: emailReg,
-        password: passReg,
-      });
-      setErrorReg('Đăng ký thành công! Đang chuyển về trang chủ...');
-      setTimeout(() => navigate('/'), 2000);
-    } catch (err: any) {
-      setErrorReg(err.response?.data?.message || 'Đăng ký thất bại!');
-    }
-  };
+  try {
+    const res = await registerUser({
+      name: nameReg,
+      phone: phoneReg,
+      email: emailReg,
+      password: passReg,
+    });
+
+    // === TỰ ĐỘNG ĐĂNG NHẬP SAU KHI ĐĂNG KÝ ===
+    localStorage.setItem('token', res.token);
+    localStorage.setItem('user', JSON.stringify(res.user));
+
+    toast.success(`Chào mừng ${res.user.name.split(' ')[0]}! Đăng ký thành công 🎉`);
+    
+    setTimeout(() => {
+      navigate('/');
+      window.location.reload(); // để header hiện tên ngay
+    }, 1500);
+
+  } catch (err: any) {
+    const msg = err.response?.data?.message || 'Đăng ký thất bại!';
+    setErrorReg(msg);
+    toast.error(msg);
+  }
+};
 
   return (
     <div className="auth-layout">
@@ -149,7 +170,18 @@ const AuthPage: React.FC = () => {
           </p>
         </form>
       </div>
-
+<ToastContainer
+      position="top-right"
+      autoClose={3000}
+      hideProgressBar={false}
+      newestOnTop
+      closeOnClick
+      rtl={false}
+      pauseOnFocusLoss
+      draggable
+      pauseOnHover
+      theme="light"
+    />
     </div>
   );
 };
