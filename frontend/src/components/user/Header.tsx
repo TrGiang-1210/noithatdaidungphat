@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from "react";
-import { Link, useLocation } from "react-router-dom";
+import React, { useState, useEffect, useRef } from "react";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import "@/styles/components/user/header.scss";
 
 interface Category {
@@ -8,14 +8,35 @@ interface Category {
   slug: string;
 }
 
+interface CurrentUser {
+  _id: string;
+  name: string;
+  phone: string;
+  email: string;
+  role: string;
+}
+
 const Header: React.FC = () => {
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
   const [isAtTop, setIsAtTop] = useState(true);
+  const [user, setUser] = useState<CurrentUser | null>(null);
 
+  const navigate = useNavigate();
   const location = useLocation();
   const isHomePage = location.pathname === "/" || location.pathname === "/home";
 
+  // Ref để hover dropdown
+  const userBoxRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const savedUser = localStorage.getItem("user");
+    if (savedUser) {
+      setUser(JSON.parse(savedUser));
+    }
+  }, []);
+
+  // Fetch categories
   useEffect(() => {
     const fetchCategories = async () => {
       try {
@@ -31,58 +52,115 @@ const Header: React.FC = () => {
     fetchCategories();
 
     let ticking = false;
-    // THÊM ĐOẠN NÀY: detect scroll
     const handleScroll = () => {
       if (!ticking) {
         window.requestAnimationFrame(() => {
           const scrollPosition = window.scrollY;
-          setIsAtTop(scrollPosition <= 10); // <= 10 để tránh flicker
+          setIsAtTop(scrollPosition <= 10);
           ticking = false;
         });
         ticking = true;
       }
     };
 
-    // Kiểm tra ngay lúc load (tránh flash)
     handleScroll();
-
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
+  // Hover dropdown
+  const handleMouseEnter = () => {
+    if (user) {
+      userBoxRef.current?.classList.add("show-dropdown");
+    }
+  };
+
+  const handleMouseLeave = () => {
+    userBoxRef.current?.classList.remove("show-dropdown");
+  };
+
+  // Đăng xuất
+  const handleLogout = () => {
+    localStorage.removeItem("token");
+    localStorage.removeItem("user");
+    setUser(null);
+    navigate("/");
+    window.location.reload();
+  };
+
   return (
     <header className={`ddp-header ${isAtTop ? "at-top" : "scrolled"}`}>
-      {/* Ẩn khi cuộn */}
       <div className="topbar">
         Nội Thất Dại Dũng Phát, Uy Tín - Chất Lượng - Chính Hãng
       </div>
+
       <div className="header-main container">
         <div className="logo">
-          {/* Bấm logo sẽ về trang chủ */}
           <Link to="/">
-            <img
-              src="./src/assets/logo-ddp-removebg.png"
-              alt="Nội Thất Dại Dũng Phát - Trang chủ"
-            />
+            <img src="./src/assets/logo-ddp-removebg.png" alt="Nội Thất Dại Dũng Phát" />
           </Link>
         </div>
+
         <div className="search-box">
           <input type="text" placeholder="Tìm kiếm sản phẩm..." />
           <button>🔍</button>
         </div>
+
         <div className="actions">
-          <div className="user-box">
-            <Link to="/tai-khoan-ca-nhan" className="user-link">
-              <span className="user-icon" aria-hidden>
-                👤
-              </span>
-              <span className="user-box-text">Đăng ký/Đăng nhập</span>
-            </Link>
+          {/* ==================== USER BOX ==================== */}
+          <div 
+            className="user-box"
+            ref={userBoxRef}
+            onMouseEnter={handleMouseEnter}
+            onMouseLeave={handleMouseLeave}
+          >
+            {user ? (
+              // ĐÃ LOGIN → HOVER HIỆN DROPDOWN, KHÔNG NHẢY TRANG
+              <div className="user-logged-in">
+                <span className="user-icon">👤</span>
+                <span className="user-name">{user.name.split(" ")[0]}</span>
+                <span className="arrow-down">▼</span>
+
+                {/* DROPDOWN */}
+                <div className="user-dropdown">
+                  <div className="dropdown-item">
+                    <span className="icon">📱</span>
+                    <span>{user.phone || "Chưa có SĐT"}</span>
+                  </div>
+                  <div className="dropdown-item">
+                    <span className="icon">✉️</span>
+                    <span>{user.email}</span>
+                  </div>
+                  <hr />
+                  <Link 
+                    to="/tai-khoan-ca-nhan" 
+                    className="dropdown-item edit-profile"
+                    onClick={(e) => e.stopPropagation()} // chặn hover khi click
+                  >
+                    <span>✏️ Edit Profile</span>
+                  </Link>
+                  <div 
+                    className="dropdown-item logout"
+                    onClick={handleLogout}
+                  >
+                    <span>🚪</span> Đăng xuất
+                  </div>
+                </div>
+              </div>
+            ) : (
+              // CHƯA LOGIN → CLICK NHẢY TRANG ĐĂNG NHẬP
+              <Link to="/tai-khoan-ca-nhan" className="user-link">
+                <span className="user-icon">👤</span>
+                <span className="user-box-text">Đăng ký/Đăng nhập</span>
+              </Link>
+            )}
           </div>
+
           <div className="cart-box">
             <div className="cart-icon">🛒</div>
             <span className="badge">1</span>
           </div>
+
           <div className="hotline">
             <span className="phone-icon">📞</span>
             <span className="phone-number">0941038839</span>
@@ -90,15 +168,10 @@ const Header: React.FC = () => {
         </div>
       </div>
 
-      {/* Luôn hiện - kể cả khi cuộn */}
+      {/* NAV MENU */}
       <nav className={`nav-menu ${!isAtTop ? "fixed-when-scrolled" : ""}`}>
         <div className="container nav-container">
-          {/* DANH MỤC SẢN PHẨM - CÓ DROPDOWN */}
-          <div
-            className={`category-main-item ${
-              isAtTop && isHomePage ? "show-dropdown-at-top" : ""
-            }`}
-          >
+          <div className={`category-main-item ${isAtTop && isHomePage ? "show-dropdown-at-top" : ""}`}>
             <div className="category-trigger">
               <span className="menu-icon">☰</span>
               DANH MỤC SẢN PHẨM
@@ -109,7 +182,6 @@ const Header: React.FC = () => {
               ) : (
                 categories.map((cat) => (
                   <Link key={cat._id} to={`/${cat.slug}`} className="cat-item">
-                    {/* bạn thay link logo nhỏ */}
                     <span className="cat-name">{cat.name}</span>
                     <span className="arrow">›</span>
                   </Link>
@@ -118,13 +190,9 @@ const Header: React.FC = () => {
             </div>
           </div>
 
-          {/* ===== THÊM CÁC MENU MỚI TỪ ĐÂY ===== */}
           <div className="main-menu-items">
-            <Link to="/gioi-thieu" className="menu-item">
-              Giới thiệu
-            </Link>
+            <Link to="/gioi-thieu" className="menu-item">Giới thiệu</Link>
           </div>
-          {/* ===== HẾT PHẦN THÊM ===== */}
         </div>
       </nav>
     </header>
