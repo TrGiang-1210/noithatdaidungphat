@@ -3,7 +3,7 @@ import { Route, Routes } from "react-router-dom";
 import AuthLayout from "@/layouts/auth.layout";
 import Home from "@/pages/user/home";
 import ProductDetail from "@/pages/user/productDetail";
-
+import AboutPage from "@/pages/user/about";
 
 const MainRouter = () => {
   return (
@@ -13,6 +13,7 @@ const MainRouter = () => {
         <Route index element={<Home />} />
         <Route path="home" element={<Home />} />
         <Route path="product/:id" element={<ProductDetail />} />
+        <Route path="about" element={<AboutPage />} />
       </Route>
     </Routes>
   );
