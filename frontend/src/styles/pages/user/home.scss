@@ -1,12 +1,130 @@
 .home-page {
   font-family: sans-serif;
   color: #333;
+  background: #f8f8f8;
 }
 
-/* Banner Section */
+/* ==================== BANNER - ĐẸP CHUẨN, CHỪA CHỖ DROPDOWN ==================== */
+/* ==================== SLIDER GỌN GÀNG - CHUẨN ĐỒ GỖ VIỆT ==================== */
+/* ==================== BANNER - CHUẨN 100% DOGOVIET.COM ==================== */
 .banner-section {
-  background: #f5f5f5;
   padding: 20px 0;
+  background: #f5f5f5;
+
+  .banner-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 15px;
+    padding-left: 335px !important; /* Chuẩn như dogoviet - chừa chỗ dropdown 320px */
+  }
+
+  .slider-wrapper {
+    background: #fff;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+    border: 1px solid #eee;
+
+    // Thêm 2 dòng này là xong
+  max-width: 850px;     // bạn thử 820–860 tùy thích
+  margin-left: auto;
+  margin-right: auto;   // để nó căn giữa trong vùng còn lại
+  }
+
+  .slider {
+    position: relative;
+    height: 420px;
+    overflow: hidden;
+
+    .slider-inner {
+      display: flex;
+      height: 100%;
+      transition: transform 0.6s ease;
+    }
+
+    .slide {
+      min-width: 100%;
+      height: 100%;
+    }
+
+    .slide-img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+
+    .slider-nav {
+      position: absolute;
+      top: 50%;
+      transform: translateY(-50%);
+      background: rgba(0,0,0,0.4);
+      color: #fff;
+      border: none;
+      width: 50px;
+      height: 50px;
+      font-size: 28px;
+      cursor: pointer;
+      border-radius: 50%;
+      z-index: 10;
+      transition: all 0.3s;
+
+      &:hover {
+        background: #c19a6b;
+        transform: translateY(-50%) scale(1.1);
+      }
+
+      &.prev { left: 15px; }
+      &.next { right: 15px; }
+    }
+
+    .slider-pagination {
+      position: absolute;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      gap: 10px;
+      z-index: 10;
+
+      .dot {
+        width: 12px;
+        height: 12px;
+        background: rgba(255,255,255,0.6);
+        border-radius: 50%;
+        cursor: pointer;
+        transition: all 0.3s;
+
+        &.active {
+          background: #c19a6b;
+          transform: scale(1.3);
+        }
+      }
+    }
+  }
+
+  /* Mobile: full width */
+  @media (max-width: 992px) {
+    .banner-container {
+      padding-left: 15px !important;
+    }
+
+    .slider {
+      height: 280px;
+    }
+
+    .slider-nav {
+      width: 40px;
+      height: 40px;
+      font-size: 24px;
+    }
+  }
+}
+
+/* ==================== SẢN PHẨM NỔI BẬT ==================== */
+.product-section {
+  padding: 50px 0;
+  background: #fff;
 
   .container {
     max-width: 1200px;
@@ -14,221 +132,94 @@
     padding: 0 16px;
   }
 
-  .banner-layout {
-    display: flex;
-    gap: 20px;
-
-    .category-col {
-      flex: 0 0 250px;
-      background: #fff;
-      border: 1px solid #ddd;
-      padding: 15px;
-      border-radius: 4px;
-
-      .category-title {
-        font-size: 18px;
-        font-weight: bold;
-        color: #d6a041;
-        margin-bottom: 15px;
-        text-transform: uppercase;
-      }
-
-      .category-list {
-        list-style: none;
-        padding: 0;
-        margin: 0;
-
-        li {
-          margin-bottom: 10px;
-          font-size: 15px;
-
-          a {
-            color: #333;
-            text-decoration: none;
-            display: flex;
-            align-items: center;
-
-            &::before {
-              content: "•";
-              color: #d6a041;
-              margin-right: 8px;
-            }
-
-            &:hover {
-              color: #d6a041;
-            }
-          }
-        }
-      }
-    }
-
-    .slider-col {
-      flex: 1;
-      max-width: calc(100% - 270px);
-    }
-  }
-
-  .slider {
-    position: relative;
-    overflow: hidden;
-    border-radius: 8px;
-    height: 400px;  /* Khung cố định */
-    cursor: grab;
-    user-select: none;
-    touch-action: pan-y;
-
-    &:active {
-      cursor: grabbing;
-    }
-
-    .slider-wrapper {
-      display: flex;
-      width: 100%;  /* Chiều rộng full x số ảnh */
-      height: 100%;
-      transition: transform 0.5s ease;  /* Hiệu ứng swipe ngang */
-      will-change: transform;
-
-      .slider-img {
-        flex: 0 0 100%;  /* Mỗi img chiếm 100% width của slider */
-        height: 100%;
-        object-fit: cover;
-      }
-    }
-
-    .slider-btn {
-      position: absolute;
-      top: 50%;
-      transform: translateY(-50%);
-      background: rgba(0, 0, 0, 0.5);
-      color: white;
-      border: none;
-      padding: 10px 20px;
-      font-size: 24px;
-      cursor: pointer;
-      z-index: 10;
-      transition: background 0.3s ease;
-
-      &:hover {
-        background: #d6a041;
-      }
-
-      &.prev {
-        left: 10px;
-      }
-
-      &.next {
-        right: 10px;
-      }
-    }
-  }
-}
-// ===================================================================
-// PRODUCT SECTION – ĐỒNG BỘ VỚI BANNER SECTION
-// ===================================================================
-.product-section {
-  padding: 40px 0;
-  background: #fff;
-
-  > .container {
-    max-width: 1200px;
-    margin: 0 auto;
-    padding: 0 16px;
-  }
-
   .section-title {
-    font-size: 26px;
-    font-weight: 700;
-    margin-bottom: 30px;
+    font-size: 28px;
+    font-weight: bold;
+    text-align: center;
+    margin-bottom: 40px;
     color: #333;
     position: relative;
-    padding-bottom: 10px;
 
     &::after {
       content: "";
-      position: absolute;
-      left: 0;
-      bottom: 0;
-      width: 60px;
+      width: 80px;
       height: 4px;
       background: #d6a041;
+      position: absolute;
+      bottom: -12px;
+      left: 50%;
+      transform: translateX(-50%);
       border-radius: 2px;
     }
   }
 
   .product-grid {
     display: grid;
-    grid-template-columns: repeat(4, 1fr); /* Chính xác 4 sản phẩm mỗi hàng */
-    gap: 24px;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 25px;
 
-    @media (max-width: 1024px) {
-      grid-template-columns: repeat(3, 1fr);
-    }
-    @media (max-width: 768px) {
-      grid-template-columns: repeat(2, 1fr);
-    }
-    @media (max-width: 480px) {
-      grid-template-columns: 1fr;
-    }
+    @media (max-width: 1024px) { grid-template-columns: repeat(3, 1fr); }
+    @media (max-width: 768px) { grid-template-columns: repeat(2, 1fr); }
+    @media (max-width: 480px) { grid-template-columns: 1fr; }
   }
 
-  /* Giữ nguyên phần card đẹp như cũ */
   .product-card {
     background: #fff;
     border-radius: 12px;
     overflow: hidden;
     border: 1px solid #eee;
     transition: all 0.3s ease;
-    display: flex;
-    flex-direction: column;
 
     &:hover {
-      transform: translateY(-8px);
-      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+      transform: translateY(-10px);
+      box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
       border-color: #d6a041;
     }
 
-    a {
+    .product-link {
       text-decoration: none;
       color: inherit;
-      flex-grow: 1;
       display: flex;
       flex-direction: column;
+      height: 100%;
     }
 
     .product-img {
       width: 100%;
-      height: 220px;
+      height: 240px;
       object-fit: cover;
-      background: #f9f9f9;
+      transition: transform 0.4s ease;
+    }
+
+    &:hover .product-img {
+      transform: scale(1.05);
     }
 
     .product-name {
-      margin: 12px 0 8px;
-      padding: 0 12px;
-      font-size: 15px;
+      padding: 15px 15px 8px;
+      font-size: 16px;
       font-weight: 500;
-      line-height: 1.4;
+      color: #333;
       display: -webkit-box;
       -webkit-line-clamp: 2;
       -webkit-box-orient: vertical;
       overflow: hidden;
-      color: #333;
     }
 
     .product-price {
-      padding: 0 12px 12px;
+      padding: 0 15px 15px;
       margin-top: auto;
 
       .price-sale {
-        font-size: 18px;
-        font-weight: 700;
+        font-size: 20px;
+        font-weight: bold;
         color: #d32f2f;
       }
 
       .price-original {
         margin-left: 8px;
         color: #999;
-        font-size: 14px;
+        font-size: 15px;
         text-decoration: line-through;
       }
     }
