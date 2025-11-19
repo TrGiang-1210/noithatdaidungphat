@@ -1,21 +1,37 @@
+// middleware/auth.js (bản chuẩn nhất 2025 – bảo mật cao, dễ đọc)
+
 const jwt = require('jsonwebtoken');
 
-module.exports = function auth(req, res, next) {
-  const header = req.get('Authorization') || req.get('x-access-token');
-  if (!header) return res.status(401).json({ message: 'Token missing' });
+const protect = async (req, res, next) => {
+  let token;
 
-  const token = header.startsWith('Bearer ') ? header.slice(7) : header;
-  const secret = process.env.JWT_SECRET;
-  if (!secret) {
-    console.warn('JWT_SECRET not set — using insecure default (development only).');
+  // 1. Lấy token từ header (Bearer) hoặc query (dùng cho reset password link)
+  if (req.headers.authorization?.startsWith('Bearer')) {
+    token = req.headers.authorization.split(' ')[1];
+  } else if (req.query.token) {
+    token = req.query.token; // cho reset password
+  }
+
+  // 2. Kiểm tra có token không
+  if (!token) {
+    return res.status(401).json({ message: 'Bạn cần đăng nhập để thực hiện hành động này' });
   }
 
   try {
-    const payload = jwt.verify(token, secret || 'secret');
-    req.user = payload;
+    // 3. Verify token
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+
+    // 4. Gắn user vào req (chỉ id + role là đủ)
+    req.user = {
+      id: decoded.id,
+      role: decoded.role
+    };
+
     next();
   } catch (err) {
-    if (process.env.NODE_ENV !== 'production') console.error('Auth verify error:', err.message);
-    return res.status(401).json({ message: 'Invalid token' });
+    console.error('Token error:', err.message);
+    return res.status(401).json({ message: 'Token không hợp lệ hoặc đã hết hạn' });
   }
 };
+
+module.exports = { protect };
