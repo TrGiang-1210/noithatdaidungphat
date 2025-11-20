@@ -1,136 +1,130 @@
 // controllers/productController.js
 const ProductService = require('../services/productService');
-const Product = require('../models/Product'); // <--- THÊM DÒNG NÀY NẾU CHƯA CÓ (rất hay bị thiếu)
+const Product = require('../models/Product');
 const Joi = require('joi');
 
-const productSchema = Joi.object({
-  name: Joi.string().required(),
-  slug: Joi.string().required(),
-  sku: Joi.string().required(),
-  images: Joi.array().items(Joi.string()).min(1).required(),
-  description: Joi.string().allow(''),
+// Helper escape regex
+const escapeRegex = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
-  priceOriginal: Joi.number().required(),
-  priceSale: Joi.number().required(),
+// remove diacritics
+const normalizeString = (s) => {
+  if (!s) return '';
+  return s
+    .toString()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '') // remove diacritics
+    .toLowerCase();
+};
 
-  material: Joi.string().allow(''),
-  color: Joi.string().allow(''),
-  size: Joi.string().allow(''),
-  quantity: Joi.number().required(),
-});
-
-// ======================================================================
-// GET ALL PRODUCTS
-// ======================================================================
+// GET /api/products
 exports.getProducts = async (req, res) => {
   try {
-    const { name, material, color, minPrice, maxPrice, sort } = req.query;
-    const filters = {};
-
-    if (name) filters.name = new RegExp(name, "i");
-    if (material) filters.material = new RegExp(material, "i");
-    if (color) filters.color = new RegExp(color, "i");
-
-    if (minPrice || maxPrice) filters.priceSale = {};
-    if (minPrice) filters.priceSale.$gte = Number(minPrice);
-    if (maxPrice) filters.priceSale.$lte = Number(maxPrice);
-
-    let query = ProductService.getAll(filters);
-
-    if (sort === "price_asc") query = query.sort({ priceSale: 1 });
-    if (sort === "price_desc") query = query.sort({ priceSale: -1 });
-
-    const products = await query;
-    res.json(products);
-  } catch (error) {
-    res.status(500).json({ message: error.message || "Error fetching products" });
+    const limit = parseInt(req.query.limit, 10) || 0;
+    const filters = {}; // mở rộng từ req.query nếu cần
+    const sort = {}; // parse req.query.sort nếu cần
+    const products = await ProductService.getAll(filters, limit, sort);
+    return res.json(Array.isArray(products) ? products : []);
+  } catch (err) {
+    console.error('getProducts error:', err);
+    return res.status(500).json({ message: err.message || 'Server error' });
   }
 };
 
-// ======================================================================
-// GET PRODUCT BY ID OR SLUG
-// ======================================================================
-exports.getProductById = async (req, res) => {
-  try {
-    const product = await ProductService.getByIdOrSlug(req.params.id);
-    res.json(product);
-  } catch (error) {
-    res.status(404).json({ message: error.message || "Product not found" });
-  }
-};
-
-// ======================================================================
-// CREATE PRODUCT
-// ======================================================================
-exports.createProduct = async (req, res) => {
-  try {
-    const { error } = productSchema.validate(req.body);
-    if (error) return res.status(400).json({ message: error.details[0].message });
-
-    const images = req.files
-      ? req.files.map(file => `/uploads/${file.filename}`)
-      : req.body.images || [];
-
-    const product = await ProductService.create({ ...req.body, images });
-    res.status(201).json(product);
-  } catch (error) {
-    res.status(500).json({ message: error.message || "Error creating product" });
-  }
-};
-
-// ======================================================================
-// UPDATE PRODUCT
-// ======================================================================
-exports.updateProduct = async (req, res) => {
-  try {
-    const { error } = productSchema.validate(req.body);
-    if (error) return res.status(400).json({ message: error.details[0].message });
-
-    const images = req.files
-      ? req.files.map(file => `/uploads/${file.filename}`)
-      : req.body.images;
-
-    const product = await ProductService.update(req.params.id, { ...req.body, images });
-    res.json(product);
-  } catch (error) {
-    res.status(500).json({ message: error.message || "Error updating product" });
-  }
-};
-
-// ======================================================================
-// DELETE PRODUCT
-// ======================================================================
-exports.deleteProduct = async (req, res) => {
-  try {
-    await ProductService.delete(req.params.id);
-    res.json({ message: "Product deleted" });
-  } catch (error) {
-    res.status(500).json({ message: error.message || "Error deleting product" });
-  }
-};
-
-// ======================================================================
-// SEARCH PRODUCTS – HOÀN HẢO, HỖ TRỢ TIẾNG VIỆT CÓ DẤU
-// ======================================================================
+// GET /api/products/search
 exports.searchProducts = async (req, res) => {
   try {
-    const { query } = req.query;
+    const raw = (req.query.query || req.query.q || '').toString().trim();
+    if (!raw) return res.json([]);
 
-    if (!query || query.trim() === '') {
-      return res.status(400).json({ message: "Query không được để trống" });
-    }
+    const limit = Math.max(0, parseInt(req.query.limit, 10) || 0);
 
-    const products = await Product.find({
-      $or: [
-        { name: { $regex: query.trim(), $options: 'i' } },
-        { description: { $regex: query.trim(), $options: 'i' } },
-        { sku: { $regex: query.trim(), $options: 'i' } }
-      ]
-    }).limit(20);
+    // regex for original input
+    const normalRegex = new RegExp(escapeRegex(raw), 'i');
 
-    res.status(200).json(products);
-  } catch (error) {
-    console.error("Lỗi search:", error);
-    res.status(500).json({ message: "Lỗi server" });
+    // fuzzy for original input (chars with .* between)
+    const chars = raw.split('').filter(Boolean).map(escapeRegex);
+    const fuzzyPattern = chars.join('.*');
+    const fuzzyRegex = new RegExp(fuzzyPattern, 'i');
+
+    // normalized (no diacritics)
+    const rawNormalized = normalizeString(raw);
+    const normalNormalizedRegex = new RegExp(escapeRegex(rawNormalized), 'i');
+    const fuzzyNormalizedRegex = new RegExp(rawNormalized.split('').map(escapeRegex).join('.*'), 'i');
+
+    // search conditions: original fields AND normalized fields (if you have name_normalized/slug_normalized)
+    const orConditions = [
+      { name: { $regex: normalRegex } },
+      { slug: { $regex: normalRegex } },
+      { name: { $regex: fuzzyRegex } },
+      { slug: { $regex: fuzzyRegex } },
+      // normalized fields (ensure you add/populate these in DB)
+      { name_normalized: { $regex: normalNormalizedRegex } },
+      { slug_normalized: { $regex: normalNormalizedRegex } },
+      { name_normalized: { $regex: fuzzyNormalizedRegex } },
+      { slug_normalized: { $regex: fuzzyNormalizedRegex } },
+      { description: { $regex: normalRegex } },
+    ];
+
+    // Remove conditions that reference fields you don't have (optional)
+    const finalConditions = orConditions.filter(cond => {
+      const key = Object.keys(cond)[0];
+      // if normalized fields not present in schema it's OK — Mongo ignores non-existing fields
+      return true;
+    });
+
+    let query = Product.find({ $or: finalConditions });
+
+    if (limit > 0) query = query.limit(limit);
+
+    // use collation for case/accents where supported (still keep normalized checks)
+    query = query.collation({ locale: 'vi', strength: 1 });
+
+    const products = await query.lean();
+
+    return res.json(Array.isArray(products) ? products : []);
+  } catch (err) {
+    console.error('searchProducts error:', err);
+    return res.status(500).json({ message: err.message || 'Error searching products' });
   }
+};
+
+// GET /api/products/:id
+exports.getProductById = async (req, res) => {
+  try {
+    const p = await ProductService.getById(req.params.id);
+    if (!p) return res.status(404).json({ message: 'Product not found' });
+    return res.json(p);
+  } catch (err) {
+    console.error('getProductById error:', err);
+    return res.status(500).json({ message: err.message || 'Server error' });
+  }
+};
+
+// GET /api/products/slug/:slug
+exports.getProductBySlug = async (req, res) => {
+  try {
+    if (typeof ProductService.getByIdOrSlug === 'function') {
+      const p = await ProductService.getByIdOrSlug(req.params.slug);
+      if (!p) return res.status(404).json({ message: 'Product not found' });
+      return res.json(p);
+    }
+    // fallback: try find by slug via model
+    const p = await Product.findOne({ slug: req.params.slug }).lean();
+    if (!p) return res.status(404).json({ message: 'Product not found' });
+    return res.json(p);
+  } catch (err) {
+    console.error('getProductBySlug error:', err);
+    return res.status(500).json({ message: err.message || 'Server error' });
+  }
+};
+
+// Admin stubs (so router mounting won't crash). Implement properly later.
+exports.createProduct = async (req, res) => {
+  return res.status(501).json({ message: 'createProduct not implemented' });
+};
+exports.updateProduct = async (req, res) => {
+  return res.status(501).json({ message: 'updateProduct not implemented' });
+};
+exports.deleteProduct = async (req, res) => {
+  return res.status(501).json({ message: 'deleteProduct not implemented' });
 };

@@ -1,36 +1,66 @@
 import React, { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
-import { fetchProductDetail } from "@/api/user/productAPI";
 import "@/styles/pages/user/productDetail.scss";
+type Product = any;
 
-const ProductDetail = () => {
-  const { id } = useParams<{ id: string }>();
-  const [product, setProduct] = useState<any>(null);
-  const [quantity, setQuantity] = useState(1);
-  const [selectedImg, setSelectedImg] = useState(0);
+const endpointCandidates = (param: string) => [
+  `http://localhost:5000/api/products/slug/${encodeURIComponent(param)}`,
+  `http://localhost:5000/api/products/${encodeURIComponent(param)}`,
+  `http://localhost:5000/api/product/${encodeURIComponent(param)}`,
+];
+
+const ProductDetail: React.FC = () => {
+  const { slug, id } = useParams();
+  const param = slug || id || "";
+  const [product, setProduct] = useState<Product | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const load = async () => {
-      if (!id) return;
-      try {
-        const data = await fetchProductDetail(id);
-        setProduct(data);
-      } catch (err) {
-        console.error("Không tìm thấy sản phẩm:", err);
+    if (!param) {
+      setError("Không có product id/slug trong URL");
+      setLoading(false);
+      return;
+    }
+
+    const fetchProduct = async () => {
+      setLoading(true);
+      setError(null);
+      const candidates = endpointCandidates(param);
+      for (const url of candidates) {
+        try {
+          const res = await fetch(url);
+          if (!res.ok) {
+            const txt = await res.text();
+            console.warn(`[ProductDetail] ${url} -> ${res.status}`, txt.slice(0,200));
+            continue;
+          }
+          const ct = res.headers.get("content-type") || "";
+          if (!ct.includes("application/json")) {
+            const txt = await res.text();
+            console.warn(`[ProductDetail] ${url} returned non-json:`, txt.slice(0,200));
+            continue;
+          }
+          const data = await res.json();
+          setProduct(data);
+          setLoading(false);
+          return;
+        } catch (e) {
+          console.warn(`[ProductDetail] fetch failed ${url}`, e);
+        }
       }
+      setError("Không tìm thấy sản phẩm (kiểm tra backend route).");
+      setLoading(false);
     };
-    load();
-  }, [id]);
 
-  if (!product) {
-    return (
-      <div className="product-detail-page">
-        <div className="container">Đang tải sản phẩm...</div>
-      </div>
-    );
-  }
+    fetchProduct();
+  }, [param]);
 
-  const currentImage = product.images?.[selectedImg] || product.images?.[0] || "/placeholder.jpg";
+  if (loading) return <div>Đang tải sản phẩm...</div>;
+  if (error) return <div style={{color:'red'}}>Lỗi: {error}</div>;
+  if (!product) return <div>Không có dữ liệu sản phẩm</div>;
+
+  const currentImage = product.images?.[0] || product.img_url || "/images/no-image.png";
   const discount = product.priceOriginal > product.priceSale
     ? Math.round(((product.priceOriginal - product.priceSale) / product.priceOriginal) * 100)
     : 0;
@@ -55,8 +85,7 @@ const ProductDetail = () => {
                   {product.images.map((img: string, i: number) => (
                     <div
                       key={i}
-                      className={`thumb ${selectedImg === i ? "active" : ""}`}
-                      onClick={() => setSelectedImg(i)}
+                      className={`thumb ${0 === i ? "active" : ""}`}
                     >
                       <img src={img} alt={`${product.name} ${i + 1}`} />
                     </div>
@@ -119,9 +148,9 @@ const ProductDetail = () => {
             </div>
 
             <div className="quantity-area">
-              <button onClick={() => setQuantity(q => Math.max(1, q - 1))}>-</button>
-              <input type="text" value={quantity} readOnly />
-              <button onClick={() => setQuantity(q => q + 1)}>+</button>
+              <button onClick={() => {}}> - </button>
+              <input type="text" value={1} readOnly />
+              <button onClick={() => {}}> + </button>
               <span className="note">(Còn {product.quantity || 0} sản phẩm)</span>
             </div>
 

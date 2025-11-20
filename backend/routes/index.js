@@ -7,14 +7,7 @@ const router = express.Router();
 const homeController = require('../controllers/homeController');
 const categoryController = require('../controllers/categoryController');
 const productController = require('../controllers/productController');
-const {
-  register,
-  login,
-  getCurrentUser,
-  updateProfile,
-  forgotPassword,
-  resetPassword
-} = require('../controllers/userController');
+const userController = require('../controllers/userController');
 
 // Middleware
 const { protect } = require('../middlewares/auth');
@@ -25,28 +18,26 @@ const upload = multer({ dest: 'uploads/' });
 router.get('/', homeController.getHomeData);
 router.get('/home', homeController.getHomeData);
 
-
-
 // Danh mục
 router.get('/categories', categoryController.getCategories);
 router.get('/categories/:id', categoryController.getCategoryById);
 
 // Sản phẩm
 // SEARCH – PHẢI CÔNG KHAI, KHÔNG AUTH, VÀ CÓ /api TRONG SERVER.JS
-router.get('/products/search', productController.searchProducts);  // ← ĐÚNG ĐƯỜNG DẪN
+router.get('/products/search', productController.searchProducts);
 router.get('/products', productController.getProducts);
-router.get('/products/:id', productController.getProductById);        // bằng _id
-router.get('/products/slug/:slug', productController.getProductBySlug);// nếu có slug
+router.get('/products/:id', productController.getProductById);
+router.get('/products/slug/:slug', productController.getProductBySlug);
 
 // Auth công khai
-router.post('/auth/register', register);
-router.post('/auth/login', login);
-router.post('/auth/forgot-password', forgotPassword);
-router.post('/auth/reset-password', resetPassword);
+router.post('/auth/register', userController.register);
+router.post('/auth/login', userController.login);
+router.post('/auth/forgot-password', userController.forgotPassword);
+router.post('/auth/reset-password', userController.resetPassword);
 
 // ==================== PROTECTED ROUTES ====================
-router.get('/auth/me', protect, getCurrentUser);
-router.put('/auth/profile', protect, updateProfile);
+router.get('/auth/me', protect, userController.getCurrentUser);
+router.put('/auth/profile', protect, userController.updateProfile);
 
 // ==================== ADMIN ROUTES ====================
 router.post('/categories', protect, categoryController.createCategory);
