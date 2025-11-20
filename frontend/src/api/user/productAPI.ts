@@ -5,7 +5,6 @@ export interface ObjectIdRef {
   _id: string;
   name?: string;
 }
-// TEMP FIX VITE CACHE - XÓA DÒNG NÀY SAU KHI HẾT LỖI
 // VITE CACHE IS STUPID SOMETIMES
 export interface Product {
   _id: string;

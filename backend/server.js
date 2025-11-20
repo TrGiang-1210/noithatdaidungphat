@@ -5,6 +5,7 @@ const dotenv = require("dotenv");
 const cors = require("cors");
 const connectDB = require("./config/db");
 const path = require('path');
+const routes = require('./routes/index');
 
 dotenv.config();
 connectDB();
@@ -18,7 +19,7 @@ app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
-app.use("/api", require("./routes/index"));
+app.use('/api', routes);
 
 // 404
 app.use((req, res) => {
