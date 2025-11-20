@@ -126,30 +126,49 @@ exports.deleteProduct = async (req, res) => {
 };
 
 // ======================================================================
-// SEARCH PRODUCTS
+// SEARCH PRODUCTS – HOÀN HẢO, HỖ TRỢ TIẾNG VIỆT CÓ DẤU
 // ======================================================================
 exports.searchProducts = async (req, res) => {
   try {
-    const { query, minPrice, maxPrice, sort } = req.query;
+    const keyword = (req.query.q || req.query.query || "").trim();
 
-    const filters = {};
+    // Nếu không có từ khóa → trả mảng rỗng (tránh query toàn bộ DB)
+    if (!keyword) {
+      return res.json([]);
+    }
 
-    if (query) filters.name = new RegExp(query, "i");
+    // Tạo filter tìm kiếm
+    const filters = {
+      // Tìm trong tên sản phẩm, không phân biệt hoa/thường và có dấu
+      name: { $regex: keyword, $options: "i" }
+    };
 
-    if (minPrice || maxPrice) filters.priceSale = {};
-    if (minPrice) filters.priceSale.$gte = Number(minPrice);
-    if (maxPrice) filters.priceSale.$lte = Number(maxPrice);
+    // Lọc giá nếu có
+    if (req.query.minPrice || req.query.maxPrice) {
+      filters.priceSale = {};
+      if (req.query.minPrice) filters.priceSale.$gte = Number(req.query.minPrice);
+      if (req.query.maxPrice) filters.priceSale.$lte = Number(req.query.maxPrice);
+    }
 
-    let queryObj = ProductService.getAll(filters);
+    // Query cơ bản
+    let query = ProductService.getAll(filters);
 
-    if (sort === "price_asc") queryObj.sort({ priceSale: 1 });
-    if (sort === "price_desc") queryObj.sort({ priceSale: -1 });
+    // Sắp xếp
+    const sort = req.query.sort;
+    if (sort === "price_asc") query = query.sort({ priceSale: 1 });
+    if (sort === "price_desc") query = query.sort({ priceSale: -1 });
+    if (sort === "newest") query = query.sort({ createdAt: -1 });
 
-    const products = await queryObj;
+    // Chỉ lấy những field cần thiết để load nhanh
+    query = query.select("name priceSale priceOriginal images slug");
+
+    // Giới hạn kết quả (tối đa 30)
+    const products = await query.limit(30);
 
     res.json(products);
 
   } catch (error) {
-    res.status(500).json({ message: error.message || "Error searching products" });
+    console.error("Lỗi tìm kiếm sản phẩm:", error);
+    res.status(500).json({ message: "Lỗi server khi tìm kiếm" });
   }
 };

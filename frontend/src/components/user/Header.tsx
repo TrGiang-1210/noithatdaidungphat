@@ -21,12 +21,13 @@ const Header: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [isAtTop, setIsAtTop] = useState(true);
   const [user, setUser] = useState<CurrentUser | null>(null);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+  const [searchQuery, setSearchQuery] = useState<string>("");
 
   const navigate = useNavigate();
   const location = useLocation();
   const isHomePage = location.pathname === "/" || location.pathname === "/home";
 
-  // Ref để hover dropdown
   const userBoxRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -36,7 +37,7 @@ const Header: React.FC = () => {
     }
   }, []);
 
-  // Fetch categories
+  // Fetch categories + scroll handler
   useEffect(() => {
     const fetchCategories = async () => {
       try {
@@ -68,18 +69,50 @@ const Header: React.FC = () => {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-  // Hover dropdown
-  const handleMouseEnter = () => {
+  // Cập nhật vị trí dropdown khi scroll/resize (giữ vị trí chính xác)
+  useEffect(() => {
+    const updateDropdownPosition = () => {
+      if (dropdownRef.current && user && userBoxRef.current?.classList.contains('show-dropdown')) {
+        const userBox = userBoxRef.current!.getBoundingClientRect();
+        const dropdown = dropdownRef.current!;
+        dropdown.style.position = 'fixed';
+        dropdown.style.top = `${userBox.bottom + 8}px`;
+        dropdown.style.right = `${window.innerWidth - userBox.right}px`;
+        dropdown.style.left = 'auto';
+      }
+    };
+
     if (user) {
-      userBoxRef.current?.classList.add("show-dropdown");
+      window.addEventListener('scroll', updateDropdownPosition);
+      window.addEventListener('resize', updateDropdownPosition);
+      return () => {
+        window.removeEventListener('scroll', updateDropdownPosition);
+        window.removeEventListener('resize', updateDropdownPosition);
+      };
     }
+  }, [user]);
+
+  // Hover handlers
+  const handleMouseEnter = () => {
+    if (user) userBoxRef.current?.classList.add("show-dropdown");
   };
 
   const handleMouseLeave = () => {
     userBoxRef.current?.classList.remove("show-dropdown");
   };
 
-  // Đăng xuất
+const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    const query = searchQuery.trim();
+    if (query === "") {
+      alert("Vui lòng nhập từ khóa tìm kiếm!");
+      return;
+    }
+    // Chuyển đến trang search với query
+    navigate(`/tim-kiem?query=${encodeURIComponent(query)}`);
+    setSearchQuery(""); // xóa ô input sau khi search
+  };
+
   const handleLogout = () => {
     localStorage.removeItem("token");
     localStorage.removeItem("user");
@@ -88,67 +121,82 @@ const Header: React.FC = () => {
     window.location.reload();
   };
 
+  // LẤY TÊN CUỐI (ví dụ: "Lưu Nguyễn Trường Giang" → "Giang")
+  const getLastName = (fullName: string) => {
+    if (!fullName) return "";
+    const parts = fullName.trim().split(" ");
+    return parts[parts.length - 1];
+  };
+
   return (
     <header className={`ddp-header ${isAtTop ? "at-top" : "scrolled"}`}>
       <div className="topbar">
-        Nội Thất Dại Dũng Phát, Uy Tín - Chất Lượng - Chính Hãng
+        Nội Thất Đại Dũng Phát, Uy Tín - Chất Lượng - Chính Hãng
       </div>
 
       <div className="header-main container">
         <div className="logo">
           <Link to="/">
-            <img src="./src/assets/logo-ddp-removebg.png" alt="Nội Thất Dại Dũng Phát" />
+            <img src="./src/assets/logo-ddp-removebg.png" alt="Nội Thất Đại Dũng Phát" />
           </Link>
         </div>
 
         <div className="search-box">
-          <input type="text" placeholder="Tìm kiếm sản phẩm..." />
-          <button>🔍</button>
+          <form onSubmit={handleSearch} style={{ display: "flex", flex: 1, maxWidth: "500px" }}>
+            <input
+              type="text"
+              placeholder="Tìm kiếm sản phẩm..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              onKeyPress={(e) => e.key === "Enter" && handleSearch(e)} // hỗ trợ Enter
+            />
+            <button type="submit">🔍</button>
+          </form>
         </div>
 
         <div className="actions">
           {/* ==================== USER BOX ==================== */}
-          <div 
+          <div
             className="user-box"
             ref={userBoxRef}
             onMouseEnter={handleMouseEnter}
             onMouseLeave={handleMouseLeave}
           >
             {user ? (
-              // ĐÃ LOGIN → HOVER HIỆN DROPDOWN, KHÔNG NHẢY TRANG
               <div className="user-logged-in">
                 <span className="user-icon">👤</span>
-                <span className="user-name">{user.name.split(" ")[0]}</span>
+                {/* HIỂN THỊ TÊN CUỐI */}
+                <span className="user-name">{getLastName(user.name)}</span>
                 <span className="arrow-down">▼</span>
 
                 {/* DROPDOWN */}
-                <div className="user-dropdown">
-                  <div className="dropdown-item">
-                    <span className="icon">📱</span>
+                <div className="user-dropdown" ref={dropdownRef}>
+                  <div className="dropdown-item phone">
                     <span>{user.phone || "Chưa có SĐT"}</span>
                   </div>
-                  <div className="dropdown-item">
-                    <span className="icon">✉️</span>
+                  <div className="dropdown-item email">
                     <span>{user.email}</span>
                   </div>
                   <hr />
-                  <Link 
-                    to="/tai-khoan-ca-nhan" 
+
+                  <Link
+                    to="/tai-khoan-ca-nhan"
                     className="dropdown-item edit-profile"
-                    onClick={(e) => e.stopPropagation()} // chặn hover khi click
+                    onClick={(e) => e.stopPropagation()}
                   >
-                    <span>✏️ Edit Profile</span>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-20h-7z" />
+                      <path d="M18.5 2.5l3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                    </svg>
+                    <span>Chỉnh sửa</span>
                   </Link>
-                  <div 
-                    className="dropdown-item logout"
-                    onClick={handleLogout}
-                  >
-                    <span>🚪</span> Đăng xuất
+
+                  <div className="dropdown-item logout" onClick={handleLogout}>
+                    <span>Đăng xuất</span>
                   </div>
                 </div>
               </div>
             ) : (
-              // CHƯA LOGIN → CLICK NHẢY TRANG ĐĂNG NHẬP
               <Link to="/tai-khoan-ca-nhan" className="user-link">
                 <span className="user-icon">👤</span>
                 <span className="user-box-text">Đăng ký/Đăng nhập</span>
