@@ -25,6 +25,9 @@ const upload = multer({ dest: 'uploads/' });
 router.get('/', homeController.getHomeData);
 router.get('/home', homeController.getHomeData);
 
+// Search
+// router.get('/search', productController.searchProducts);
+
 // Danh mục – công khai
 router.get('/categories', categoryController.getCategories);
 router.get('/categories/:id', categoryController.getCategoryById);
@@ -32,7 +35,7 @@ router.get('/categories/:id', categoryController.getCategoryById);
 // Sản phẩm – công khai
 router.get('/products', productController.getProducts);
 router.get('/products/:id', productController.getProductById);
-router.get('/products/search', productController.searchProducts);
+router.get("/products/search", productController.searchProducts);
 
 // Auth công khai
 router.post('/auth/register', register);
