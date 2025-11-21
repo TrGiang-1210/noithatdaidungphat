@@ -8,7 +8,7 @@ const nodemailer = require('nodemailer');
 
 class UserService {
   static async getUserById(id) {
-    const user = await User.findById(id).select('-password');
+    const user = await User.findById(id).select('name phone email address role createdAt updatedAt');
     if (!user) throw new Error('Không tìm thấy người dùng');
     return user;
   }
@@ -91,18 +91,16 @@ static async updateUser(userId, updateData) {
     }
   });
 
-  const updatedUser = await User.findByIdAndUpdate(
-    userId,
-    updates,
-    { new: true, runValidators: true }
-  ).select('name phone email address role createdAt updatedAt');
+  // Cập nhật trước
+  await User.findByIdAndUpdate(userId, updates, { runValidators: true });
 
-  if (!updatedUser) throw new Error('Không tìm thấy người dùng để cập nhật');
+  // Sau đó lấy lại user mới nhất từ DB (chắc chắn có address)
+  const freshUser = await User.findById(userId)
+    .select('name phone email address role createdAt updatedAt');
 
-  // <<< DÒNG THẦN THÁNH NÀY FIX 100% BUG KHÔNG HIỆN ADDRESS >>>
-  await updatedUser.reload();
+  if (!freshUser) throw new Error('Không tìm thấy người dùng sau khi cập nhật');
 
-  return updatedUser;
+  return freshUser;
 }
 
   // ==================== QUÊN MẬT KHẨU (giữ nguyên đẹp như cũ) ====================

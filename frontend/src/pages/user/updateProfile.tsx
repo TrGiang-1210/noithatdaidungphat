@@ -28,7 +28,7 @@ const UpdateProfile: React.FC = () => {
           name: user.name || '',
           phone: user.phone || '',
           email: user.email || '',
-          address: '', // nếu bạn có lưu address trong DB thì thêm vào đây
+          address: user.address || '',
           password: '',
           confirmPassword: '',
         });
