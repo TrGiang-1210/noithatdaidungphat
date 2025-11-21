@@ -1,23 +1,23 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import '@/styles/pages/user/auth.scss'; // file scss mới mình vừa gửi
+import '@/styles/pages/user/auth.scss';
 import { loginUser, registerUser } from '@/api/user/userAPI';
 import { Eye, EyeOff } from 'lucide-react';
-import { ToastContainer } from 'react-toastify';
-import { toast } from 'react-toastify'; // <--- THÊM DÒNG NÀY VÀO ĐẦU FILE
+import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
 const AuthPage: React.FC = () => {
+  // Show/Hide password
   const [showPasswordLogin, setShowPasswordLogin] = useState(false);
   const [showPasswordReg, setShowPasswordReg] = useState(false);
   const [showConfirmReg, setShowConfirmReg] = useState(false);
 
-  // Login states
-  const [emailLogin, setEmailLogin] = useState('');
+  // ========= ĐĂNG NHẬP =========
+  const [usernameOrPhone, setUsernameOrPhone] = useState(''); // Email hoặc SĐT
   const [passLogin, setPassLogin] = useState('');
   const [errorLogin, setErrorLogin] = useState('');
 
-  // Register states
+  // ========= ĐĂNG KÝ =========
   const [nameReg, setNameReg] = useState('');
   const [phoneReg, setPhoneReg] = useState('');
   const [emailReg, setEmailReg] = useState('');
@@ -27,67 +27,71 @@ const AuthPage: React.FC = () => {
 
   const navigate = useNavigate();
 
-  // ========== XỬ LÝ ĐĂNG NHẬP ==========
+  // ========== XỬ LÝ ĐĂNG NHẬP (hỗ trợ email hoặc phone) ==========
   const handleLogin = async (e: React.FormEvent) => {
-  e.preventDefault();
-  setErrorLogin('');
-  try {
-    const res = await loginUser({ email: emailLogin, password: passLogin });
+    e.preventDefault();
+    setErrorLogin('');
 
-    // === LƯU TOKEN + USER ĐỂ HEADER HIỆN TÊN ===
-    localStorage.setItem('token', res.token);
-    localStorage.setItem('user', JSON.stringify(res.user)); // <-- QUAN TRỌNG!!!
+    // Tự động phát hiện là email hay phone
+    const loginPayload = usernameOrPhone.includes('@')
+      ? { email: usernameOrPhone.trim(), password: passLogin }
+      : { phone: usernameOrPhone.trim(), password: passLogin };
 
-    toast.success(`Xin chào ${res.user.name.split(' ')[0]}! 🎉`); // <-- thông báo đẹp
+    try {
+      const res = await loginUser(loginPayload);
 
-    // Redirect đúng role
-    if (res.user.role === 'admin') {
-      navigate('/admin/dashboard');
-    } else {
-      navigate('/');
-      window.location.reload(); // <-- reload 1 lần để header hiện tên ngay lập tức
+      localStorage.setItem('token', res.token);
+      localStorage.setItem('user', JSON.stringify(res.user));
+
+      toast.success(`Xin chào ${res.user.name.split(' ')[0]}! 🎉`);
+
+      if (res.user.role === 'admin') {
+        navigate('/admin/dashboard');
+      } else {
+        navigate('/');
+        window.location.reload(); // reload để header hiện tên ngay
+      }
+    } catch (err: any) {
+      const msg = err.response?.data?.message || 'Email/số điện thoại hoặc mật khẩu không đúng!';
+      setErrorLogin(msg);
+      toast.error(msg);
     }
-  } catch (err: any) {
-    setErrorLogin(err.response?.data?.message || 'Email hoặc mật khẩu sai!');
-    toast.error('Đăng nhập thất bại!'); // <-- thêm toast lỗi
-  }
-};
+  };
 
   // ========== XỬ LÝ ĐĂNG KÝ ==========
   const handleRegister = async (e: React.FormEvent) => {
-  e.preventDefault();
-  setErrorReg('');
+    e.preventDefault();
+    setErrorReg('');
 
-  if (passReg !== confirmReg) {
-    setErrorReg('Mật khẩu xác nhận không khớp!');
-    return;
-  }
+    if (passReg !== confirmReg) {
+      setErrorReg('Mật khẩu xác nhận không khớp!');
+      return;
+    }
 
-  try {
-    const res = await registerUser({
-      name: nameReg,
-      phone: phoneReg,
-      email: emailReg,
-      password: passReg,
-    });
+    try {
+      const res = await registerUser({
+        name: nameReg,
+        phone: phoneReg,
+        email: emailReg,
+        password: passReg,
+      });
 
-    // === TỰ ĐỘNG ĐĂNG NHẬP SAU KHI ĐĂNG KÝ ===
-    localStorage.setItem('token', res.token);
-    localStorage.setItem('user', JSON.stringify(res.user));
+      // Tự động đăng nhập sau khi đăng ký thành công
+      localStorage.setItem('token', res.token);
+      localStorage.setItem('user', JSON.stringify(res.user));
 
-    toast.success(`Chào mừng ${res.user.name.split(' ')[0]}! Đăng ký thành công 🎉`);
-    
-    setTimeout(() => {
-      navigate('/');
-      window.location.reload(); // để header hiện tên ngay
-    }, 1500);
+      toast.success(`Chào mừng ${res.user.name.split(' ')[0]}! Đăng ký thành công 🎉`);
 
-  } catch (err: any) {
-    const msg = err.response?.data?.message || 'Đăng ký thất bại!';
-    setErrorReg(msg);
-    toast.error(msg);
-  }
-};
+      setTimeout(() => {
+        navigate('/');
+        window.location.reload();
+      }, 1500);
+    } catch (err: any) {
+      const msg = err.response?.data?.message || 'Đăng ký thất bại!';
+      setErrorReg(msg);
+      toast.error(msg);
+    }
+  };
 
   return (
     <div className="auth-layout">
@@ -99,9 +103,27 @@ const AuthPage: React.FC = () => {
         <form onSubmit={handleRegister} className="auth-form">
           {errorReg && <p className="error-message">{errorReg}</p>}
 
-          <input type="text" placeholder="Họ và tên" value={nameReg} onChange={(e) => setNameReg(e.target.value)} required />
-          <input type="tel" placeholder="Số điện thoại" value={phoneReg} onChange={(e) => setPhoneReg(e.target.value)} required />
-          <input type="email" placeholder="Email" value={emailReg} onChange={(e) => setEmailReg(e.target.value)} required />
+          <input
+            type="text"
+            placeholder="Họ và tên"
+            value={nameReg}
+            onChange={(e) => setNameReg(e.target.value)}
+            required
+          />
+          <input
+            type="tel"
+            placeholder="Số điện thoại"
+            value={phoneReg}
+            onChange={(e) => setPhoneReg(e.target.value)}
+            required
+          />
+          <input
+            type="email"
+            placeholder="Email"
+            value={emailReg}
+            onChange={(e) => setEmailReg(e.target.value)}
+            required
+          />
 
           <div className="password-group">
             <input
@@ -132,8 +154,6 @@ const AuthPage: React.FC = () => {
           <button type="submit" className="submit-btn register-btn">
             ĐĂNG KÝ
           </button>
-
-          
         </form>
       </div>
 
@@ -145,7 +165,15 @@ const AuthPage: React.FC = () => {
         <form onSubmit={handleLogin} className="auth-form">
           {errorLogin && <p className="error-message">{errorLogin}</p>}
 
-          <input type="email" placeholder="Email" value={emailLogin} onChange={(e) => setEmailLogin(e.target.value)} required />
+          {/* INPUT DUY NHẤT CHO EMAIL HOẶC SỐ ĐIỆN THOẠI */}
+          <input
+            type="text"
+            placeholder="Email hoặc số điện thoại"
+            value={usernameOrPhone}
+            onChange={(e) => setUsernameOrPhone(e.target.value)}
+            required
+            autoComplete="username"
+          />
 
           <div className="password-group">
             <input
@@ -154,6 +182,7 @@ const AuthPage: React.FC = () => {
               value={passLogin}
               onChange={(e) => setPassLogin(e.target.value)}
               required
+              autoComplete="current-password"
             />
             <button type="button" onClick={() => setShowPasswordLogin(!showPasswordLogin)}>
               {showPasswordLogin ? <EyeOff size={20} /> : <Eye size={20} />}
@@ -164,24 +193,24 @@ const AuthPage: React.FC = () => {
             ĐĂNG NHẬP
           </button>
 
-          
           <p className="footer-text forgotten">
             <Link to="/forgot-password">Quên mật khẩu?</Link>
           </p>
         </form>
       </div>
-<ToastContainer
-      position="top-right"
-      autoClose={3000}
-      hideProgressBar={false}
-      newestOnTop
-      closeOnClick
-      rtl={false}
-      pauseOnFocusLoss
-      draggable
-      pauseOnHover
-      theme="light"
-    />
+
+      <ToastContainer
+        position="top-right"
+        autoClose={3000}
+        hideProgressBar={false}
+        newestOnTop
+        closeOnClick
+        rtl={false}
+        pauseOnFocusLoss
+        draggable
+        pauseOnHover
+        theme="light"
+      />
     </div>
   );
 };
