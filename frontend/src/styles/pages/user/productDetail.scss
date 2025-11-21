@@ -205,36 +205,77 @@
     }
 
     .quantity-area {
-      display: flex;
-      align-items: center;
-      gap: 15px;
-      margin-bottom: 30px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 20px 0;
+  flex-wrap: wrap;
 
-      button {
-        width: 44px;
-        height: 44px;
-        border: 1px solid #ddd;
-        background: white;
-        font-size: 22px;
-        cursor: pointer;
-        border-radius: 8px;
-      }
+  .qty-btn {
+    width: 40px;
+    height: 40px;
+    border: 2px solid #e67e22;
+    background: white;
+    color: #e67e22;
+    font-size: 20px;
+    font-weight: bold;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s;
 
-      input {
-        width: 90px;
-        height: 44px;
-        text-align: center;
-        border: 1px solid #ddd;
-        font-size: 18px;
-        border-radius: 8px;
-      }
-
-      .note {
-        color: #27ae60;
-        font-weight: bold;
-        font-size: 15px;
-      }
+    &:hover:not(:disabled) {
+      background: #e67e22;
+      color: white;
     }
+
+    &:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+  }
+
+  .qty-input {
+    width: 60px;
+    text-align: center;
+    padding: 8px;
+    border: 2px solid #ddd;
+    border-radius: 8px;
+    font-size: 16px;
+    font-weight: bold;
+  }
+
+  .note {
+    font-size: 14px;
+    color: #666;
+  }
+}
+
+.action-area {
+  display: flex;
+  gap: 16px;
+  margin: 25px 0;
+  flex-wrap: wrap;
+
+  .btn-buy-now {
+    flex: 1;
+    min-width: 200px;
+    background: #e74c3c;
+    color: white;
+    &:hover { background: #c0392b; }
+  }
+
+  .btn-add-cart {
+    flex: 1;
+    min-width: 200px;
+    background: #e67e22;
+    color: white;
+    border: 2px solid #e67e22;
+    &:hover {
+      background: white;
+      color: #e67e22;
+    }
+  }
+}
 
     .action-area {
       display: flex;

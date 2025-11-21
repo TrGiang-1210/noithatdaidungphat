@@ -1,0 +1,51 @@
+.order-success-container {
+  max-width: 600px;
+  margin: 60px auto;
+  text-align: center;
+  padding: 40px 20px;
+  font-family: Arial, sans-serif;
+  
+  .success-icon {
+    font-size: 80px;
+    color: #27ae60;
+    margin-bottom: 20px;
+  }
+  
+  h1 { font-size: 36px; color: #e67e22; margin: 20px 0; }
+  
+  .info-box {
+    background: #f8f9fa;
+    padding: 25px;
+    border-radius: 12px;
+    margin: 30px 0;
+    line-height: 1.8;
+  }
+  
+  .hotline { font-size: 32px; color: #e67e22; margin: 10px 0; }
+  
+  .buttons {
+    margin: 40px 0;
+    display: flex;
+    gap: 20px;
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+  
+  .btn-home, .btn-history {
+    padding: 14px 30px;
+    font-size: 16px;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+  }
+  
+  .btn-home {
+    background: #e67e22;
+    color: white;
+  }
+  
+  .btn-history {
+    background: #34495e;
+    color: white;
+  }
+}

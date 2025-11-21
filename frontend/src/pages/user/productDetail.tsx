@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
+import { useCart } from '@/context/CartContext';
 import "@/styles/pages/user/productDetail.scss";
 type Product = any;
 
@@ -15,6 +16,10 @@ const ProductDetail: React.FC = () => {
   const [product, setProduct] = useState<Product | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  const { addToCart } = useCart();
+  const navigate = useNavigate();
+  const [quantity, setQuantity] = useState(1);
 
   useEffect(() => {
     if (!param) {
@@ -148,15 +153,41 @@ const ProductDetail: React.FC = () => {
             </div>
 
             <div className="quantity-area">
-              <button onClick={() => {}}> - </button>
-              <input type="text" value={1} readOnly />
-              <button onClick={() => {}}> + </button>
+              <button 
+                className="qty-btn"
+                onClick={() => setQuantity(Math.max(1, quantity - 1))}
+                disabled={quantity <= 1}
+              >
+                −
+              </button>
+              <input type="text" value={quantity} readOnly className="qty-input" />
+              <button 
+                className="qty-btn"
+                onClick={() => setQuantity(quantity + 1)}
+              >
+                +
+              </button>
               <span className="note">(Còn {product.quantity || 0} sản phẩm)</span>
             </div>
 
+            {/* Nút hành động */}
             <div className="action-area">
-              <button className="btn-buy-now">MUA NGAY</button>
-              <button className="btn-add-cart">
+              {/* MUA NGAY → bay thẳng tới trang thanh toán */}
+              <button 
+                className="btn-buy-now"
+                onClick={async () => {
+                  await addToCart(product._id, quantity);
+                  navigate('/paycart');
+                }}
+              >
+                MUA NGAY
+              </button>
+
+              {/* THÊM VÀO GIỎ HÀNG → chỉ thêm, không chuyển trang */}
+              <button 
+                className="btn-add-cart"
+                onClick={() => addToCart(product._id, quantity)}
+              >
                 THÊM VÀO GIỎ HÀNG
               </button>
             </div>

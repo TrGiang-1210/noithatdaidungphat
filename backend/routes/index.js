@@ -8,9 +8,11 @@ const homeController = require('../controllers/homeController');
 const categoryController = require('../controllers/categoryController');
 const productController = require('../controllers/productController');
 const userController = require('../controllers/userController');
+const cartController = require('../controllers/cartController');
+const orderController = require('../controllers/orderController');
 
 // Middleware
-const { protect } = require('../middlewares/auth');
+const { protect: auth } = require('../middlewares/auth');
 const multer = require('multer');
 const upload = multer({ dest: 'uploads/' });
 
@@ -34,6 +36,20 @@ router.post('/auth/register', userController.register);
 router.post('/auth/login', userController.login);
 router.post('/auth/forgot-password', userController.forgotPassword);
 router.post('/auth/reset-password', userController.resetPassword);
+
+// Cart
+router.post('/cart', auth, cartController.addItem);
+router.get('/cart', auth, cartController.getCart);
+router.put('/cart', auth, cartController.updateItem);
+router.delete('/cart', auth, cartController.removeItem);
+router.delete('/cart/clear', auth, cartController.clearCart);
+
+// Orders
+router.get('/orders', auth, orderController.getOrders);
+router.get('/orders/:id', auth, orderController.getOrderById);
+router.post('/orders', auth, orderController.createOrder);
+router.put('/orders/:id', auth, orderController.updateOrder);
+router.delete('/orders/:id', auth, orderController.deleteOrder);
 
 // ==================== PROTECTED ROUTES ====================
 router.get('/auth/me', protect, userController.getCurrentUser);

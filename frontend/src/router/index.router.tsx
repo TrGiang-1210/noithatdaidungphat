@@ -7,6 +7,8 @@ import AboutPage from "../pages/user/about";
 import AuthPage from "../pages/user/auth";
 import SearchResults from "../pages/user/searchResults";
 import UpdateProfile from "../pages/user/updateProfile";
+import PayCart from "../pages/user/payCart";
+import OrderSuccess from "../pages/user/orderSuccess";
 
 const MainRouter = () => {
   return (
@@ -20,6 +22,8 @@ const MainRouter = () => {
         <Route path="tai-khoan-ca-nhan" element={<AuthPage />} />
         <Route path="cap-nhat-thong-tin" element={<UpdateProfile />} />
         <Route path="tim-kiem" element={<SearchResults />} />
+        <Route path="thanh-toan" element={<PayCart />} />
+        <Route path="dat-hang-thanh-cong" element={<OrderSuccess />} />
       </Route>
     </Routes>
   );
