@@ -180,7 +180,7 @@ const handleSearch = (e: React.FormEvent) => {
                   <hr />
 
                   <Link
-                    to="/tai-khoan-ca-nhan"
+                    to="/cap-nhat-thong-tin"
                     className="dropdown-item edit-profile"
                     onClick={(e) => e.stopPropagation()}
                   >
