@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
+import { useCart } from "@/context/CartContext";
 import "@/styles/components/user/header.scss";
 
 interface Category {
@@ -23,6 +24,7 @@ const Header: React.FC = () => {
   const [user, setUser] = useState<CurrentUser | null>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const [searchQuery, setSearchQuery] = useState<string>("");
+  const { totalQuantity, openCart } = useCart();
 
   const navigate = useNavigate();
   const location = useLocation();
@@ -72,22 +74,26 @@ const Header: React.FC = () => {
   // Cập nhật vị trí dropdown khi scroll/resize (giữ vị trí chính xác)
   useEffect(() => {
     const updateDropdownPosition = () => {
-      if (dropdownRef.current && user && userBoxRef.current?.classList.contains('show-dropdown')) {
+      if (
+        dropdownRef.current &&
+        user &&
+        userBoxRef.current?.classList.contains("show-dropdown")
+      ) {
         const userBox = userBoxRef.current!.getBoundingClientRect();
         const dropdown = dropdownRef.current!;
-        dropdown.style.position = 'fixed';
+        dropdown.style.position = "fixed";
         dropdown.style.top = `${userBox.bottom + 8}px`;
         dropdown.style.right = `${window.innerWidth - userBox.right}px`;
-        dropdown.style.left = 'auto';
+        dropdown.style.left = "auto";
       }
     };
 
     if (user) {
-      window.addEventListener('scroll', updateDropdownPosition);
-      window.addEventListener('resize', updateDropdownPosition);
+      window.addEventListener("scroll", updateDropdownPosition);
+      window.addEventListener("resize", updateDropdownPosition);
       return () => {
-        window.removeEventListener('scroll', updateDropdownPosition);
-        window.removeEventListener('resize', updateDropdownPosition);
+        window.removeEventListener("scroll", updateDropdownPosition);
+        window.removeEventListener("resize", updateDropdownPosition);
       };
     }
   }, [user]);
@@ -101,7 +107,7 @@ const Header: React.FC = () => {
     userBoxRef.current?.classList.remove("show-dropdown");
   };
 
-const handleSearch = (e: React.FormEvent) => {
+  const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     const query = searchQuery.trim();
     if (query === "") {
@@ -137,12 +143,18 @@ const handleSearch = (e: React.FormEvent) => {
       <div className="header-main container">
         <div className="logo">
           <Link to="/">
-            <img src="./src/assets/logo-ddp-removebg.png" alt="Nội Thất Đại Dũng Phát" />
+            <img
+              src="./src/assets/logo-ddp-removebg.png"
+              alt="Nội Thất Đại Dũng Phát"
+            />
           </Link>
         </div>
 
         <div className="search-box">
-          <form onSubmit={handleSearch} style={{ display: "flex", flex: 1, maxWidth: "500px" }}>
+          <form
+            onSubmit={handleSearch}
+            style={{ display: "flex", flex: 1, maxWidth: "500px" }}
+          >
             <input
               type="text"
               placeholder="Tìm kiếm sản phẩm..."
@@ -184,7 +196,14 @@ const handleSearch = (e: React.FormEvent) => {
                     className="dropdown-item edit-profile"
                     onClick={(e) => e.stopPropagation()}
                   >
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <svg
+                      width="16"
+                      height="16"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                    >
                       <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-20h-7z" />
                       <path d="M18.5 2.5l3 3L12 15l-4 1 1-4 9.5-9.5z" />
                     </svg>
@@ -204,9 +223,14 @@ const handleSearch = (e: React.FormEvent) => {
             )}
           </div>
 
-          <div className="cart-box">
+          <div className="cart-box" onClick={() => navigate("/paycart")}>
             <div className="cart-icon">🛒</div>
-            <span className="badge">1</span>
+            {totalQuantity > 0 && (
+              <span className="badge">
+                {totalQuantity > 99 ? "99+" : totalQuantity}
+              </span>
+            )}
+            {/* <div className="cart-tooltip">Xem giỏ hàng & Thanh toán</div> */}
           </div>
 
           <div className="hotline">
@@ -219,7 +243,11 @@ const handleSearch = (e: React.FormEvent) => {
       {/* NAV MENU */}
       <nav className={`nav-menu ${!isAtTop ? "fixed-when-scrolled" : ""}`}>
         <div className="container nav-container">
-          <div className={`category-main-item ${isAtTop && isHomePage ? "show-dropdown-at-top" : ""}`}>
+          <div
+            className={`category-main-item ${
+              isAtTop && isHomePage ? "show-dropdown-at-top" : ""
+            }`}
+          >
             <div className="category-trigger">
               <span className="menu-icon">☰</span>
               DANH MỤC SẢN PHẨM
@@ -239,7 +267,9 @@ const handleSearch = (e: React.FormEvent) => {
           </div>
 
           <div className="main-menu-items">
-            <Link to="/gioi-thieu" className="menu-item">Giới thiệu</Link>
+            <Link to="/gioi-thieu" className="menu-item">
+              Giới thiệu
+            </Link>
           </div>
         </div>
       </nav>

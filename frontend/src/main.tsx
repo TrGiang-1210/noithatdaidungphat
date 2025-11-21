@@ -3,8 +3,8 @@ import { createRoot } from "react-dom/client";
 import { BrowserRouter } from "react-router-dom";
 
 import App from "./App";
-// import { CartProvider } from "@/context/CartContext";
-// import { OrderProvider } from "@/context/OrderContext"; 
+import { CartProvider } from "@/context/CartContext";
+import { OrderProvider } from "@/context/OrderContext"; 
 
 // Import global styles
 import "@/styles/main.scss";
@@ -19,11 +19,11 @@ if (rootEl) {
   createRoot(rootEl).render(
     <StrictMode>
       <BrowserRouter>
-        {/* <CartProvider> */}
-          {/* <OrderProvider> */}
+        <CartProvider>
+          <OrderProvider>
             <App />
-          {/* </OrderProvider> */}
-        {/* </CartProvider> */}
+          </OrderProvider>
+        </CartProvider>
       </BrowserRouter>
     </StrictMode>
   );
