@@ -13,8 +13,9 @@ const userSchema = new mongoose.Schema(
       type: String,
       default: '',
       trim: true,
-      // Bạn có thể thêm validate số điện thoại VN sau nếu cần
-      // match: [/^(0[3|5|7|8|9])+([0-9]{8})\b/, 'Số điện thoại không hợp lệ']
+      unique: true, // <<< QUAN TRỌNG: tránh 2 tài khoản cùng 1 số điện thoại
+      sparse: true, // cho phép nhiều user để trống phone (vì default '')
+      match: [/^(0[3|5|7|8|9][0-9]{8})$/, 'Số điện thoại Việt Nam không hợp lệ'],
     },
     email: {
       type: String,
@@ -24,27 +25,31 @@ const userSchema = new mongoose.Schema(
       trim: true,
       match: [/^\S+@\S+\.\S+$/, 'Email không hợp lệ'],
     },
+    address: {
+      type: String,
+      default: '',
+      trim: true,
+    },
     password: {
       type: String,
       required: [true, 'Vui lòng nhập mật khẩu'],
       minlength: 6,
-      select: false, // Không trả password mặc định khi query
+      select: false,
     },
     role: {
       type: String,
       enum: ['user', 'admin'],
       default: 'user',
     },
-    // ==================== THÊM 2 FIELD CHO QUÊN MẬT KHẨU (BẢO MẬT CAO) ====================
     passwordResetToken: String,
     passwordResetExpires: Date,
   },
   {
-    timestamps: true, // tự động tạo createdAt & updatedAt (chuẩn Mongo)
+    timestamps: true,
   }
 );
 
-// ==================== INDEX ĐỂ TÌM KIẾM NHANH HƠN (tùy chọn nhưng rất tốt) ====================
+// Index tìm kiếm nhanh bằng email hoặc phone
 userSchema.index({ email: 1 });
 userSchema.index({ phone: 1 });
 

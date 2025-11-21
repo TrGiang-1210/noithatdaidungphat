@@ -23,14 +23,13 @@ export const registerUser = async (userData: {
   return response.data;
 };
 
-// ==================== ĐĂNG NHẬP ====================
+/// ==================== ĐĂNG NHẬP (hỗ trợ cả email và phone) ====================
 export const loginUser = async (credentials: {
-  email: string;
+  email?: string;
+  phone?: string;
   password: string;
-}): Promise<{
-  token: string;
-  user: User;
-}> => {
+}& ({ email: string } | { phone: string }) // đảm bảo có ít nhất 1 trong 2
+): Promise<{ token: string; user: User }> =>{
   const response = await axiosInstance.post('/auth/login', credentials);
   return response.data;
 };
