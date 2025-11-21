@@ -1,28 +1,46 @@
-// src/controllers/userController.js (hoặc authController.js đều được)
+// src/controllers/userController.js
 
 const UserService = require('../services/userService');
 const jwt = require('jsonwebtoken');
 const Joi = require('joi');
 
 // ==================== VALIDATION SCHEMAS ====================
-const registerSchema = Joi.object({
-  name: Joi.string().trim().required(),
-  phone: Joi.string().trim().allow(''),
-  email: Joi.string().email().required(),
-  password: Joi.string().min(6).required(),
+const loginSchema = Joi.object({
+  email: Joi.string().email({ tlds: { allow: false } }).label('Email'),
+  phone: Joi.string().pattern(/^0[35789][0-9]{8}$/).label('Số điện thoại'),
+  password: Joi.string().required().label('Mật khẩu'),
+}).xor('email', 'phone').messages({
+  'object.xor': 'Chỉ được nhập email hoặc số điện thoại, không nhập cả hai',
+  'object.missing': 'Vui lòng nhập email hoặc số điện thoại',
+  'any.required': 'Vui lòng nhập {{#label}}',
+  'string.email': '{{#label}} không hợp lệ',
+  'string.pattern.base': '{{#label}} không hợp lệ (VD: 0901234567)',
 });
 
-const loginSchema = Joi.object({
-  email: Joi.string().email().required(),
-  password: Joi.string().required(),
+const registerSchema = Joi.object({
+  name: Joi.string().trim().required().label('Họ và tên'),
+  phone: Joi.string()
+    .trim()
+    .allow('')
+    .pattern(/^0[35789][0-9]{8}$/)
+    .message('Số điện thoại không hợp lệ, ví dụ đúng: 0901234567')
+    .label('Số điện thoại'),
+  email: Joi.string().email({ tlds: { allow: false } }).required().label('Email'),
+  password: Joi.string().min(6).required().label('Mật khẩu'),
 });
 
 const updateProfileSchema = Joi.object({
-  name: Joi.string().trim(),
-  phone: Joi.string().trim().allow(''),
-  email: Joi.string().email(),
-  password: Joi.string().min(6),
-}).min(1); // ít nhất 1 field để update
+  name: Joi.string().trim().label('Họ và tên'),
+  phone: Joi.string()
+    .trim()
+    .allow('')
+    .pattern(/^0[35789][0-9]{8}$/)
+    .message('Số điện thoại không hợp lệ')
+    .label('Số điện thoại'),
+  email: Joi.string().email({ tlds: { allow: false } }).label('Email'),
+  address: Joi.string().trim().allow('').label('Địa chỉ giao hàng'),
+  password: Joi.string().min(6).label('Mật khẩu mới'),
+}).min(1).min(1); // ít nhất 1 field
 
 // ==================== ĐĂNG KÝ ====================
 exports.register = async (req, res) => {
@@ -32,14 +50,12 @@ exports.register = async (req, res) => {
 
     const user = await UserService.createUser(req.body);
 
-    // Tạo token
     const token = jwt.sign(
       { id: user._id, role: user.role },
       process.env.JWT_SECRET,
-      { expiresIn: '7d' } // khuyến khích để lâu hơn 1h
+      { expiresIn: '7d' }
     );
 
-    // Trả về đúng kiểu frontend mong đợi
     res.status(201).json({
       message: 'Đăng ký thành công!',
       user: {
@@ -67,8 +83,9 @@ exports.login = async (req, res) => {
     const { error } = loginSchema.validate(req.body);
     if (error) return res.status(400).json({ message: error.details[0].message });
 
-    const { email, password } = req.body;
-    const { user, token } = await UserService.loginUser(email, password);
+    const { email, phone, password } = req.body;
+
+    const { user, token } = await UserService.loginUser({ email, phone, password });
 
     res.json({
       token,
@@ -83,14 +100,13 @@ exports.login = async (req, res) => {
       },
     });
   } catch (err) {
-    res.status(401).json({ message: err.message || 'Email hoặc mật khẩu không đúng' });
+    res.status(401).json({ message: err.message || 'Email/số điện thoại hoặc mật khẩu không đúng' });
   }
 };
 
-// ==================== LẤY THÔNG TIN USER HIỆN TẠI (/auth/me) ====================
+// ==================== CÁC HÀM KHÁC (giữ nguyên) ====================
 exports.getCurrentUser = async (req, res) => {
   try {
-    // req.user được gán từ middleware auth (protect route)
     const user = await UserService.getUserById(req.user.id);
     if (!user) return res.status(404).json({ message: 'Không tìm thấy người dùng' });
 
@@ -108,7 +124,6 @@ exports.getCurrentUser = async (req, res) => {
   }
 };
 
-// ==================== CẬP NHẬT THÔNG TIN CÁ NHÂN (/auth/profile) ====================
 exports.updateProfile = async (req, res) => {
   try {
     const { error } = updateProfileSchema.validate(req.body);
@@ -133,20 +148,18 @@ exports.updateProfile = async (req, res) => {
   }
 };
 
-// ==================== QUÊN MẬT KHẨU ====================
 exports.forgotPassword = async (req, res) => {
   try {
     const { email } = req.body;
     if (!email) return res.status(400).json({ message: 'Vui lòng cung cấp email' });
 
     const result = await UserService.forgotPassword(email);
-    res.json(result); // { message: 'Đã gửi link đặt lại mật khẩu đến email của bạn' }
+    res.json(result);
   } catch (err) {
     res.status(400).json({ message: err.message });
   }
 };
 
-// ==================== ĐẶT LẠI MẬT KHẨU ====================
 exports.resetPassword = async (req, res) => {
   try {
     const { token, newPassword } = req.body;
