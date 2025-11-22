@@ -1,7 +1,8 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useContext } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useCart } from "@/context/CartContext";
 import "@/styles/components/user/header.scss";
+import { AuthContext } from "@/context/AuthContext"; // <-- added
 
 interface Category {
   _id: string;
@@ -21,7 +22,7 @@ const Header: React.FC = () => {
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
   const [isAtTop, setIsAtTop] = useState(true);
-  const [user, setUser] = useState<CurrentUser | null>(null);
+  const { user, logout } = useContext(AuthContext); // <-- use context user & logout
   const dropdownRef = useRef<HTMLDivElement>(null);
   const [searchQuery, setSearchQuery] = useState<string>("");
   const { totalQuantity, openCart } = useCart();
@@ -31,13 +32,6 @@ const Header: React.FC = () => {
   const isHomePage = location.pathname === "/" || location.pathname === "/home";
 
   const userBoxRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const savedUser = localStorage.getItem("user");
-    if (savedUser) {
-      setUser(JSON.parse(savedUser));
-    }
-  }, []);
 
   // Fetch categories + scroll handler
   useEffect(() => {
@@ -120,11 +114,11 @@ const Header: React.FC = () => {
   };
 
   const handleLogout = () => {
-    localStorage.removeItem("token");
-    localStorage.removeItem("user");
-    setUser(null);
+    // use AuthContext logout so app state updates consistently
+    try {
+      logout();
+    } catch (e) { /* ignore */ }
     navigate("/");
-    window.location.reload();
   };
 
   // LẤY TÊN CUỐI (ví dụ: "Lưu Nguyễn Trường Giang" → "Giang")
@@ -184,10 +178,10 @@ const Header: React.FC = () => {
                 {/* DROPDOWN */}
                 <div className="user-dropdown" ref={dropdownRef}>
                   <div className="dropdown-item phone">
-                    <span>{user.phone || "Chưa có SĐT"}</span>
+                    <span>{user?.phone || "Chưa có SĐT"}</span>
                   </div>
                   <div className="dropdown-item email">
-                    <span>{user.email}</span>
+                    <span>{user?.email}</span>
                   </div>
                   <hr />
 
@@ -223,7 +217,7 @@ const Header: React.FC = () => {
             )}
           </div>
 
-          <div className="cart-box" onClick={() => navigate("/paycart")}>
+          <div className="cart-box" onClick={() => navigate("/thanh-toan")}>
             <div className="cart-icon">🛒</div>
             {totalQuantity > 0 && (
               <span className="badge">
@@ -262,7 +256,8 @@ const Header: React.FC = () => {
                     <span className="arrow">›</span>
                   </Link>
                 ))
-              )}
+              )
+            }
             </div>
           </div>
 

@@ -13,6 +13,13 @@ const orderController = require('../controllers/orderController');
 
 // Middleware
 const { protect: auth } = require('../middlewares/auth');
+const {
+  addItem,
+  getCart,
+  updateItem,
+  removeItem,
+  clearCart
+} = cartController;
 const multer = require('multer');
 const upload = multer({ dest: 'uploads/' });
 
@@ -52,16 +59,16 @@ router.put('/orders/:id', auth, orderController.updateOrder);
 router.delete('/orders/:id', auth, orderController.deleteOrder);
 
 // ==================== PROTECTED ROUTES ====================
-router.get('/auth/me', protect, userController.getCurrentUser);
-router.put('/auth/profile', protect, userController.updateProfile);
+router.get('/auth/me', auth, userController.getCurrentUser);
+router.put('/auth/profile', auth, userController.updateProfile);
 
 // ==================== ADMIN ROUTES ====================
-router.post('/categories', protect, categoryController.createCategory);
-router.put('/categories/:id', protect, categoryController.updateCategory);
-router.delete('/categories/:id', protect, categoryController.deleteCategory);
+router.post('/categories', auth, categoryController.createCategory);
+router.put('/categories/:id', auth, categoryController.updateCategory);
+router.delete('/categories/:id', auth, categoryController.deleteCategory);
 
-router.post('/products', protect, upload.array('images', 10), productController.createProduct);
-router.put('/products/:id', protect, upload.array('images', 10), productController.updateProduct);
-router.delete('/products/:id', protect, productController.deleteProduct);
+router.post('/products', auth, upload.array('images', 10), productController.createProduct);
+router.put('/products/:id', auth, upload.array('images', 10), productController.updateProduct);
+router.delete('/products/:id', auth, productController.deleteProduct);
 
 module.exports = router;

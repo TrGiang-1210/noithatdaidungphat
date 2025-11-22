@@ -1,16 +1,16 @@
 import axios from "axios";
 
 const axiosInstance = axios.create({
-  baseURL: "http://localhost:5000/api", // Đổi nếu backend bạn chạy port khác
-  withCredentials: false,               // Bật nếu backend dùng cookie
-  timeout: 10000,                       // 10s timeout
+  baseURL: "http://localhost:5000/api",
+  withCredentials: false,
+  timeout: 10000,
 });
 
-// Thêm token vào header nếu có
 axiosInstance.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem("token");
     if (token) {
+      config.headers = config.headers || {};
       config.headers.Authorization = `Bearer ${token}`;
     }
     return config;
@@ -18,16 +18,19 @@ axiosInstance.interceptors.request.use(
   (error) => Promise.reject(error)
 );
 
-// Xử lý lỗi trả về từ server
 axiosInstance.interceptors.response.use(
   (response) => response,
   (error) => {
     console.error("API Error:", error.response?.data || error.message);
 
-    // Nếu token hết hạn, chuyển về login
+    // Remove token on 401 but don't force redirect here.
     if (error.response?.status === 401) {
       localStorage.removeItem("token");
-      window.location.href = "/login";
+      // let AuthContext handle UI and navigation; avoid window.location.href here
+      // Optionally dispatch an event that AuthContext can listen to:
+      try {
+        window.dispatchEvent(new CustomEvent("app:auth-logout"));
+      } catch (e) { /* ignore */ }
     }
 
     return Promise.reject(error);
