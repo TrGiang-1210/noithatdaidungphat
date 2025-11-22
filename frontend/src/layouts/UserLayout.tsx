@@ -5,7 +5,7 @@ import Header from "@/components/user/Header";
 // import CartSidebar from "@/components/user/CartSidebar";
 import { FaShoppingCart } from "react-icons/fa";
 
-const AuthLayout: React.FC = () => {
+const UserLayout: React.FC = () => {
 //   const [isCartOpen, setCartOpen] = useState(false);
 
   return (
@@ -24,4 +24,4 @@ const AuthLayout: React.FC = () => {
   );
 };
 
-export default AuthLayout;
+export default UserLayout;

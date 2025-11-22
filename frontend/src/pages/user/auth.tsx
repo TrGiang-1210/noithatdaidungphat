@@ -1,10 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useContext } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import '@/styles/pages/user/auth.scss';
 import { loginUser, registerUser } from '@/api/user/userAPI';
 import { Eye, EyeOff } from 'lucide-react';
-import { ToastContainer, toast } from 'react-toastify';
-import 'react-toastify/dist/ReactToastify.css';
+import { toast } from 'react-toastify';
+import { AuthContext } from '@/context/AuthContext';
 
 const AuthPage: React.FC = () => {
   // Show/Hide password
@@ -26,39 +26,52 @@ const AuthPage: React.FC = () => {
   const [errorReg, setErrorReg] = useState('');
 
   const navigate = useNavigate();
+  const { login: contextLogin } = useContext(AuthContext);
 
   // ========== XỬ LÝ ĐĂNG NHẬP (hỗ trợ email hoặc phone) ==========
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorLogin('');
 
-    // Tự động phát hiện là email hay phone
     const loginPayload = usernameOrPhone.includes('@')
       ? { email: usernameOrPhone.trim(), password: passLogin }
       : { phone: usernameOrPhone.trim(), password: passLogin };
 
     try {
       const res = await loginUser(loginPayload);
+      console.log('[Auth] login response raw:', res);
 
-      localStorage.setItem('token', res.token);
-      localStorage.setItem('user', JSON.stringify(res.user));
+      // normalise shapes (userAPI returns response.data in most cases)
+      const data = res?.data ?? res;
+      const token = data?.token ?? data?.accessToken ?? data?.payload?.token;
+      const user = data?.user ?? data?.payload?.user ?? data?.data?.user;
 
-      toast.success(`Xin chào ${res.user.name.split(' ')[0]}! 🎉`);
+      if (!token) {
+        const msg = data?.message || 'Không lấy được token từ server';
+        setErrorLogin(msg);
+        toast.error(msg);
+        return;
+      }
 
-      if (res.user.role === 'admin') {
+      // wait for context to set user (contextLogin sets user immediately if we pass user)
+      await contextLogin(token, user);
+      toast.success(`Xin chào ${user?.name?.split?.(' ')[0] ?? 'khách'}! 🎉`);
+
+      // confirm user from localStorage / context later if needed
+      if (user?.role === 'admin') {
         navigate('/admin/dashboard');
       } else {
-        navigate('/');
-        window.location.reload(); // reload để header hiện tên ngay
+        navigate('/', { replace: true });
       }
     } catch (err: any) {
-      const msg = err.response?.data?.message || 'Email/số điện thoại hoặc mật khẩu không đúng!';
+      console.error('[Auth] login error:', err);
+      const msg = err?.response?.data?.message || err?.message || 'Email/số điện thoại hoặc mật khẩu không đúng!';
       setErrorLogin(msg);
       toast.error(msg);
     }
   };
 
-  // ========== XỬ LÝ ĐĂNG KÝ ==========
+  // REGISTER: auto-login via context after register
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorReg('');
@@ -75,19 +88,25 @@ const AuthPage: React.FC = () => {
         email: emailReg,
         password: passReg,
       });
+      console.log('[Auth] register response raw:', res);
 
-      // Tự động đăng nhập sau khi đăng ký thành công
-      localStorage.setItem('token', res.token);
-      localStorage.setItem('user', JSON.stringify(res.user));
+      const data = res?.data ?? res;
+      const token = data?.token ?? data?.accessToken ?? data?.payload?.token;
+      const user = data?.user ?? data?.payload?.user ?? data?.data?.user;
 
-      toast.success(`Chào mừng ${res.user.name.split(' ')[0]}! Đăng ký thành công 🎉`);
+      if (!token) {
+        const msg = data?.message || 'Đăng ký thành công nhưng không nhận được token';
+        setErrorReg(msg);
+        toast.error(msg);
+        return;
+      }
 
-      setTimeout(() => {
-        navigate('/');
-        window.location.reload();
-      }, 1500);
+      await contextLogin(token, user);
+      toast.success(`Chào mừng ${user?.name?.split?.(' ')[0] ?? 'bạn'}! Đăng ký thành công 🎉`);
+      navigate('/', { replace: true });
     } catch (err: any) {
-      const msg = err.response?.data?.message || 'Đăng ký thất bại!';
+      console.error('[Auth] register error:', err);
+      const msg = err?.response?.data?.message || err?.message || 'Đăng ký thất bại!';
       setErrorReg(msg);
       toast.error(msg);
     }
@@ -198,19 +217,6 @@ const AuthPage: React.FC = () => {
           </p>
         </form>
       </div>
-
-      <ToastContainer
-        position="top-right"
-        autoClose={3000}
-        hideProgressBar={false}
-        newestOnTop
-        closeOnClick
-        rtl={false}
-        pauseOnFocusLoss
-        draggable
-        pauseOnHover
-        theme="light"
-      />
     </div>
   );
 };
