@@ -217,14 +217,9 @@ const Header: React.FC = () => {
             )}
           </div>
 
-          <div className="cart-box" onClick={() => navigate("/thanh-toan")}>
+          <div className="cart-box" onClick={() => navigate('/thanh-toan')} role="button" aria-label="Giỏ hàng">
             <div className="cart-icon">🛒</div>
-            {totalQuantity > 0 && (
-              <span className="badge">
-                {totalQuantity > 99 ? "99+" : totalQuantity}
-              </span>
-            )}
-            {/* <div className="cart-tooltip">Xem giỏ hàng & Thanh toán</div> */}
+            <span className="badge">{totalQuantity || 0}</span>
           </div>
 
           <div className="hotline">
