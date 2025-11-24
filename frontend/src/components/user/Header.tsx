@@ -26,6 +26,11 @@ const Header: React.FC = () => {
   const dropdownRef = useRef<HTMLDivElement>(null);
   const [searchQuery, setSearchQuery] = useState<string>("");
   const { totalQuantity, openCart } = useCart();
+  const [showSuggestions, setShowSuggestions] = useState(false);
+const [suggestions, setSuggestions] = useState<any[]>([]);
+const [loadingSuggestions, setLoadingSuggestions] = useState(false);
+const suggestionsRef = useRef<HTMLDivElement>(null);
+const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const navigate = useNavigate();
   const location = useLocation();
@@ -92,6 +97,52 @@ const Header: React.FC = () => {
     }
   }, [user]);
 
+  // === DEBOUNCE SEARCH KHI GÕ ===
+useEffect(() => {
+  if (searchQuery.trim().trim().length < 2) {
+    setSuggestions([]);
+    setShowSuggestions(false);
+    return;
+  }
+
+  // Debounce 300ms
+  if (searchTimeoutRef.current) clearTimeout(searchTimeoutRef.current);
+
+  searchTimeoutRef.current = setTimeout(async () => {
+    setLoadingSuggestions(true);
+    setShowSuggestions(true);
+
+    try {
+      const res = await fetch(
+        `http://localhost:5000/api/products/search-suggestions?q=${encodeURIComponent(searchQuery)}`
+      );
+      const data = await res.json();
+      setSuggestions(data.slice(0, 6)); // chỉ lấy tối đa 6 gợi ý
+    } catch (err) {
+      console.error("Lỗi gợi ý tìm kiếm:", err);
+      setSuggestions([]);
+    } finally {
+      setLoadingSuggestions(false);
+    }
+  }, 300);
+
+  return () => {
+    if (searchTimeoutRef.current) clearTimeout(searchTimeoutRef.current);
+  };
+}, [searchQuery]);
+
+// === ĐÓNG DROPDOWN KHI CLICK RA NGOÀI ===
+useEffect(() => {
+  const handleClickOutside = (e: MouseEvent) => {
+    if (suggestionsRef.current && !suggestionsRef.current.contains(e.target as Node)) {
+      setShowSuggestions(false);
+    }
+  };
+
+  document.addEventListener("mousedown", handleClickOutside);
+  return () => document.removeEventListener("mousedown", handleClickOutside);
+}, []);
+
   // Hover handlers
   const handleMouseEnter = () => {
     if (user) userBoxRef.current?.classList.add("show-dropdown");
@@ -145,20 +196,70 @@ const Header: React.FC = () => {
         </div>
 
         <div className="search-box">
-          <form
-            onSubmit={handleSearch}
-            style={{ display: "flex", flex: 1, maxWidth: "500px" }}
+  <form onSubmit={handleSearch}>
+    <input
+      type="text"
+      placeholder="Tìm kiếm sản phẩm..."
+      value={searchQuery}
+      onChange={(e) => setSearchQuery(e.target.value)}
+      onFocus={() => searchQuery.trim().length >= 2 && setShowSuggestions(true)}
+      autoComplete="off"
+    />
+    <button type="submit">Search</button>
+
+    {/* DROPDOWN GỢI Ý */}
+    {showSuggestions && suggestions.length > 0 && (
+      <div className="search-suggestions" ref={suggestionsRef}>
+        {suggestions.map((product) => (
+          <Link
+            key={product._id}
+            to={`/san-pham/${product.slug}`}
+            className="suggestion-item"
+            onClick={() => {
+              setSearchQuery("");
+              setShowSuggestions(false);
+            }}
           >
-            <input
-              type="text"
-              placeholder="Tìm kiếm sản phẩm..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              onKeyPress={(e) => e.key === "Enter" && handleSearch(e)} // hỗ trợ Enter
+            <img
+              src={product.images?.[0] || "/placeholder.jpg"}
+              alt={product.name}
+              className="suggestion-img"
+              onError={(e) => (e.currentTarget.src = "/placeholder.jpg")}
             />
-            <button type="submit">🔍</button>
-          </form>
+            <div className="suggestion-info">
+              <div className="suggestion-name">{product.name}</div>
+              <div className="suggestion-price">
+                {new Intl.NumberFormat("vi-VN", {
+                  style: "currency",
+                  currency: "VND",
+                }).format(product.price)}
+              </div>
+            </div>
+          </Link>
+        ))}
+
+        <div className="suggestion-footer">
+          Nhấn Enter để tìm "<strong>{searchQuery}</strong>"
         </div>
+      </div>
+    )}
+
+    {/* Loading skeleton */}
+    {showSuggestions && loadingSuggestions && (
+      <div className="search-suggestions loading" ref={suggestionsRef}>
+        {[1, 2, 3, 4].map((i) => (
+          <div key={i} className="suggestion-item skeleton">
+            <div className="suggestion-img skeleton-img"></div>
+            <div className="suggestion-info">
+              <div className="skeleton-line"></div>
+              <div className="skeleton-line short"></div>
+            </div>
+          </div>
+        ))}
+      </div>
+    )}
+  </form>
+</div>
 
         <div className="actions">
           {/* ==================== USER BOX ==================== */}
