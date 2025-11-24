@@ -7,19 +7,14 @@ import AboutPage from "../pages/user/about";
 import AuthPage from "../pages/user/auth";          // ← trang đăng nhập/đăng ký
 import UpdateProfile from "../pages/user/updateProfile";
 import SearchResults from "../pages/user/searchResults";
-import PayCart from "../pages/user/payCart";
+import PayCart from "../pages/user/payCart"; // <-- thêm import trang thanh toán (đường dẫn nếu khác thì chỉnh)
 import OrderSuccess from "../pages/user/orderSuccess";
 
 const MainRouter = () => {
   return (
     <Routes>
-
-      {/* 1. Trang đăng nhập / đăng ký – ĐỨNG RIÊNG, KHÔNG bọc layout chính */}
-      <Route path="/tai-khoan-ca-nhan" element={<AuthPage />} />
-
-      {/* 2. Tất cả các trang còn lại dùng layout chung (Header + Footer) */}
-      <Route element={<UserLayout />}>
-        <Route path="/" element={<Home />} />
+      <Route path="/" element={<UserLayout />}>
+        <Route index element={<Home />} />
         <Route path="/trang-chu" element={<Home />} />
         <Route path="/product/:id" element={<ProductDetail />} />
         <Route path="/gioi-thieu" element={<AboutPage />} />
@@ -31,6 +26,10 @@ const MainRouter = () => {
         <Route path="/dat-hang-thanh-cong" element={<OrderSuccess />} />
       </Route>
 
+      {/* 1. Trang đăng nhập / đăng ký – ĐỨNG RIÊNG, KHÔNG bọc layout chính */}
+      <Route path="/tai-khoan-ca-nhan" element={<AuthPage />} />
+
+      { /* fallback / other routes */ }
     </Routes>
   );
 };

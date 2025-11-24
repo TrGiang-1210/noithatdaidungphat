@@ -4,8 +4,19 @@ import axiosInstance from '../../axios';
  * Lấy toàn bộ giỏ hàng hiện tại
  */
 export const fetchCart = async () => {
-  const res = await axiosInstance.get(`/cart`);
-  return res.data;
+  const token = localStorage.getItem("token");
+  if (!token) {
+    // guest: no server cart
+    return null;
+  }
+  try {
+    const res = await axiosInstance.get("/cart");
+    return res.data;
+  } catch (err: any) {
+    // unauthorized -> signal caller to fallback to local cart (don't throw a user toast here)
+    if (err?.response?.status === 401) return null;
+    throw err;
+  }
 };
 
 /**

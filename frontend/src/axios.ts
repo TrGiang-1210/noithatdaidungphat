@@ -21,20 +21,25 @@ axiosInstance.interceptors.request.use(
 axiosInstance.interceptors.response.use(
   (response) => response,
   (error) => {
-    console.error("API Error:", error.response?.data || error.message);
+    // debug log only — DO NOT show user toast here
+    console.debug("API Error:", error.response?.data || error.message);
 
-    // Remove token on 401 but don't force redirect here.
     if (error.response?.status === 401) {
+      // Remove token and notify AuthContext (no UI toast)
       localStorage.removeItem("token");
-      // let AuthContext handle UI and navigation; avoid window.location.href here
-      // Optionally dispatch an event that AuthContext can listen to:
-      try {
-        window.dispatchEvent(new CustomEvent("app:auth-logout"));
-      } catch (e) { /* ignore */ }
+      setAuthToken(null);
+      try { window.dispatchEvent(new CustomEvent("app:auth-logout")); } catch (e) {}
     }
-
     return Promise.reject(error);
   }
 );
+
+export const setAuthToken = (token) => {
+  if (token) {
+    axiosInstance.defaults.headers.common["Authorization"] = `Bearer ${token}`;
+  } else {
+    delete axiosInstance.defaults.headers.common["Authorization"];
+  }
+};
 
 export default axiosInstance;

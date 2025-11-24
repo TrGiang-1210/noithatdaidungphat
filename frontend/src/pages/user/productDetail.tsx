@@ -1,7 +1,9 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useContext } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useCart } from '@/context/CartContext';
 import "@/styles/pages/user/productDetail.scss";
+import { toast } from "react-toastify";
+import { AuthContext } from "@/context/AuthContext";
 type Product = any;
 
 const endpointCandidates = (param: string) => [
@@ -18,6 +20,7 @@ const ProductDetail: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
 
   const { addToCart } = useCart();
+  const { user } = useContext(AuthContext);
   const navigate = useNavigate();
   const [quantity, setQuantity] = useState(1);
 
@@ -69,6 +72,72 @@ const ProductDetail: React.FC = () => {
   const discount = product.priceOriginal > product.priceSale
     ? Math.round(((product.priceOriginal - product.priceSale) / product.priceOriginal) * 100)
     : 0;
+
+  // Fallback lưu giỏ hàng cho guest (localStorage)
+  const fallbackAddToLocalCart = (prod: any, qty: number) => {
+    try {
+      const raw = localStorage.getItem("cart_local");
+      const cart = raw ? JSON.parse(raw) : { items: [] as any[], totalQuantity: 0 };
+      const idx = cart.items.findIndex((i: any) => i.productId === prod._id);
+      if (idx >= 0) {
+        cart.items[idx].quantity += qty;
+      } else {
+        cart.items.push({
+  product: {
+    _id: prod._id,
+    name: prod.name,
+    price: prod.priceSale ?? prod.price ?? 0,
+    images: prod.images || [prod.img_url].filter(Boolean),
+    priceSale: prod.priceSale,
+    // các field cần thiết khác nếu có
+  },
+  quantity: qty,
+});
+      }
+      cart.totalQuantity = cart.items.reduce((s: number, it: any) => s + it.quantity, 0);
+      localStorage.setItem("cart_local", JSON.stringify(cart));
+      toast.success("Đã thêm vào giỏ hàng (không cần đăng nhập)");
+    } catch (e) {
+      console.error("fallbackAddToLocalCart error", e);
+      toast.error("Không thể thêm vào giỏ hàng");
+    }
+  };
+
+  // Thêm vào giỏ hàng an toàn: thử call backend, nếu lỗi -> dùng localStorage
+  const handleAdd = async (qty: number, redirectToPay = false) => {
+    if (!product) return;
+    try {
+      await addToCart(product, qty); // truyền cả object product
+      toast.success("Đã thêm vào giỏ hàng");
+      if (redirectToPay) navigate("/paycart");
+    } catch (err: any) {
+      console.warn("addToCart failed, fallback to local cart", err);
+      fallbackAddToLocalCart(product, qty);
+      if (redirectToPay) navigate("/paycart");
+    }
+  };
+
+  const actionArea = (
+    <div className="action-area">
+      <button
+        className="btn-buy-now"
+        onClick={async () => {
+          await handleAdd(quantity, true);
+        }}
+      >
+        MUA NGAY
+      </button>
+
+      <button
+        className="btn-add-cart"
+        onClick={async () => {
+          await handleAdd(quantity, false);
+        }}
+      >
+        THÊM VÀO GIỎ HÀNG
+      </button>
+    </div>
+  );
 
   return (
     <div className="product-detail-page">
@@ -171,26 +240,7 @@ const ProductDetail: React.FC = () => {
             </div>
 
             {/* Nút hành động */}
-            <div className="action-area">
-              {/* MUA NGAY → bay thẳng tới trang thanh toán */}
-              <button 
-                className="btn-buy-now"
-                onClick={async () => {
-                  await addToCart(product._id, quantity);
-                  navigate('/paycart');
-                }}
-              >
-                MUA NGAY
-              </button>
-
-              {/* THÊM VÀO GIỎ HÀNG → chỉ thêm, không chuyển trang */}
-              <button 
-                className="btn-add-cart"
-                onClick={() => addToCart(product._id, quantity)}
-              >
-                THÊM VÀO GIỎ HÀNG
-              </button>
-            </div>
+            {actionArea}
 
             <div className="installment-area">
               <button className="installment-btn primary">
