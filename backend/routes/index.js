@@ -34,6 +34,7 @@ router.get('/categories/:id', categoryController.getCategoryById);
 // Sản phẩm
 // SEARCH – PHẢI CÔNG KHAI, KHÔNG AUTH, VÀ CÓ /api TRONG SERVER.JS
 router.get('/products/search', productController.searchProducts);
+router.get('/products/search-suggestions', productController.searchSuggestions);
 router.get('/products', productController.getProducts);
 router.get('/products/:id', productController.getProductById);
 router.get('/products/slug/:slug', productController.getProductBySlug);

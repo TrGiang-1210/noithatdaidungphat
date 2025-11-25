@@ -88,6 +88,22 @@
   }
 }
 
+// .paycart-form input,
+// .paycart-form select,
+.paycart-form textarea {
+  width: 95%;
+}
+
+// .paycart-form input,
+.paycart-form select{
+  width: 100%;
+}
+
+.paycart-form .address {
+  width: 95%;
+}
+
+
 .paycart-form textarea {
   min-height: 100px;
   resize: vertical;
