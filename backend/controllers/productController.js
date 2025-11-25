@@ -128,3 +128,65 @@ exports.updateProduct = async (req, res) => {
 exports.deleteProduct = async (req, res) => {
   return res.status(501).json({ message: 'deleteProduct not implemented' });
 };
+
+// GET /api/products/search-suggestions?q=xxx → SIÊU THÔNG MINH (ĐÃ SỬA LỖI)
+exports.searchSuggestions = async (req, res) => {
+  try {
+    let q = (req.query.q || '').toString().trim();
+
+    // Cho phép tìm ngay từ 1 ký tự
+    if (!q || q.length < 1) {
+      return res.json([]);
+    }
+
+    // Hàm chuẩn hóa: bỏ dấu tiếng Việt
+    const normalize = (str) =>
+      str.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+
+    const normalizedQ = normalize(q);
+    const escapedQ = q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+    // Tạo các pattern tìm kiếm linh hoạt
+    const searchPatterns = [
+      new RegExp(escapedQ, 'i'),                    // tìm chính xác có dấu
+      new RegExp(normalizedQ, 'i'),                 // tìm chính xác không dấu
+      new RegExp(normalizedQ.split('').join('.*'), 'i'),  // gõ thiếu: "btra" → "bàn trà"
+      new RegExp(escapedQ.split('').join('.*'), 'i'),     // gõ thiếu có dấu: "ghsfa" → "ghế sofa"
+    ];
+
+    // Tìm sản phẩm theo tên HOẶC mô tả
+    const products = await Product.find({
+      $or: [
+        { name: { $in: searchPatterns } },
+        { description: { $in: searchPatterns } },
+        { sku: { $in: searchPatterns } },        // THÊM DÒNG NÀY: TÌM THEO SKU
+        { sku: { $regex: escapedQ, $options: 'i' } }, // Bonus: tìm chính xác SKU
+      ]
+    })
+      .select('name slug priceSale priceOriginal images sku')
+      .limit(10)
+      .lean();
+
+    // Sắp xếp ưu tiên sản phẩm có từ khóa trong tên (ưu tiên cao hơn)
+    products.sort((a, b) => {
+      const aSku = (a.sku || '').toString().toLowerCase();
+      const bSku = (b.sku || '').toString().toLowerCase();
+      const lowerQ = q.toLowerCase();
+
+      if (aSku.includes(lowerQ) && !bSku.includes(lowerQ)) return -1;
+      if (!aSku.includes(lowerQ) && bSku.includes(lowerQ)) return 1;
+
+      const aName = normalize(a.name);
+      const bName = normalize(b.name);
+      if (aName.includes(normalizedQ) && !bName.includes(normalizedQ)) return -1;
+      if (!aName.includes(normalizedQ) && bName.includes(normalizedQ)) return 1;
+
+      return 0;
+    });
+
+    res.json(products);
+  } catch (err) {
+    console.error('searchSuggestions error:', err);
+    res.status(500).json([]);
+  }
+};

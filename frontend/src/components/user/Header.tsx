@@ -27,10 +27,10 @@ const Header: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState<string>("");
   const { totalQuantity, openCart } = useCart();
   const [showSuggestions, setShowSuggestions] = useState(false);
-const [suggestions, setSuggestions] = useState<any[]>([]);
-const [loadingSuggestions, setLoadingSuggestions] = useState(false);
-const suggestionsRef = useRef<HTMLDivElement>(null);
-const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const [suggestions, setSuggestions] = useState<any[]>([]);
+  const [loadingSuggestions, setLoadingSuggestions] = useState(false);
+  const suggestionsRef = useRef<HTMLDivElement>(null);
+  const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const navigate = useNavigate();
   const location = useLocation();
@@ -98,50 +98,55 @@ const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   }, [user]);
 
   // === DEBOUNCE SEARCH KHI GÕ ===
-useEffect(() => {
-  if (searchQuery.trim().trim().length < 2) {
-    setSuggestions([]);
-    setShowSuggestions(false);
-    return;
-  }
-
-  // Debounce 300ms
-  if (searchTimeoutRef.current) clearTimeout(searchTimeoutRef.current);
-
-  searchTimeoutRef.current = setTimeout(async () => {
-    setLoadingSuggestions(true);
-    setShowSuggestions(true);
-
-    try {
-      const res = await fetch(
-        `http://localhost:5000/api/products/search-suggestions?q=${encodeURIComponent(searchQuery)}`
-      );
-      const data = await res.json();
-      setSuggestions(data.slice(0, 6)); // chỉ lấy tối đa 6 gợi ý
-    } catch (err) {
-      console.error("Lỗi gợi ý tìm kiếm:", err);
+  useEffect(() => {
+    if (searchQuery.trim().trim().length < 1) {
       setSuggestions([]);
-    } finally {
-      setLoadingSuggestions(false);
-    }
-  }, 300);
-
-  return () => {
-    if (searchTimeoutRef.current) clearTimeout(searchTimeoutRef.current);
-  };
-}, [searchQuery]);
-
-// === ĐÓNG DROPDOWN KHI CLICK RA NGOÀI ===
-useEffect(() => {
-  const handleClickOutside = (e: MouseEvent) => {
-    if (suggestionsRef.current && !suggestionsRef.current.contains(e.target as Node)) {
       setShowSuggestions(false);
+      return;
     }
-  };
 
-  document.addEventListener("mousedown", handleClickOutside);
-  return () => document.removeEventListener("mousedown", handleClickOutside);
-}, []);
+    // Debounce 300ms
+    if (searchTimeoutRef.current) clearTimeout(searchTimeoutRef.current);
+
+    searchTimeoutRef.current = setTimeout(async () => {
+      setLoadingSuggestions(true);
+      setShowSuggestions(true);
+
+      try {
+        const res = await fetch(
+          `http://localhost:5000/api/products/search-suggestions?q=${encodeURIComponent(
+            searchQuery
+          )}`
+        );
+        const data = await res.json();
+        setSuggestions(data.slice(0, 6)); // chỉ lấy tối đa 6 gợi ý
+      } catch (err) {
+        console.error("Lỗi gợi ý tìm kiếm:", err);
+        setSuggestions([]);
+      } finally {
+        setLoadingSuggestions(false);
+      }
+    }, 300);
+
+    return () => {
+      if (searchTimeoutRef.current) clearTimeout(searchTimeoutRef.current);
+    };
+  }, [searchQuery]);
+
+  // === ĐÓNG DROPDOWN KHI CLICK RA NGOÀI ===
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (
+        suggestionsRef.current &&
+        !suggestionsRef.current.contains(e.target as Node)
+      ) {
+        setShowSuggestions(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   // Hover handlers
   const handleMouseEnter = () => {
@@ -168,7 +173,9 @@ useEffect(() => {
     // use AuthContext logout so app state updates consistently
     try {
       logout();
-    } catch (e) { /* ignore */ }
+    } catch (e) {
+      /* ignore */
+    }
     navigate("/");
   };
 
@@ -196,70 +203,99 @@ useEffect(() => {
         </div>
 
         <div className="search-box">
-  <form onSubmit={handleSearch}>
-    <input
-      type="text"
-      placeholder="Tìm kiếm sản phẩm..."
-      value={searchQuery}
-      onChange={(e) => setSearchQuery(e.target.value)}
-      onFocus={() => searchQuery.trim().length >= 2 && setShowSuggestions(true)}
-      autoComplete="off"
-    />
-    <button type="submit">Search</button>
-
-    {/* DROPDOWN GỢI Ý */}
-    {showSuggestions && suggestions.length > 0 && (
-      <div className="search-suggestions" ref={suggestionsRef}>
-        {suggestions.map((product) => (
-          <Link
-            key={product._id}
-            to={`/san-pham/${product.slug}`}
-            className="suggestion-item"
-            onClick={() => {
-              setSearchQuery("");
-              setShowSuggestions(false);
-            }}
-          >
-            <img
-              src={product.images?.[0] || "/placeholder.jpg"}
-              alt={product.name}
-              className="suggestion-img"
-              onError={(e) => (e.currentTarget.src = "/placeholder.jpg")}
+          <form onSubmit={handleSearch}>
+            <input
+              type="text"
+              placeholder="Tìm kiếm sản phẩm..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              onFocus={() =>
+                searchQuery.trim().length >= 2 && setShowSuggestions(true)
+              }
+              autoComplete="off"
             />
-            <div className="suggestion-info">
-              <div className="suggestion-name">{product.name}</div>
-              <div className="suggestion-price">
-                {new Intl.NumberFormat("vi-VN", {
-                  style: "currency",
-                  currency: "VND",
-                }).format(product.price)}
+            <button type="submit">Search</button>
+
+            {/* DROPDOWN GỢI Ý */}
+            {showSuggestions && suggestions.length > 0 && (
+              <div className="search-suggestions" ref={suggestionsRef}>
+                {suggestions.map((product) => (
+                  <Link
+                    key={product._id}
+                    to={`/san-pham/${product.slug}`}
+                    className="suggestion-item"
+                    onClick={() => {
+                      setSearchQuery("");
+                      setShowSuggestions(false);
+                    }}
+                  >
+                    <img
+                      src={product.images?.[0] || "/placeholder.jpg"}
+                      alt={product.name}
+                      className="suggestion-img"
+                      onError={(e) =>
+                        (e.currentTarget.src = "/placeholder.jpg")
+                      }
+                    />
+                    <div className="suggestion-info">
+                      <div className="suggestion-name">{product.name}</div>
+                      <div className="suggestion-sku">Mã SP: {product.sku}</div>
+                      <div className="suggestion-price-info">
+                        {/* Giá đã giảm */}
+                        <span className="price-sale">
+                          {new Intl.NumberFormat("vi-VN", {
+                            style: "currency",
+                            currency: "VND",
+                          }).format(product.priceSale)}
+                        </span>
+
+                        {/* Giá gốc + % giảm (nếu có giảm) */}
+                        {product.priceOriginal > product.priceSale && (
+                          <div className="price-original-wrapper">
+                            <span className="price-original">
+                              {new Intl.NumberFormat("vi-VN", {
+                                style: "currency",
+                                currency: "VND",
+                              }).format(product.priceOriginal)}
+                            </span>
+                            <span className="discount-percent">
+                              -
+                              {Math.round(
+                                ((product.priceOriginal - product.priceSale) /
+                                  product.priceOriginal) *
+                                  100
+                              )}
+                              %
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </Link>
+                ))}
+
+                <div className="suggestion-footer">
+                  Nhấn Enter để tìm "<strong>{searchQuery}</strong>"
+                </div>
               </div>
-            </div>
-          </Link>
-        ))}
+            )}
 
-        <div className="suggestion-footer">
-          Nhấn Enter để tìm "<strong>{searchQuery}</strong>"
+            {/* Loading skeleton */}
+            {showSuggestions && loadingSuggestions && (
+              <div className="search-suggestions loading" ref={suggestionsRef}>
+                {[1, 2, 3, 4].map((i) => (
+                  <div key={i} className="suggestion-item skeleton">
+                    <div className="suggestion-img skeleton-img"></div>
+                    <div className="suggestion-info">
+                      <div className="skeleton-line"></div>
+                      <div className="skeleton-line short"></div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </form>
         </div>
-      </div>
-    )}
-
-    {/* Loading skeleton */}
-    {showSuggestions && loadingSuggestions && (
-      <div className="search-suggestions loading" ref={suggestionsRef}>
-        {[1, 2, 3, 4].map((i) => (
-          <div key={i} className="suggestion-item skeleton">
-            <div className="suggestion-img skeleton-img"></div>
-            <div className="suggestion-info">
-              <div className="skeleton-line"></div>
-              <div className="skeleton-line short"></div>
-            </div>
-          </div>
-        ))}
-      </div>
-    )}
-  </form>
-</div>
 
         <div className="actions">
           {/* ==================== USER BOX ==================== */}
@@ -318,14 +354,19 @@ useEffect(() => {
             )}
           </div>
 
-          <div className="cart-box" onClick={() => navigate('/thanh-toan')} role="button" aria-label="Giỏ hàng">
+          <div
+            className="cart-box"
+            onClick={() => navigate("/thanh-toan")}
+            role="button"
+            aria-label="Giỏ hàng"
+          >
             <div className="cart-icon">🛒</div>
             <span className="badge">{totalQuantity || 0}</span>
           </div>
 
           <div className="hotline">
             <span className="phone-icon">📞</span>
-            <span className="phone-number">0941038839</span>
+            <span className="phone-number">0941 038 839</span>
           </div>
         </div>
       </div>
@@ -352,8 +393,7 @@ useEffect(() => {
                     <span className="arrow">›</span>
                   </Link>
                 ))
-              )
-            }
+              )}
             </div>
           </div>
 

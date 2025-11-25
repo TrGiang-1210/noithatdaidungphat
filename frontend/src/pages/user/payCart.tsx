@@ -178,32 +178,32 @@ const PayCart: React.FC = () => {
                 onChange={handleChange}
                 required
               />
-              <input
-                type="text"
-                placeholder="Địa chỉ"
-                name="address"
-                value={formData.address}
-                onChange={handleChange}
-                required
-              />
-            </div>
 
-            <div className="address-select-group">
-              <select
-                name="city"
-                value={formData.city}
-                onChange={handleChange}
-                required
-              >
-                <option value="">Chọn tỉnh / thành phố</option>
-                {provinces.map((province) => (
-                  <option key={province} value={province}>
-                    {province}
-                  </option>
-                ))}
-              </select>
+              <div className="address-select-group">
+                <select
+                  name="city"
+                  value={formData.city}
+                  onChange={handleChange}
+                  required
+                >
+                  <option value="">Chọn tỉnh / thành phố</option>
+                  {provinces.map((province) => (
+                    <option key={province} value={province}>
+                      {province}
+                    </option>
+                  ))}
+                </select>
+              </div>
             </div>
-
+            <input
+              type="text"
+              placeholder="Địa chỉ"
+              name="address"
+              className="address"
+              value={formData.address}
+              onChange={handleChange}
+              required
+            />
             <textarea
               placeholder="Nhập ghi chú (nếu có)"
               name="note"
