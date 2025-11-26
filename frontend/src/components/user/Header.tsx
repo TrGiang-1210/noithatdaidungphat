@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, useContext } from "react";
+import { FaSearch } from "react-icons/fa";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useCart } from "@/context/CartContext";
 import "@/styles/components/user/header.scss";
@@ -214,7 +215,7 @@ const Header: React.FC = () => {
               }
               autoComplete="off"
             />
-            <button type="submit">Search</button>
+            <button type="submit"><FaSearch /></button>
 
             {/* DROPDOWN GỢI Ý */}
             {showSuggestions && suggestions.length > 0 && (

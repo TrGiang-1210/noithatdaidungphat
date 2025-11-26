@@ -3,6 +3,8 @@
 const UserService = require('../services/userService');
 const jwt = require('jsonwebtoken');
 const Joi = require('joi');
+const crypto = require('crypto');
+const sendEmail = require('../utils/sendEmail');
 
 // ==================== VALIDATION SCHEMAS ====================
 const loginSchema = Joi.object({
@@ -150,28 +152,83 @@ exports.updateProfile = async (req, res) => {
   }
 };
 
+// backend/controllers/userController.js → thay nguyên hàm này
 exports.forgotPassword = async (req, res) => {
-  try {
-    const { email } = req.body;
-    if (!email) return res.status(400).json({ message: 'Vui lòng cung cấp email' });
+  const { email } = req.body;
+  if (!email) return res.status(400).json({ message: 'Vui lòng nhập email' });
 
-    const result = await UserService.forgotPassword(email);
-    res.json(result);
+  try {
+    const user = await UserService.getUserByEmail(email);
+    const msg = 'Nếu email đã đăng ký, link đặt lại mật khẩu sẽ được gửi trong vài phút';
+
+    if (!user) {
+      return res.json({ message: msg });
+    }
+
+    // Tạo token
+    const resetToken = crypto.randomBytes(32).toString('hex');
+    const hashedToken = crypto.createHash('sha256').update(resetToken).digest('hex');
+
+    user.resetPasswordToken = hashedToken;
+    user.resetPasswordExpire = Date.now() + 15 * 60 * 1000;
+    await user.save({ validateBeforeSave: false });
+
+    const resetUrl = `${process.env.FRONTEND_URL}/quen-mat-khau?token=${resetToken}`;
+
+    const html = `
+      <h3>Đặt lại mật khẩu</h3>
+      <p>Nhấn vào link sau (hiệu lực 15 phút):</p>
+      <a href="${resetUrl}" style="padding:10px 20px; background:#d4380d; color:white; text-decoration:none; border-radius:5px;">
+        Đặt lại mật khẩu
+      </a>
+    `;
+
+    try {
+      await require('../utils/sendEmail')({
+        email: user.email,
+        subject: 'Đặt lại mật khẩu - Nội Thất Đại Dũng Phát',
+        html,
+      });
+      console.log('Gửi email thành công tới:', user.email);
+    } catch (err) {
+      console.error('Lỗi gửi email:', err.message);
+    }
+
+    res.json({ message: msg });
   } catch (err) {
-    res.status(400).json({ message: err.message });
+    console.error('Lỗi forgotPassword:', err);
+    res.status(500).json({ message: 'Lỗi server' });
   }
 };
 
+// ==================== ĐẶT LẠI MẬT KHẨU ====================
 exports.resetPassword = async (req, res) => {
+  const { token, newPassword } = req.body;
+
+  if (!token || !newPassword || newPassword.length < 6) {
+    return res.status(400).json({ message: 'Token hoặc mật khẩu không hợp lệ' });
+  }
+
   try {
-    const { token, newPassword } = req.body;
-    if (!token || !newPassword) {
-      return res.status(400).json({ message: 'Thiếu thông tin' });
+    // Hash token từ client gửi lên
+    const hashedToken = crypto.createHash('sha256').update(token).digest('hex');
+
+    // Tìm user có token này và chưa hết hạn
+    const user = await UserService.findUserByResetToken(hashedToken);
+
+    if (!user || !user.resetPasswordExpire || user.resetPasswordExpire < Date.now()) {
+      return res.status(400).json({ message: 'Link đã hết hạn hoặc không hợp lệ' });
     }
 
-    const result = await UserService.resetPassword(token, newPassword);
-    res.json(result);
+    // Cập nhật mật khẩu mới
+    await UserService.updatePassword(user._id, newPassword);
+
+    // Xóa token cũ
+    await UserService.clearResetToken(user._id);
+
+    res.json({ message: 'Đặt lại mật khẩu thành công! Bạn có thể đăng nhập ngay.' });
   } catch (err) {
-    res.status(400).json({ message: err.message || 'Token không hợp lệ hoặc đã hết hạn' });
+    console.error('Lỗi resetPassword:', err);
+    res.status(400).json({ message: 'Link không hợp lệ hoặc đã hết hạn' });
   }
 };

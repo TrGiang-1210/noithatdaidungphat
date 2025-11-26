@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useContext } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { useCart } from '@/context/CartContext';
+import { useCart } from "@/context/CartContext";
 import "@/styles/pages/user/productDetail.scss";
 import { toast } from "react-toastify";
 import { AuthContext } from "@/context/AuthContext";
@@ -40,13 +40,19 @@ const ProductDetail: React.FC = () => {
           const res = await fetch(url);
           if (!res.ok) {
             const txt = await res.text();
-            console.warn(`[ProductDetail] ${url} -> ${res.status}`, txt.slice(0,200));
+            console.warn(
+              `[ProductDetail] ${url} -> ${res.status}`,
+              txt.slice(0, 200)
+            );
             continue;
           }
           const ct = res.headers.get("content-type") || "";
           if (!ct.includes("application/json")) {
             const txt = await res.text();
-            console.warn(`[ProductDetail] ${url} returned non-json:`, txt.slice(0,200));
+            console.warn(
+              `[ProductDetail] ${url} returned non-json:`,
+              txt.slice(0, 200)
+            );
             continue;
           }
           const data = await res.json();
@@ -65,38 +71,49 @@ const ProductDetail: React.FC = () => {
   }, [param]);
 
   if (loading) return <div>Đang tải sản phẩm...</div>;
-  if (error) return <div style={{color:'red'}}>Lỗi: {error}</div>;
+  if (error) return <div style={{ color: "red" }}>Lỗi: {error}</div>;
   if (!product) return <div>Không có dữ liệu sản phẩm</div>;
 
-  const currentImage = product.images?.[0] || product.img_url || "/images/no-image.png";
-  const discount = product.priceOriginal > product.priceSale
-    ? Math.round(((product.priceOriginal - product.priceSale) / product.priceOriginal) * 100)
-    : 0;
+  const currentImage =
+    product.images?.[0] || product.img_url || "/images/no-image.png";
+  const discount =
+    product.priceOriginal > product.priceSale
+      ? Math.round(
+          ((product.priceOriginal - product.priceSale) /
+            product.priceOriginal) *
+            100
+        )
+      : 0;
 
   // Fallback lưu giỏ hàng cho guest (localStorage)
   const fallbackAddToLocalCart = (prod: any, qty: number) => {
     try {
       const raw = localStorage.getItem("cart_local");
-      const cart = raw ? JSON.parse(raw) : { items: [] as any[], totalQuantity: 0 };
+      const cart = raw
+        ? JSON.parse(raw)
+        : { items: [] as any[], totalQuantity: 0 };
       const idx = cart.items.findIndex((i: any) => i.productId === prod._id);
       if (idx >= 0) {
         cart.items[idx].quantity += qty;
       } else {
         cart.items.push({
-  product: {
-    _id: prod._id,
-    name: prod.name,
-    price: prod.priceSale ?? prod.price ?? 0,
-    images: prod.images || [prod.img_url].filter(Boolean),
-    priceSale: prod.priceSale,
-    // các field cần thiết khác nếu có
-  },
-  quantity: qty,
-});
+          product: {
+            _id: prod._id,
+            name: prod.name,
+            price: prod.priceSale ?? prod.price ?? 0,
+            images: prod.images || [prod.img_url].filter(Boolean),
+            priceSale: prod.priceSale,
+            // các field cần thiết khác nếu có
+          },
+          quantity: qty,
+        });
       }
-      cart.totalQuantity = cart.items.reduce((s: number, it: any) => s + it.quantity, 0);
+      cart.totalQuantity = cart.items.reduce(
+        (s: number, it: any) => s + it.quantity,
+        0
+      );
       localStorage.setItem("cart_local", JSON.stringify(cart));
-      toast.success("Đã thêm vào giỏ hàng (không cần đăng nhập)");
+      // toast.success("Đã thêm vào giỏ hàng (không cần đăng nhập)");
     } catch (e) {
       console.error("fallbackAddToLocalCart error", e);
       toast.error("Không thể thêm vào giỏ hàng");
@@ -104,16 +121,46 @@ const ProductDetail: React.FC = () => {
   };
 
   // Thêm vào giỏ hàng an toàn: thử call backend, nếu lỗi -> dùng localStorage
+    // Thêm vào giỏ hàng an toàn: chỉ hiện 1 toast duy nhất
   const handleAdd = async (qty: number, redirectToPay = false) => {
     if (!product) return;
+
+    let added = false;
+    let isGuest = false;
+
     try {
-      await addToCart(product, qty); // truyền cả object product
-      toast.success("Đã thêm vào giỏ hàng");
-      if (redirectToPay) navigate("/paycart");
+      await addToCart(product, qty); // thử call backend trước
+      added = true;
     } catch (err: any) {
-      console.warn("addToCart failed, fallback to local cart", err);
+      // Nếu lỗi (thường là chưa login hoặc token hết hạn)
+      console.warn("addToCart failed → chuyển sang guest cart", err);
       fallbackAddToLocalCart(product, qty);
-      if (redirectToPay) navigate("/paycart");
+      added = true;
+      isGuest = true;
+    }
+
+    // Chỉ hiện 1 toast duy nhất, đẹp và rõ ràng
+    if (added) {
+      toast.success(
+        isGuest
+          ? "Đã thêm vào giỏ hàng (khách vãng lai)"
+          : "Đã thêm vào giỏ hàng",
+        {
+          position: "bottom-right",
+          autoClose: 2000,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true,
+          theme: "light",
+        }
+      );
+
+      if (redirectToPay) {
+        navigate("/thanh-toan"); // hoặc /paycart tùy bạn
+      }
+    } else {
+      toast.error("Không thể thêm vào giỏ hàng");
     }
   };
 
@@ -143,7 +190,6 @@ const ProductDetail: React.FC = () => {
     <div className="product-detail-page">
       <div className="container">
         <div className="new-layout">
-
           {/* ==================== TRÁI: ẢNH + MÔ TẢ DƯỚI ==================== */}
           <div className="left-column">
             {/* Ảnh + thumbnail */}
@@ -157,10 +203,7 @@ const ProductDetail: React.FC = () => {
               {product.images && product.images.length > 1 && (
                 <div className="thumbnail-row">
                   {product.images.map((img: string, i: number) => (
-                    <div
-                      key={i}
-                      className={`thumb ${0 === i ? "active" : ""}`}
-                    >
+                    <div key={i} className={`thumb ${0 === i ? "active" : ""}`}>
                       <img src={img} alt={`${product.name} ${i + 1}`} />
                     </div>
                   ))}
@@ -172,7 +215,9 @@ const ProductDetail: React.FC = () => {
             {product.description && (
               <div className="description-under-image">
                 <h3>MÔ TẢ SẢN PHẨM</h3>
-                <div dangerouslySetInnerHTML={{ __html: product.description }} />
+                <div
+                  dangerouslySetInnerHTML={{ __html: product.description }}
+                />
               </div>
             )}
           </div>
@@ -182,8 +227,11 @@ const ProductDetail: React.FC = () => {
             <h1 className="product-title">{product.name}</h1>
 
             <div className="meta-info">
-              Mã hàng: <strong>{product.sku || product._id?.slice(-8).toUpperCase()}</strong> |{" "}
-              {(product.view || 0) + 1289} lượt xem
+              Mã hàng:{" "}
+              <strong>
+                {product.sku || product._id?.slice(-8).toUpperCase()}
+              </strong>{" "}
+              | {(product.view || 0) + 1289} lượt xem
             </div>
 
             <div className="price-area">
@@ -222,21 +270,28 @@ const ProductDetail: React.FC = () => {
             </div>
 
             <div className="quantity-area">
-              <button 
+              <button
                 className="qty-btn"
                 onClick={() => setQuantity(Math.max(1, quantity - 1))}
                 disabled={quantity <= 1}
               >
                 −
               </button>
-              <input type="text" value={quantity} readOnly className="qty-input" />
-              <button 
+              <input
+                type="text"
+                value={quantity}
+                readOnly
+                className="qty-input"
+              />
+              <button
                 className="qty-btn"
                 onClick={() => setQuantity(quantity + 1)}
               >
                 +
               </button>
-              <span className="note">(Còn {product.quantity || 0} sản phẩm)</span>
+              <span className="note">
+                (Còn {product.quantity || 0} sản phẩm)
+              </span>
             </div>
 
             {/* Nút hành động */}
@@ -252,30 +307,42 @@ const ProductDetail: React.FC = () => {
             </div>
 
             {/* ==================== PHẦN CHÍNH SÁCH MUA HÀNG - GIỐNG HỆT ẢNH ==================== */}
-<div className="policy-area">
-  <div className="status-section">
-    <p><strong>Tình trạng:</strong> Hàng mới 100%</p>
-    <p>
-      <strong>Trạng thái:</strong>{" "}
-      <span className={`stock-status ${product.quantity > 0 ? "in-stock" : "out-of-stock"}`}>
-        {product.quantity > 0 ? "Còn hàng" : "Hết hàng"}
-      </span>
-    </p>
-  </div>
+            <div className="policy-area">
+              <div className="status-section">
+                <p>
+                  <strong>Tình trạng:</strong> Hàng mới 100%
+                </p>
+                <p>
+                  <strong>Trạng thái:</strong>{" "}
+                  <span
+                    className={`stock-status ${
+                      product.quantity > 0 ? "in-stock" : "out-of-stock"
+                    }`}
+                  >
+                    {product.quantity > 0 ? "Còn hàng" : "Hết hàng"}
+                  </span>
+                </p>
+              </div>
 
-  <div className="delivery-section">
-    <h4>Chi phí giao hàng:</h4>
-    <ul>
-      <li>Giao lắp miễn phí tại các quận nội thành tại TPHCM.</li>
-      <li>Quận 9, Hóc Môn, Thủ Đức, Củ Chi, Nhà Bè: 200.000 vnđ/đơn hàng</li>
-      <li>Các tỉnh thành khác: 400.000 vnđ/đơn hàng</li>
-    </ul>
-  </div>
+              <div className="delivery-section">
+                <h4>Chi phí giao hàng:</h4>
+                <ul>
+                  <li>Giao lắp miễn phí tại các quận nội thành tại TPHCM.</li>
+                  <li>
+                    Quận 9, Hóc Môn, Thủ Đức, Củ Chi, Nhà Bè: 200.000 vnđ/đơn
+                    hàng
+                  </li>
+                  <li>Các tỉnh thành khác: 400.000 vnđ/đơn hàng</li>
+                </ul>
+              </div>
 
-  <div className="time-section">
-    <p><strong>Thời gian giao hàng:</strong> Từ 6 giờ đến 10 ngày làm việc.</p>
-  </div>
-</div>
+              <div className="time-section">
+                <p>
+                  <strong>Thời gian giao hàng:</strong> Từ 6 giờ đến 10 ngày làm
+                  việc.
+                </p>
+              </div>
+            </div>
           </div>
         </div>
       </div>

@@ -55,7 +55,7 @@ const AuthPage: React.FC = () => {
 
       // wait for context to set user (contextLogin sets user immediately if we pass user)
       await contextLogin(token, user);
-      toast.success(`Xin chào ${user?.name?.split?.(' ')[0] ?? 'khách'}! 🎉`);
+      toast.success(`Xin chào ${user?.name?.split?.(' ')[0] ?? 'khách'}!`);
 
       // confirm user from localStorage / context later if needed
       if (user?.role === 'admin') {
@@ -213,7 +213,7 @@ const AuthPage: React.FC = () => {
           </button>
 
           <p className="footer-text forgotten">
-            <Link to="/forgot-password">Quên mật khẩu?</Link>
+            <Link to="/quen-mat-khau">Quên mật khẩu?</Link>
           </p>
         </form>
       </div>

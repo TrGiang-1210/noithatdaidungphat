@@ -1,0 +1,86 @@
+// src/styles/pages/user/resetPass.scss
+.reset-pass-page {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+
+  .reset-container {
+    background: white;
+    padding: 40px 30px;
+    border-radius: 12px;
+    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
+    width: 100%;
+    max-width: 420px;
+    text-align: center;
+
+    h2 {
+      margin-bottom: 24px;
+      color: #333;
+      font-size: 24px;
+    }
+
+    .reset-form {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+
+      input {
+        padding: 14px;
+        border: 1px solid #ddd;
+        border-radius: 8px;
+        font-size: 16px;
+        outline: none;
+        transition: border 0.3s;
+
+        &:focus {
+          border-color: #667eea;
+        }
+      }
+
+      button {
+        margin-top: 10px;
+        padding: 14px;
+        background: #667eea;
+        color: white;
+        border: none;
+        border-radius: 8px;
+        font-size: 16px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: background 0.3s;
+
+        &:hover {
+          background: #5a6fd8;
+        }
+
+        &:disabled {
+          background: #aaa;
+          cursor: not-allowed;
+        }
+      }
+    }
+
+    .back-login,
+    .btn-back {
+      margin-top: 20px;
+      color: #667eea;
+      text-decoration: none;
+      font-weight: 500;
+
+      &:hover {
+        text-decoration: underline;
+      }
+    }
+
+    .success-message {
+      line-height: 1.6;
+      strong {
+        color: #667eea;
+        font-size: 18px;
+      }
+    }
+  }
+}
