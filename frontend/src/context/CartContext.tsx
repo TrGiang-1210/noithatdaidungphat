@@ -36,7 +36,7 @@ type CartContextType = {
   totalQuantity: number;
   loadCart: () => Promise<void>;
   reloadCart: () => Promise<void>;
-  addToCart: (product: Product, quantity?: number) => Promise<void>; // ← ĐỔI THAM SỐ
+  addToCart: (product: Product, quantity?: number) => Promise<boolean>;
   updateItem: (productId: string, quantity: number) => Promise<void>;
   removeItem: (productId: string) => Promise<void>;
   clearCart: () => Promise<void>;
@@ -134,21 +134,19 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  // ADD TO CART - NHẬN VÀO PRODUCT OBJECT LUÔN
-  const addToCart = useCallback(async (product: Product, quantity = 1) => {
+  // TRỌNG TÂM: addToCart giờ KHÔNG toast nữa, chỉ trả về true/false
+  const addToCart = useCallback(async (product: Product, quantity = 1): Promise<boolean> => {
     const normalizedProduct = normalizeProduct(product);
     const token = localStorage.getItem("token");
-
-    const newItem: CartItem = { product: normalizedProduct, quantity };
 
     if (token) {
       try {
         await addToCartAPI(normalizedProduct._id, quantity);
         await loadCart();
-        toast.success("Đã thêm vào giỏ hàng");
-        return;
+        return true; // thành công với tài khoản đăng nhập
       } catch (err: any) {
-        console.warn("Thêm giỏ hàng server lỗi, fallback local", err);
+        console.warn("Thêm giỏ hàng server lỗi → fallback local", err);
+        // không throw, vẫn tiếp tục dùng local
       }
     }
 
@@ -163,7 +161,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
             : i
         );
       } else {
-        newItems = [...prev.items, newItem];
+        newItems = [...prev.items, { product: normalizedProduct, quantity }];
       }
       const newTotal = newItems.reduce((s, i) => s + i.quantity, 0);
       const newCart = { items: newItems, totalQuantity: newTotal };
@@ -171,7 +169,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
       return newCart;
     });
 
-    toast.success("Đã thêm vào giỏ hàng (khách vãng lai)");
+    return false; // nghĩa là dùng guest cart
   }, [loadCart]);
 
   const updateItem = useCallback(async (productId: string, quantity: number) => {

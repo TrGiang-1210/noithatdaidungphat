@@ -9,6 +9,7 @@ import UpdateProfile from "../pages/user/updateProfile";
 import SearchResults from "../pages/user/searchResults";
 import PayCart from "../pages/user/payCart"; // <-- thêm import trang thanh toán (đường dẫn nếu khác thì chỉnh)
 import OrderSuccess from "../pages/user/orderSuccess";
+import ResetPassPage from "../pages/user/resetPass";
 
 const MainRouter = () => {
   return (
@@ -16,7 +17,7 @@ const MainRouter = () => {
       <Route path="/" element={<UserLayout />}>
         <Route index element={<Home />} />
         <Route path="/trang-chu" element={<Home />} />
-        <Route path="/san-pham/:id" element={<ProductDetail />} />
+        <Route path="/san-pham/:slug" element={<ProductDetail />} />
         <Route path="/gioi-thieu" element={<AboutPage />} />
         <Route path="/tim-kiem" element={<SearchResults />} />
 
@@ -28,7 +29,7 @@ const MainRouter = () => {
 
       {/* 1. Trang đăng nhập / đăng ký – ĐỨNG RIÊNG, KHÔNG bọc layout chính */}
       <Route path="/tai-khoan-ca-nhan" element={<AuthPage />} />
-
+      <Route path="/quen-mat-khau" element={<ResetPassPage />} />
       { /* fallback / other routes */ }
     </Routes>
   );
