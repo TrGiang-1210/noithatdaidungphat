@@ -108,7 +108,7 @@ const Home: React.FC = () => {
             ) : products.length > 0 ? (
               products.map((product) => (
                 <div className="product-card" key={product._id}>
-                  <Link to={`/product/${product.slug}`} className="product-link">
+                  <Link to={`/san-pham/${product.slug}`} className="product-link">
                     <img
                       src={product.images?.[0] ?? "/placeholder.jpg"}
                       alt={product.name}
