@@ -4,7 +4,8 @@ const User = require('../models/User');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
-const nodemailer = require('nodemailer');
+// const nodemailer = require('nodemailer');
+import sendResetPasswordEmail from './brevoService.js';
 
 class UserService {
   static async getUserById(id) {
@@ -119,7 +120,7 @@ static async forgotPassword(email) {
   const hashedToken = crypto.createHash('sha256').update(resetToken).digest('hex');
 
   user.resetPasswordToken = hashedToken;
-  user.resetPasswordExpire = Date.now() + 15 * 60 * 1000; // 15 phút
+  user.resetPasswordExpire = Date.now() + 15 * 60 * 1000;
   await user.save({ validateBeforeSave: false });
 
   const resetUrl = `${process.env.FRONTEND_URL}/quen-mat-khau?token=${resetToken}`;
@@ -147,12 +148,15 @@ static async forgotPassword(email) {
       },
     });
 
-    await transporter.sendMail({
-      from: `"Nội Thất Đại Dũng Phát" <${process.env.EMAIL_USER}>`,
-      to: user.email,
-      subject: 'Đặt lại mật khẩu - Nội Thất Đại Dũng Phát',
-      html,
-    });
+    // GỌI BREVO SERVICE
+  await sendResetPasswordEmail(user.email, user.name, resetUrl);
+
+    // await transporter.sendMail({
+    //   from: `"Nội Thất Đại Dũng Phát" <${process.env.EMAIL_USER}>`,
+    //   to: user.email,
+    //   subject: 'Đặt lại mật khẩu - Nội Thất Đại Dũng Phát',
+    //   html,
+    // });
 
     console.log('EMAIL ĐÃ GỬI THÀNH CÔNG TỚI:', user.email);   // thêm dòng này
 console.log('Link reset:', resetUrl);
