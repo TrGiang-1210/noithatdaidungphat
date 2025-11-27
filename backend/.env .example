@@ -1,0 +1,5 @@
+# .env.example ← file này được commit lên GitHub
+BREVO_API_KEY=xkeysib-your-key-here-replace-in-your-local
+FRONTEND_URL=http://localhost:5173
+JWT_SECRET=your_very_long_random_secret_here
+MONGO_URI=mongodb://127.0.0.1:27017/noithatdaidungphat
