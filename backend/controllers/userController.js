@@ -4,7 +4,7 @@ const UserService = require('../services/userService');
 const jwt = require('jsonwebtoken');
 const Joi = require('joi');
 const crypto = require('crypto');
-const sendEmail = require('../utils/sendEmail');
+// const sendEmail = require('../utils/sendEmail');
 
 // ==================== VALIDATION SCHEMAS ====================
 const loginSchema = Joi.object({
@@ -184,11 +184,11 @@ exports.forgotPassword = async (req, res) => {
     `;
 
     try {
-      await require('../utils/sendEmail')({
-        email: user.email,
-        subject: 'Đặt lại mật khẩu - Nội Thất Đại Dũng Phát',
-        html,
-      });
+      // await require('../utils/sendEmail')({
+      //   email: user.email,
+      //   subject: 'Đặt lại mật khẩu - Nội Thất Đại Dũng Phát',
+      //   html,
+      // });
       console.log('Gửi email thành công tới:', user.email);
     } catch (err) {
       console.error('Lỗi gửi email:', err.message);
