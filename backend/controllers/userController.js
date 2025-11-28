@@ -1,9 +1,10 @@
 // src/controllers/userController.js
-
 const UserService = require('../services/userService');
 const jwt = require('jsonwebtoken');
 const Joi = require('joi');
 const crypto = require('crypto');
+const sendResetPasswordEmail = require('../services/brevoService');
+const User = require('../models/User');
 // const sendEmail = require('../utils/sendEmail');
 
 // ==================== VALIDATION SCHEMAS ====================
@@ -152,18 +153,15 @@ exports.updateProfile = async (req, res) => {
   }
 };
 
-// backend/controllers/userController.js → thay nguyên hàm này
 exports.forgotPassword = async (req, res) => {
   const { email } = req.body;
   if (!email) return res.status(400).json({ message: 'Vui lòng nhập email' });
 
   try {
-    const user = await UserService.getUserByEmail(email);
+    // ← CHỈ 2 DÒNG NÀY, KHÔNG CÓ REQUIRE Ở ĐÂY
+    const user = await User.findOne({ email: email.toLowerCase().trim() });
     const msg = 'Nếu email đã đăng ký, link đặt lại mật khẩu sẽ được gửi trong vài phút';
-
-    if (!user) {
-      return res.json({ message: msg });
-    }
+    if (!user) return res.json({ message: msg });
 
     // Tạo token
     const resetToken = crypto.randomBytes(32).toString('hex');
@@ -175,23 +173,16 @@ exports.forgotPassword = async (req, res) => {
 
     const resetUrl = `${process.env.FRONTEND_URL}/quen-mat-khau?token=${resetToken}`;
 
-    const html = `
-      <h3>Đặt lại mật khẩu</h3>
-      <p>Nhấn vào link sau (hiệu lực 15 phút):</p>
-      <a href="${resetUrl}" style="padding:10px 20px; background:#d4380d; color:white; text-decoration:none; border-radius:5px;">
-        Đặt lại mật khẩu
-      </a>
-    `;
+    const emailResult = await sendResetPasswordEmail(
+      user.email,
+      user.name || 'Khách hàng',
+      resetUrl
+    );
 
-    try {
-      // await require('../utils/sendEmail')({
-      //   email: user.email,
-      //   subject: 'Đặt lại mật khẩu - Nội Thất Đại Dũng Phát',
-      //   html,
-      // });
-      console.log('Gửi email thành công tới:', user.email);
-    } catch (err) {
-      console.error('Lỗi gửi email:', err.message);
+    if (emailResult) {
+      console.log('BREVO: Đã gửi email reset password tới', user.email, '| MessageId:', emailResult.messageId);
+    } else {
+      console.error('BREVO: Gửi thất bại tới', user.email);
     }
 
     res.json({ message: msg });
