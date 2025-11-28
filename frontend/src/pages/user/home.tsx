@@ -27,7 +27,6 @@ const Home: React.FC = () => {
   const [products, setProducts] = useState<Product[]>([]);
   const [loadingProducts, setLoadingProducts] = useState(true);
   const [currentSlide, setCurrentSlide] = useState(0);
-
   const sliderWrapperRef = useRef<HTMLDivElement>(null);
 
   // Auto slide
@@ -65,37 +64,45 @@ const Home: React.FC = () => {
     <div className="home-page">
       {/* ==================== BANNER ==================== */}
       {/* ==================== BANNER - CHUẨN DOGOVIET.COM ==================== */}
-<section className="banner-section">
-  <div className="container banner-container">
-    <div className="slider-wrapper">
-      <div className="slider">
-        <div 
-          className="slider-inner"
-          style={{ transform: `translateX(-${currentSlide * 100}%)` }}
-        >
-          {banners.map((banner, idx) => (
-            <div key={idx} className="slide">
-              <img src={banner.src} alt={banner.alt} className="slide-img" />
+      <section className="banner-section">
+        <div className="container banner-container">
+          <div className="slider-wrapper">
+            <div className="slider">
+              <div
+                className="slider-inner"
+                style={{ transform: `translateX(-${currentSlide * 100}%)` }}
+              >
+                {banners.map((banner, idx) => (
+                  <div key={idx} className="slide">
+                    <img
+                      src={banner.src}
+                      alt={banner.alt}
+                      className="slide-img"
+                    />
+                  </div>
+                ))}
+              </div>
+
+              <button className="slider-nav prev" onClick={prevSlide}>
+                ‹
+              </button>
+              <button className="slider-nav next" onClick={nextSlide}>
+                ›
+              </button>
+
+              <div className="slider-pagination">
+                {banners.map((_, idx) => (
+                  <span
+                    key={idx}
+                    className={`dot ${idx === currentSlide ? "active" : ""}`}
+                    onClick={() => setCurrentSlide(idx)}
+                  />
+                ))}
+              </div>
             </div>
-          ))}
+          </div>
         </div>
-
-        <button className="slider-nav prev" onClick={prevSlide}>‹</button>
-        <button className="slider-nav next" onClick={nextSlide}>›</button>
-
-        <div className="slider-pagination">
-          {banners.map((_, idx) => (
-            <span
-              key={idx}
-              className={`dot ${idx === currentSlide ? "active" : ""}`}
-              onClick={() => setCurrentSlide(idx)}
-            />
-          ))}
-        </div>
-      </div>
-    </div>
-  </div>
-</section>
+      </section>
 
       {/* ==================== SẢN PHẨM NỔI BẬT ==================== */}
       <section className="product-section">
@@ -108,7 +115,10 @@ const Home: React.FC = () => {
             ) : products.length > 0 ? (
               products.map((product) => (
                 <div className="product-card" key={product._id}>
-                  <Link to={`/san-pham/${product.slug}`} className="product-link">
+                  <Link
+                    to={`/san-pham/${product.slug}`}
+                    className="product-link"
+                  >
                     <img
                       src={product.images?.[0] ?? "/placeholder.jpg"}
                       alt={product.name}

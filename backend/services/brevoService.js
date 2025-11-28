@@ -1,40 +1,45 @@
-// services/brevoService.js
+// services/brevoService.js – PHIÊN BẢN CHẮN 401 100% (28-11-2025)
 require('dotenv').config();
-const Brevo = require('@getbrevo/brevo');
-
-// Cách mới 2025: không cần instance, chỉ cần set apiKey trực tiếp
-const apiInstance = new Brevo.TransactionalEmailsApi();
-apiInstance.apiKey = process.env.BREVO_API_KEY; // ← ĐƠN GIẢN CHỈ 1 DÒNG NÀY!
+const axios = require('axios');
 
 const sendResetPasswordEmail = async (email, name = 'Khách hàng', resetUrl) => {
-  if (!process.env.BREVO_API_KEY) {
-    console.error('BREVO_API_KEY chưa được cấu hình trong .env');
-    return false;
-  }
-
-  const sendSmtpEmail = new Brevo.SendSmtpEmail();
-
-  sendSmtpEmail.sender = { 
-    name: 'Nội Thất Đại Dũng Phát', 
-    email: 'no-reply@tongkhonoithattayninh.vn' 
+  const payload = {
+    sender: {
+      name: 'Nội Thất Đại Dũng Phát',
+      email: 'daidungphat@tongkhonoithattayninh.vn'   // ← đã verified
+    },
+    to: [{ email, name }],
+    subject: 'Đặt lại mật khẩu tài khoản của bạn',
+    htmlContent: `
+      <h2>Xin chào ${name},</h2>
+      <p>Click nút dưới để đặt lại mật khẩu (hiệu lực 15 phút):</p>
+      <div style="text-align:center;margin:40px 0;">
+        <a href="${resetUrl}" style="background:#d4380d;color:white;padding:16px 32px;text-decoration:none;border-radius:8px;font-size:16px;font-weight:bold;">
+          Đặt lại mật khẩu
+        </a>
+      </div>
+      <p>Nếu bạn không yêu cầu, vui lòng bỏ qua email này.</p>
+    `
   };
-  sendSmtpEmail.to = [{ email, name }];
-  sendSmtpEmail.templateId = 1;
-  sendSmtpEmail.params = { NAME: name, RESET_URL: resetUrl };
 
   try {
-    const data = await apiInstance.sendTransacEmail(sendSmtpEmail);
-    console.log('BREVO: Gửi email reset password thành công tới', email);
-    return data;
+    const response = await axios.post(
+      'https://api.brevo.com/v3/smtp/email',
+      payload,
+      {
+        headers: {
+          'accept': 'application/json',
+          'api-key': process.env.BREVO_API_KEY,
+          'content-type': 'application/json'
+        }
+      }
+    );
+
+    console.log('BREVO GỬI THÀNH CÔNG → MessageId:', response.data.messageId);
+    return response.data;
   } catch (error) {
-    console.error('BREVO: Lỗi gửi email');
-    if (error.response) {
-      console.error('Status:', error.response.status);
-      console.error('Body:', error.response.body);
-    } else {
-      console.error(error.message);
-    }
-    return false;
+    console.error('BREVO GỬI THẤT BẠI:', error.response?.data || error.message);
+    return null;
   }
 };
 

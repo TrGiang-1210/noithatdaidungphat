@@ -86,100 +86,41 @@ const ProductDetail: React.FC = () => {
       : 0;
 
   // Fallback lưu giỏ hàng cho guest (localStorage)
-  const fallbackAddToLocalCart = (prod: any, qty: number) => {
-    try {
-      const raw = localStorage.getItem("cart_local");
-      const cart = raw
-        ? JSON.parse(raw)
-        : { items: [] as any[], totalQuantity: 0 };
-      const idx = cart.items.findIndex((i: any) => i.productId === prod._id);
-      if (idx >= 0) {
-        cart.items[idx].quantity += qty;
-      } else {
-        cart.items.push({
-          product: {
-            _id: prod._id,
-            name: prod.name,
-            price: prod.priceSale ?? prod.price ?? 0,
-            images: prod.images || [prod.img_url].filter(Boolean),
-            priceSale: prod.priceSale,
-            // các field cần thiết khác nếu có
-          },
-          quantity: qty,
-        });
-      }
-      cart.totalQuantity = cart.items.reduce(
-        (s: number, it: any) => s + it.quantity,
-        0
-      );
-      localStorage.setItem("cart_local", JSON.stringify(cart));
-      // toast.success("Đã thêm vào giỏ hàng (không cần đăng nhập)");
-    } catch (e) {
-      console.error("fallbackAddToLocalCart error", e);
-      toast.error("Không thể thêm vào giỏ hàng");
-    }
-  };
-
-  // Thêm vào giỏ hàng an toàn: thử call backend, nếu lỗi -> dùng localStorage
-    // Thêm vào giỏ hàng an toàn: chỉ hiện 1 toast duy nhất
-  const handleAdd = async (qty: number, redirectToPay = false) => {
+  const handleAdd = async (qty: number = 1, buyNow: boolean = false) => {
     if (!product) return;
 
-    let added = false;
-    let isGuest = false;
+    const success = await addToCart(product, qty);
 
-    try {
-      await addToCart(product, qty); // thử call backend trước
-      added = true;
-    } catch (err: any) {
-      // Nếu lỗi (thường là chưa login hoặc token hết hạn)
-      console.warn("addToCart failed → chuyển sang guest cart", err);
-      fallbackAddToLocalCart(product, qty);
-      added = true;
-      isGuest = true;
-    }
+    if (success) {
+      toast.success("Đã thêm vào giỏ hàng!");
 
-    // Chỉ hiện 1 toast duy nhất, đẹp và rõ ràng
-    if (added) {
-      toast.success(
-        isGuest
-          ? "Đã thêm vào giỏ hàng (khách vãng lai)"
-          : "Đã thêm vào giỏ hàng",
-        {
-          position: "bottom-right",
-          autoClose: 2000,
-          hideProgressBar: false,
-          closeOnClick: true,
-          pauseOnHover: true,
-          draggable: true,
-          theme: "light",
-        }
-      );
-
-      if (redirectToPay) {
-        navigate("/thanh-toan"); // hoặc /paycart tùy bạn
+      if (buyNow) {
+        // Chờ 1 chút để context cập nhật xong rồi mới chuyển trang
+        setTimeout(() => {
+          navigate("/thanh-toan");
+        }, 300);
       }
     } else {
-      toast.error("Không thể thêm vào giỏ hàng");
+      // success = false → nghĩa là đang dùng guest (hoặc server lỗi nhưng đã fallback local)
+      toast.success("Đã thêm vào giỏ hàng!");
+
+      if (buyNow) {
+        setTimeout(() => {
+          navigate("/thanh-toan");
+        }, 300);
+      }
     }
   };
 
   const actionArea = (
     <div className="action-area">
-      <button
-        className="btn-buy-now"
-        onClick={async () => {
-          await handleAdd(quantity, true);
-        }}
-      >
+      <button className="btn-buy-now" onClick={() => handleAdd(quantity, true)}>
         MUA NGAY
       </button>
 
       <button
         className="btn-add-cart"
-        onClick={async () => {
-          await handleAdd(quantity, false);
-        }}
+        onClick={() => handleAdd(quantity, false)}
       >
         THÊM VÀO GIỎ HÀNG
       </button>
