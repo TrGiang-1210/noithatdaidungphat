@@ -1,36 +1,46 @@
-// src/services/brevoService.js
-import Brevo from '@getbrevo/brevo';
+// src/services/brevoService.js ← ĐỔI THÀNH COMMONJS (quan trọng nhất!!!)
 
-// Cách mới 2025 - chỉ cần 1 dòng này là đủ!
-const apiInstance = new Brevo.TransactionalEmailsApi({
-  apiKey: process.env.BREVO_API_KEY   // ← Đặt thẳng vào constructor
-});
+const Brevo = require('@getbrevo/brevo');
+
+const apiInstance = new Brevo.TransactionalEmailsApi();
+
+// Cấu hình API key đúng cách 2025
+const apiKey = apiInstance.authentications['api-key'];
+apiKey.apiKey = process.env.BREVO_API_KEY;
 
 const sendResetPasswordEmail = async (email, name = 'Khách hàng', resetUrl) => {
-  const sendSmtpEmail = new Brevo.SendSmtpEmail();
+  if (!process.env.BREVO_API_KEY) {
+    console.error('BREVO_API_KEY chưa được cấu hình trong .env');
+    return null;
+  }
 
-  sendSmtpEmail.sender = {
-    name: 'Nội Thất Đại Dũng Phát',
-    email: 'no-reply@tongkhonoithattayninh.vn'
-  };
-
-  sendSmtpEmail.to = [{ email: email, name: name }];
-
-  sendSmtpEmail.templateId = 1;  // ← ID template của bạn
-
-  sendSmtpEmail.params = {
-    NAME: name,
-    RESET_URL: resetUrl
+  const sendSmtpEmail = {
+    sender: {
+      name: 'Nội Thất Đại Dũng Phát',
+      email: 'no-reply@tongkhonoithattayninh.vn' // ← phải đã verify trên Brevo
+    },
+    to: [{ email, name }],
+    templateId: 1, // ← kiểm tra lại ID này chính xác chưa
+    params: {
+      NAME: name,
+      RESET_URL: resetUrl
+    }
   };
 
   try {
     const result = await apiInstance.sendTransacEmail(sendSmtpEmail);
-    console.log('Brevo: Gửi email thành công tới', email);
+    console.log('BREVO: Gửi thành công tới', email, '| MessageId:', result.messageId);
     return result;
   } catch (error) {
-    console.error('Brevo lỗi:', error?.response?.body || error.message);
-    return null; // Không throw để UX mượt
+    console.error('BREVO LỖI CHI TIẾT:');
+    if (error.response) {
+      console.error('Status:', error.response.status);
+      console.error('Body:', error.response.body);
+    } else {
+      console.error('Error:', error.message);
+    }
+    return null;
   }
 };
 
-export default sendResetPasswordEmail;
+module.exports = sendResetPasswordEmail; // ← CommonJS export

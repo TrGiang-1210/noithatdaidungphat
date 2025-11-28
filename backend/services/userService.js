@@ -5,7 +5,7 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
 // const nodemailer = require('nodemailer');
-import sendResetPasswordEmail from './brevoService.js';
+const sendResetPasswordEmail = require('./brevoService');
 
 class UserService {
   static async getUserById(id) {
@@ -124,48 +124,18 @@ static async forgotPassword(email) {
   await user.save({ validateBeforeSave: false });
 
   const resetUrl = `${process.env.FRONTEND_URL}/quen-mat-khau?token=${resetToken}`;
-
-  // HTML email đẹp (giữ nguyên hoặc chỉnh thoải mái)
-  const html = `
-    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #ddd; border-radius: 10px; text-align: center;">
-      <h2 style="color: #d4380d;">Đặt lại mật khẩu</h2>
-      <p>Xin chào <strong>${user.name}</strong>,</p>
-      <p>Nhấn nút bên dưới để đặt lại mật khẩu (hết hạn sau 15 phút):</p>
-      <a href="${resetUrl}" style="display: inline-block; margin: 20px 0; padding: 14px 30px; background: #d4380d; color: white; text-decoration: none; border-radius: 8px; font-weight: bold;">
-        Đặt lại mật khẩu
-      </a>
-      <p>Nếu bạn không yêu cầu, bỏ qua email này nhé!</p>
-    </div>
-  `;
-
   // QUAN TRỌNG: try-catch riêng cho phần gửi mail
   try {
-    const transporter = nodemailer.createTransport({
-      service: 'gmail',
-      auth: {
-        user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_PASS,        // ← ĐẢM BẢO DÙNG APP PASSWORD 16 KÝ TỰ
-      },
-    });
+    await sendResetPasswordEmail(user.email, user.name, resetUrl); // ← gọi Brevo
 
-    // GỌI BREVO SERVICE
-  await sendResetPasswordEmail(user.email, user.name, resetUrl);
-
-    // await transporter.sendMail({
-    //   from: `"Nội Thất Đại Dũng Phát" <${process.env.EMAIL_USER}>`,
-    //   to: user.email,
-    //   subject: 'Đặt lại mật khẩu - Nội Thất Đại Dũng Phát',
-    //   html,
-    // });
-
-    console.log('EMAIL ĐÃ GỬI THÀNH CÔNG TỚI:', user.email);   // thêm dòng này
-console.log('Link reset:', resetUrl);
+    console.log('BREVO: Email reset password đã gửi thành công tới:', user.email);
+    console.log('Link reset:', resetUrl);
   } catch (emailError) {
-    console.error('Lỗi gửi email reset:', emailError.message);
-    // Không throw → vẫn trả 200 để frontend không lỗi
-    // Người dùng vẫn thấy thông báo thành công (chuẩn Shopee/Tiki)
-  }
+    console.error('BREVO: LỖI GỬI EMAIL QUA BREVO:', emailError.message || emailError);
 
+    // Quan trọng: không throw, vẫn báo thành công cho user (bảo mật)
+    // Nhưng dev biết có lỗi thật → dễ debug
+  }
   return { message: successMsg };
 }
 
