@@ -86,7 +86,6 @@ const PayCart: React.FC = () => {
       toast.error("Giỏ hàng trống!");
       return;
     }
-
     if (!formData.city) {
       toast.error("Vui lòng chọn tỉnh/thành phố");
       return;
@@ -96,34 +95,47 @@ const PayCart: React.FC = () => {
 
     try {
       const orderData = {
+        // 1. Bắt buộc có items đúng format
+        items: cartItems.map((item) => ({
+          product_id: item.product._id,
+          quantity: item.quantity,
+          price: item.product.price || item.product.priceSale || 0,
+          name: item.product.name,
+          img_url: item.product.images?.[0] || item.product.image || "", // BẮT BUỘC là img_url, không phải image
+        })),
+
+        // 2. Tổng tiền phải là "total" (không phải totalAmount)
+        total: totalPrice,
+
+        // 3. Phương thức thanh toán phải là "payment_method" và giá trị "cod" hoặc "bank"
+        payment_method: formData.paymentMethod === "cod" ? "cod" : "bank",
+
+        // 4. Customer bắt buộc object
         customer: {
           name: formData.name.trim(),
           phone: formData.phone.trim(),
-          email: formData.email.trim(),
+          email: formData.email.trim() || null,
           address: `${formData.address.trim()}, ${formData.city}`,
-          note: formData.note?.trim() || "",
-          city: formData.city,
         },
-        items: cartItems.map((item) => ({
-          product: item.product._id,
-          quantity: item.quantity,
-          price: item.product.price,
-        })),
-        total: totalPrice,
-        paymentMethod:
-          formData.paymentMethod === "cod"
-            ? "Thanh toán khi nhận hàng"
-            : "Chuyển khoản ngân hàng",
+
+        // 5. Bắt buộc có 3 trường riêng (dù không dùng cũng phải gửi)
+        city: formData.city,
+        district: "Không yêu cầu",
+        ward: "Không yêu cầu",
       };
+
+      console.log("Gửi đơn hàng:", orderData); // để bạn kiểm tra
 
       await addOrder(orderData);
       await clearCart();
 
-      toast.success("Đặt hàng thành công! Chúng tôi sẽ liên hệ ngay ❤️");
-      setTimeout(() => navigate("/order-success"), 1500);
-    } catch (err) {
-      console.error("Lỗi đặt hàng:", err);
-      toast.error("Đặt hàng thất bại. Vui lòng thử lại.");
+      toast.success("Đặt hàng thành công! Chúng tôi sẽ liên hệ ngay");
+      setTimeout(() => navigate("/dat-hang-thanh-cong"), 1500);
+    } catch (err: any) {
+      console.error("Lỗi đặt hàng:", err.response?.data || err);
+      toast.error(
+        err.response?.data?.message || "Đặt hàng thất bại. Vui lòng thử lại."
+      );
     } finally {
       setLoading(false);
     }

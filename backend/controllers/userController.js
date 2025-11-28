@@ -192,7 +192,7 @@ exports.forgotPassword = async (req, res) => {
   }
 };
 
-// ==================== ĐẶT LẠI MẬT KHẨU ====================
+// ==================== ĐẶT LẠI MẬT KHẨU (SỬA LẠI CHO ĐÚNG) ====================
 exports.resetPassword = async (req, res) => {
   const { token, newPassword } = req.body;
 
@@ -201,25 +201,28 @@ exports.resetPassword = async (req, res) => {
   }
 
   try {
-    // Hash token từ client gửi lên
+    // CHỈ HASH 1 LẦN DUY NHẤT – ĐÚNG NHƯ KHI LƯU
     const hashedToken = crypto.createHash('sha256').update(token).digest('hex');
 
-    // Tìm user có token này và chưa hết hạn
-    const user = await UserService.findUserByResetToken(hashedToken);
+    // Tìm user bằng token đã hash + còn hạn
+    const user = await User.findOne({
+      resetPasswordToken: hashedToken,
+      resetPasswordExpire: { $gt: Date.now() },
+    });
 
-    if (!user || !user.resetPasswordExpire || user.resetPasswordExpire < Date.now()) {
+    if (!user) {
       return res.status(400).json({ message: 'Link đã hết hạn hoặc không hợp lệ' });
     }
 
     // Cập nhật mật khẩu mới
-    await UserService.updatePassword(user._id, newPassword);
-
-    // Xóa token cũ
-    await UserService.clearResetToken(user._id);
+    user.password = newPassword; // giả sử anh dùng pre-save hook để hash
+    user.resetPasswordToken = undefined;
+    user.resetPasswordExpire = undefined;
+    await user.save();
 
     res.json({ message: 'Đặt lại mật khẩu thành công! Bạn có thể đăng nhập ngay.' });
   } catch (err) {
     console.error('Lỗi resetPassword:', err);
-    res.status(400).json({ message: 'Link không hợp lệ hoặc đã hết hạn' });
+    res.status(500).json({ message: 'Có lỗi xảy ra, vui lòng thử lại' });
   }
 };
