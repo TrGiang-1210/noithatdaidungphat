@@ -29,33 +29,24 @@ const PayCart: React.FC = () => {
 
   // Load thông tin user khi vào trang — nếu không có user thì cho guest
   useEffect(() => {
-    let mounted = true;
+  const userInfo = localStorage.getItem("userInfo");
+  if (userInfo) {
+    try {
+      const u = JSON.parse(userInfo);
+      setFormData(prev => ({
+        ...prev,
+        name: u.name || "",
+        phone: u.phone || "",
+        email: u.email || "",
+        address: u.address || "",
+      }));
+    } catch (e) {}
+  }
 
-    const loadUser = async () => {
-      try {
-        const u = await getCurrentUser();
-        if (!mounted) return;
-        setFormData((prev) => ({
-          ...prev,
-          name: u.name || "",
-          phone: u.phone || "",
-          email: u.email || "",
-          address: u.address || "",
-        }));
-      } catch (err) {
-        console.info("Không có user hiện tại, dùng guest flow");
-      }
-    };
-    loadUser();
-
-    if (typeof reloadCart === "function") {
-      reloadCart().catch((e) => console.error("reloadCart error", e));
-    }
-
-    return () => {
-      mounted = false;
-    };
-  }, [reloadCart]);
+  if (typeof reloadCart === "function") {
+    reloadCart().catch(() => {});
+  }
+}, [reloadCart]);
 
   const handleChange = (
     e: React.ChangeEvent<
