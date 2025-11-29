@@ -49,3 +49,25 @@
     color: white;
   }
 }
+
+.order-code-section {
+  background: #f0f8ff;
+  padding: 20px;
+  border-radius: 12px;
+  text-align: center;
+  margin: 20px 0;
+  border: 2px dashed #007bff;
+}
+
+.order-code-highlight {
+  font-size: 2.5rem;
+  font-weight: bold;
+  color: #d4380d;
+  margin: 10px 0;
+  letter-spacing: 3px;
+}
+
+.small-note {
+  color: #666;
+  font-size: 0.95rem;
+}

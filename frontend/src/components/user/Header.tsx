@@ -402,9 +402,9 @@ const Header: React.FC = () => {
             <Link to="/gioi-thieu" className="menu-item">
               Giới thiệu
             </Link>
-            <Link to="/theo-doi-don-hang" className="menu-item">
+            {/* <Link to="/theo-doi-don-hang" className="menu-item">
               Kiểm tra đơn hàng
-            </Link>
+            </Link> */}
           </div>
         </div>
       </nav>
