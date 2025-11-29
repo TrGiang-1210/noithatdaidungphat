@@ -1,20 +1,31 @@
-// src/router/index.router.tsx – BẢN FIX CUỐI CÙNG, ĐẢM BẢO KHÔNG NHẢY + KHÔNG NHÁY
+// src/router/index.router.tsx
 import { Route, Routes } from "react-router-dom";
-import UserLayout from "../layouts/UserLayout";  // giữ nguyên tên cũ cũng được
+import UserLayout from "../layouts/UserLayout";
+import AdminLayout from "../layouts/admin.layout";        // ← THÊM DÒNG NÀY
+
+// === USER PAGES ===
 import Home from "../pages/user/home";
 import ProductDetail from "../pages/user/productDetail";
 import AboutPage from "../pages/user/about";
-import AuthPage from "../pages/user/auth";          // ← trang đăng nhập/đăng ký
+import AuthPage from "../pages/user/auth";
 import UpdateProfile from "../pages/user/updateProfile";
 import SearchResults from "../pages/user/searchResults";
-import PayCart from "../pages/user/payCart"; // <-- thêm import trang thanh toán (đường dẫn nếu khác thì chỉnh)
+import PayCart from "../pages/user/payCart";
 import OrderSuccess from "../pages/user/orderSuccess";
 import ResetPassPage from "../pages/user/resetPass";
-import OrderTrackingPage from "../pages/user/orderTracking"; // <-- thêm import trang theo dõi đơn hàng
+import OrderTrackingPage from "../pages/user/orderTracking";
+
+// === ADMIN PAGES ===  ← THÊM TỪ ĐÂY
+import ProductBulkCategory from "../pages/admin/productBulkCategory";  // trang gán danh mục
+import Dashboard from "../pages/admin/dashboard";                      // (tạo sau cũng được)
+// import CategoryManager from "../admin/pages/CategoryManager";          // (tuỳ chọn)
+// THÊM ĐẾN ĐÂY
 
 const MainRouter = () => {
   return (
     <Routes>
+
+      {/* ==================== USER ROUTES ==================== */}
       <Route path="/" element={<UserLayout />}>
         <Route index element={<Home />} />
         <Route path="/trang-chu" element={<Home />} />
@@ -22,16 +33,26 @@ const MainRouter = () => {
         <Route path="/gioi-thieu" element={<AboutPage />} />
         <Route path="/tim-kiem" element={<SearchResults />} />
         <Route path="/thanh-toan" element={<PayCart />} />
-        <Route path="/dat-hang-thanh-cong" element={<OrderSuccess />} />ư
+        <Route path="/dat-hang-thanh-cong" element={<OrderSuccess />} />
         <Route path="/theo-doi-don-hang" element={<OrderTrackingPage />} />
-        {/* Các trang cần đăng nhập (sau này sẽ bọc thêm ProtectedRoute) */}
         <Route path="/cap-nhat-thong-tin" element={<UpdateProfile />} />
       </Route>
 
-      {/* 1. Trang đăng nhập / đăng ký – ĐỨNG RIÊNG, KHÔNG bọc layout chính */}
       <Route path="/tai-khoan-ca-nhan" element={<AuthPage />} />
       <Route path="/quen-mat-khau" element={<ResetPassPage />} />
-      { /* fallback / other routes */ }
+
+      {/* ==================== ADMIN ROUTES ==================== */}
+      {/* THÊM TOÀN BỘ ĐOẠN NÀY */}
+      <Route path="/admin" element={<AdminLayout />}>
+        <Route index element={<Dashboard />} />
+        <Route path="gan-danh-muc" element={<ProductBulkCategory />} />   {/* ← TRANG QUAN TRỌNG NHẤT */}
+        {/* <Route path="categories" element={<CategoryManager />} /> */}
+        {/* Thêm trang admin khác ở đây sau này */}
+      </Route>
+      {/* HẾT ĐOẠN THÊM */}
+
+      {/* 404 – tuỳ chọn */}
+      {/* <Route path="*" element={<NotFound />} /> */}
     </Routes>
   );
 };

@@ -6,6 +6,7 @@ const cors = require("cors");
 const connectDB = require("./config/db");
 const path = require('path');
 const routes = require('./routes/index');
+const adminRoutes = require('./routes/admin');
 
 dotenv.config();
 connectDB();
@@ -20,6 +21,7 @@ app.use(express.urlencoded({ extended: true }));
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 app.use('/api', routes);
+app.use('/api/admin', adminRoutes);
 
 // 404
 app.use((req, res) => {

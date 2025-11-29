@@ -61,3 +61,36 @@ exports.deleteCategory = async (req, res) => {
     res.status(500).json({ message: error.message || 'Error deleting category' });
   }
 };
+
+// THÊM VÀO CUỐI FILE categoryController.js
+exports.getCategoryTree = async (req, res) => {
+  try {
+    const categories = await CategoryService.getAll({}); // lấy hết
+    const map = {};
+    const tree = [];
+
+    // Tạo map id → object + thêm value/label cho react-checkbox-tree
+    categories.forEach(cat => {
+      map[cat._id] = {
+        ...cat.toObject(),
+        value: cat._id.toString(),
+        label: cat.name,
+        children: []
+      };
+    });
+
+    // Xây cây
+    categories.forEach(cat => {
+      if (cat.parent && map[cat.parent]) {
+        map[cat.parent].children.push(map[cat._id]);
+      } else {
+        tree.push(map[cat._id]);
+      }
+    });
+
+    res.json(tree);
+  } catch (error) {
+    console.error("Lỗi getCategoryTree:", error);
+    res.status(500).json({ message: "Lỗi lấy cây danh mục" });
+  }
+};
