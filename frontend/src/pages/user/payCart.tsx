@@ -29,24 +29,24 @@ const PayCart: React.FC = () => {
 
   // Load thông tin user khi vào trang — nếu không có user thì cho guest
   useEffect(() => {
-  const userInfo = localStorage.getItem("userInfo");
-  if (userInfo) {
-    try {
-      const u = JSON.parse(userInfo);
-      setFormData(prev => ({
-        ...prev,
-        name: u.name || "",
-        phone: u.phone || "",
-        email: u.email || "",
-        address: u.address || "",
-      }));
-    } catch (e) {}
-  }
+    const userInfo = localStorage.getItem("userInfo");
+    if (userInfo) {
+      try {
+        const u = JSON.parse(userInfo);
+        setFormData((prev) => ({
+          ...prev,
+          name: u.name || "",
+          phone: u.phone || "",
+          email: u.email || "",
+          address: u.address || "",
+        }));
+      } catch (e) {}
+    }
 
-  if (typeof reloadCart === "function") {
-    reloadCart().catch(() => {});
-  }
-}, [reloadCart]);
+    if (typeof reloadCart === "function") {
+      reloadCart().catch(() => {});
+    }
+  }, [reloadCart]);
 
   const handleChange = (
     e: React.ChangeEvent<
@@ -86,44 +86,50 @@ const PayCart: React.FC = () => {
 
     try {
       const orderData = {
-        // 1. Bắt buộc có items đúng format
         items: cartItems.map((item) => ({
           product_id: item.product._id,
           quantity: item.quantity,
           price: item.product.price || item.product.priceSale || 0,
           name: item.product.name,
-          img_url: item.product.images?.[0] || item.product.image || "", // BẮT BUỘC là img_url, không phải image
+          img_url: item.product.images?.[0] || item.product.image || "",
         })),
-
-        // 2. Tổng tiền phải là "total" (không phải totalAmount)
         total: totalPrice,
-
-        // 3. Phương thức thanh toán phải là "payment_method" và giá trị "cod" hoặc "bank"
         payment_method: formData.paymentMethod === "cod" ? "cod" : "bank",
-
-        // 4. Customer bắt buộc object
         customer: {
           name: formData.name.trim(),
           phone: formData.phone.trim(),
           email: formData.email.trim() || null,
           address: `${formData.address.trim()}, ${formData.city}`,
         },
-
-        // 5. Bắt buộc có 3 trường riêng (dù không dùng cũng phải gửi)
         city: formData.city,
         district: "Không yêu cầu",
         ward: "Không yêu cầu",
+        // note: formData.note || "",
       };
 
-      console.log("Gửi đơn hàng:", orderData); // để bạn kiểm tra
+      // Gọi API → nhận kết quả
+      const result = await addOrder(orderData);
+      console.log("Kết quả từ backend:", result); // ← xem cái này
 
-      await addOrder(orderData);
+      // Lấy thông tin đơn hàng dù backend trả kiểu gì
+      const order = result.order || result.data || result;
+
       await clearCart();
 
+      // CHỈ TOAST 1 LẦN DUY NHẤT Ở ĐÂY
       toast.success("Đặt hàng thành công! Chúng tôi sẽ liên hệ ngay");
-      setTimeout(() => navigate("/dat-hang-thanh-cong"), 1500);
+
+      // CHUYỂN TRANG NGAY LẬP TỨC, KHÔNG DÙNG setTimeout NỮA
+      navigate("/dat-hang-thanh-cong", {
+        state: {
+          orderCode: order.code || order.order_code || "DH" + Date.now(),
+          trackingToken: order.tracking_token || order.token || "",
+          total: totalPrice,
+          isGuest: !user,
+        },
+      });
     } catch (err: any) {
-      console.error("Lỗi đặt hàng:", err.response?.data || err);
+      console.error("Lỗi đặt hàng:", err);
       toast.error(
         err.response?.data?.message || "Đặt hàng thất bại. Vui lòng thử lại."
       );

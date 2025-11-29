@@ -1,54 +1,18 @@
 // src/contexts/OrderContext.tsx
-import React, { createContext, useContext, useState } from 'react';
-import { createOrder } from '@/api/user/orderAPI'; // bạn sửa đường dẫn nếu cần
-import { toast } from 'react-toastify';
-
-interface CustomerInfo {
-  name: string;
-  phone: string;
-  email: string;
-  address: string;
-  note?: string;
-  city: string;
-}
-
-interface OrderItem {
-  product: string; // product _id
-  quantity: number;
-  price: number;
-}
-
-interface Order {
-  _id: string;
-  customer: CustomerInfo;
-  items: any[];
-  total: number;
-  paymentMethod: string;
-  status: string;
-  createdAt: string;
-}
+import React, { createContext, useContext } from 'react';
+import { createOrder } from '@/api/user/orderAPI';
 
 interface OrderContextType {
-  addOrder: (orderData: {
-    customer: CustomerInfo;
-    items: OrderItem[];
-    total: number;
-    paymentMethod: string;
-  }) => Promise<void>;
+  addOrder: (orderData: any) => Promise<any>;
 }
 
 const OrderContext = createContext<OrderContextType | undefined>(undefined);
 
 export const OrderProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const addOrder = async (orderData: any) => {
-    try {
-      const response = await createOrder(orderData);
-      toast.success('Đặt hàng thành công! Chúng tôi sẽ liên hệ sớm');
-      return response;
-    } catch (err: any) {
-      toast.error(err.response?.data?.message || 'Đặt hàng thất bại');
-      throw err;
-    }
+    const response = await createOrder(orderData);
+    // CHỈ TRẢ VỀ DỮ LIỆU, KHÔNG TOAST Ở ĐÂY NỮA
+    return response.data || response; // ← quan trọng nhất
   };
 
   return (

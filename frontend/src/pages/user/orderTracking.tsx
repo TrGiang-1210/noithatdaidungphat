@@ -102,7 +102,7 @@ const OrderTrackingPage: React.FC = () => {
 
       {/* Footer nhỏ */}
       <div className="tracking-footer">
-        <p>Gọi <strong>1900 1234</strong> nếu bạn cần hỗ trợ</p>
+        <p>Gọi <strong>0941 038 839</strong> nếu bạn cần hỗ trợ</p>
       </div>
     </div>
   );
