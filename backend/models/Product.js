@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const Schema = mongoose.Schema;
 
 const productSchema = new mongoose.Schema({
   slug: { type: String, required: true, unique: true },
@@ -19,10 +20,11 @@ const productSchema = new mongoose.Schema({
 
   quantity: { type: Number, required: true },
 
-  // Nếu không dùng category/brand/productType thì có thể xóa
-//   category_id: { type: mongoose.Schema.Types.ObjectId, ref: "Category", default: null },
-//   brand_id: { type: mongoose.Schema.Types.ObjectId, ref: "Brand", default: null },
-//   product_type_id: { type: mongoose.Schema.Types.ObjectId, ref: "ProductType", default: null },
+  categories: [{
+  type: mongoose.Schema.Types.ObjectId,
+  ref: "Category",
+  required: true
+}],
 
 hot: { type: Boolean, default: false },
   onSale: { type: Boolean, default: false },
