@@ -56,6 +56,7 @@ router.delete('/cart/clear', auth, cartController.clearCart);
 router.get('/orders', auth, orderController.getOrders);
 router.get('/orders/:id', auth, orderController.getOrderById);
 router.post('/orders', auth, orderController.createOrder);
+router.post('/track', orderController.trackPublic);
 router.put('/orders/:id', auth, orderController.updateOrder);
 router.delete('/orders/:id', auth, orderController.deleteOrder);
 

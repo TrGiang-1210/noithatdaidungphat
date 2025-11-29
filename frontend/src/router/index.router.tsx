@@ -10,6 +10,7 @@ import SearchResults from "../pages/user/searchResults";
 import PayCart from "../pages/user/payCart"; // <-- thêm import trang thanh toán (đường dẫn nếu khác thì chỉnh)
 import OrderSuccess from "../pages/user/orderSuccess";
 import ResetPassPage from "../pages/user/resetPass";
+import OrderTrackingPage from "../pages/user/orderTracking"; // <-- thêm import trang theo dõi đơn hàng
 
 const MainRouter = () => {
   return (
@@ -20,11 +21,11 @@ const MainRouter = () => {
         <Route path="/san-pham/:slug" element={<ProductDetail />} />
         <Route path="/gioi-thieu" element={<AboutPage />} />
         <Route path="/tim-kiem" element={<SearchResults />} />
-
+        <Route path="/thanh-toan" element={<PayCart />} />
+        <Route path="/dat-hang-thanh-cong" element={<OrderSuccess />} />ư
+        <Route path="/theo-doi-don-hang" element={<OrderTrackingPage />} />
         {/* Các trang cần đăng nhập (sau này sẽ bọc thêm ProtectedRoute) */}
         <Route path="/cap-nhat-thong-tin" element={<UpdateProfile />} />
-        <Route path="/thanh-toan" element={<PayCart />} />
-        <Route path="/dat-hang-thanh-cong" element={<OrderSuccess />} />
       </Route>
 
       {/* 1. Trang đăng nhập / đăng ký – ĐỨNG RIÊNG, KHÔNG bọc layout chính */}
