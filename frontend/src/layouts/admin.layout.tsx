@@ -1,6 +1,6 @@
 // src/layouts/AdminLayout.tsx
 import { Outlet, Link, useLocation } from "react-router-dom";
-import "@/styles/pages/admin/admin.layout.scss";
+import "@/styles/layouts/admin.layout.scss";
 import { 
   LayoutDashboard, 
   Package, 
