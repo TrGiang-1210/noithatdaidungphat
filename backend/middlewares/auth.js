@@ -1,4 +1,4 @@
-// middleware/auth.js (ĐÃ FIX – hỗ trợ Guest Checkout 2025)
+// middlewares/auth.js (FIX - thêm admin middleware)
 const jwt = require('jsonwebtoken');
 
 const protect = async (req, res, next) => {
@@ -42,4 +42,17 @@ const protect = async (req, res, next) => {
   return res.status(401).json({ message: 'Bạn cần đăng nhập để thực hiện hành động này' });
 };
 
-module.exports = { protect };
+// THÊM admin middleware
+const admin = (req, res, next) => {
+  if (!req.user) {
+    return res.status(403).json({ message: 'Bạn không có quyền admin' });
+  }
+
+  if (req.user.role !== 'admin') {
+    return res.status(403).json({ message: 'Chỉ admin mới được phép' });
+  }
+
+  next();
+};
+
+module.exports = { protect, admin };  // ← THÊM admin vào đây
