@@ -1,4 +1,4 @@
-// routes/index.js – BẢN FIX DỨT ĐIỂM SEARCH + CLEAN
+// routes/index.js — FIX 100%
 
 const express = require('express');
 const router = express.Router();
@@ -13,13 +13,6 @@ const orderController = require('../controllers/orderController');
 
 // Middleware
 const { protect: auth } = require('../middlewares/auth');
-const {
-  addItem,
-  getCart,
-  updateItem,
-  removeItem,
-  clearCart
-} = cartController;
 const multer = require('multer');
 const upload = multer({ dest: 'uploads/' });
 
@@ -32,7 +25,6 @@ router.get('/categories', categoryController.getCategories);
 router.get('/categories/:id', categoryController.getCategoryById);
 
 // Sản phẩm
-// SEARCH – PHẢI CÔNG KHAI, KHÔNG AUTH, VÀ CÓ /api TRONG SERVER.JS
 router.get('/products/search', productController.searchProducts);
 router.get('/products/search-suggestions', productController.searchSuggestions);
 router.get('/products', productController.getProducts);
@@ -45,7 +37,7 @@ router.post('/auth/login', userController.login);
 router.post('/auth/forgot-password', userController.forgotPassword);
 router.post('/auth/reset-password', userController.resetPassword);
 
-// Cart
+// Cart — FIX: dùng cartController.method trực tiếp (không destructure)
 router.post('/cart', auth, cartController.addItem);
 router.get('/cart', auth, cartController.getCart);
 router.put('/cart', auth, cartController.updateItem);
