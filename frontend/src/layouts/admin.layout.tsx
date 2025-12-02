@@ -47,8 +47,8 @@ export default function AdminLayout() {
 
           {/* Quản lý danh mục */}
           <Link 
-            to="/admin/categories" 
-            className={`menu-item ${location.pathname.startsWith('/admin/categories') ? 'active' : ''}`}
+            to="/admin/quan-ly-danh-muc" 
+            className={`menu-item ${location.pathname.startsWith('/admin/quan-ly-danh muc') ? 'active' : ''}`}
           >
             <Package className="icon" />
             <span>Quản lý danh mục</span>

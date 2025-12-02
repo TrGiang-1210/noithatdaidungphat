@@ -4,8 +4,17 @@ const Joi = require('joi');
 const categorySchema = Joi.object({
   slug: Joi.string().required(),
   name: Joi.string().required(),
-  description: Joi.string().allow('')
-});
+  description: Joi.string().allow(''),
+  parent: Joi.string().allow(null, '').optional(),
+}).unknown(true);
+
+// Schema cho cập nhật (không bắt buộc slug/name)
+const updateCategorySchema = Joi.object({
+  name: Joi.string().trim(),
+  slug: Joi.string().trim(),
+  description: Joi.string().allow(''),
+  parent: Joi.string().allow(null, '').optional(),
+}).unknown(true).min(1); // ít nhất 1 field để update
 
 exports.getCategories = async (req, res) => {
   try {
@@ -31,7 +40,7 @@ exports.getCategoryById = async (req, res) => {
 
 exports.createCategory = async (req, res) => {
   try {
-    const { error } = categorySchema.validate(req.body);
+    const { error } = categorySchema.validate(req.body); // giữ nguyên: bắt buộc slug + name
     if (error) return res.status(400).json({ message: error.details[0].message });
 
     const category = await CategoryService.create(req.body);
@@ -43,7 +52,8 @@ exports.createCategory = async (req, res) => {
 
 exports.updateCategory = async (req, res) => {
   try {
-    const { error } = categorySchema.validate(req.body);
+    // DÙNG SCHEMA MỚI CHO UPDATE
+    const { error } = updateCategorySchema.validate(req.body);
     if (error) return res.status(400).json({ message: error.details[0].message });
 
     const category = await CategoryService.update(req.params.id, req.body);
