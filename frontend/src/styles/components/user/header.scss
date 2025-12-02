@@ -75,7 +75,7 @@
         color: #fff;
         border: none;
         border-radius: 0 8px 8px 0;
-        padding: 0 20px;
+        padding: 0 25px;
         cursor: pointer;
         font-size: 18px;
         transition: all 0.3s;
@@ -86,6 +86,14 @@
 
         &:active {
           transform: scale(0.95);
+        }
+
+        .search-icon {
+          position: absolute;
+          left: 29rem;
+          top: 50%;
+          transform: translateY(-50%);
+          color: #94a3b8;
         }
       }
 

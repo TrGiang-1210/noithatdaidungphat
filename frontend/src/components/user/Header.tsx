@@ -215,7 +215,7 @@ const Header: React.FC = () => {
               }
               autoComplete="off"
             />
-            <button type="submit"><FaSearch /></button>
+            <button type="submit"><FaSearch className="search-icon"/></button>
 
             {/* DROPDOWN GỢI Ý */}
             {showSuggestions && suggestions.length > 0 && (
