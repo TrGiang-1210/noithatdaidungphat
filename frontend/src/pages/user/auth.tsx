@@ -59,7 +59,7 @@ const AuthPage: React.FC = () => {
 
       // confirm user from localStorage / context later if needed
       if (user?.role === 'admin') {
-        navigate('/admin/dashboard');
+        navigate('/admin');
       } else {
         navigate('/', { replace: true });
       }
