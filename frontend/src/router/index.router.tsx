@@ -18,8 +18,7 @@ import OrderTrackingPage from "../pages/user/orderTracking";
 // === ADMIN PAGES ===  ← THÊM TỪ ĐÂY
 import ProductBulkCategory from "../pages/admin/productBulkCategory";  // trang gán danh mục
 import Dashboard from "../pages/admin/dashboard";                      // (tạo sau cũng được)
-// import CategoryManager from "../admin/pages/CategoryManager";          // (tuỳ chọn)
-// THÊM ĐẾN ĐÂY
+import CategoryManager from "../pages/admin/categoryManager";
 
 const MainRouter = () => {
   return (
@@ -46,8 +45,7 @@ const MainRouter = () => {
       <Route path="/admin" element={<AdminLayout />}>
         <Route index element={<Dashboard />} />
         <Route path="gan-danh-muc" element={<ProductBulkCategory />} />   {/* ← TRANG QUAN TRỌNG NHẤT */}
-        {/* <Route path="categories" element={<CategoryManager />} /> */}
-        {/* Thêm trang admin khác ở đây sau này */}
+        <Route path="quan-ly-danh-muc" element={<CategoryManager />} />   {/* ← TRANG QUAN TRỌNG THỨ HAI */}
       </Route>
       {/* HẾT ĐOẠN THÊM */}
 

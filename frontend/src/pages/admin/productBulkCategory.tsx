@@ -2,6 +2,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { Search, Package, Folders, Loader2, CheckCircle } from 'lucide-react';
 import "@/styles/pages/admin/productBulkCategory.scss";
+import axiosInstance from '../../axios';
 
 interface Product {
   _id: string;
@@ -15,7 +16,7 @@ interface CategoryNode {
   children?: CategoryNode[];
 }
 
-// Component cây danh mục tự viết – đẹp y chang bên sản phẩm
+// Component cây danh mục (giữ nguyên)
 const CategoryTreeItem: React.FC<{
   node: CategoryNode;
   level: number;
@@ -29,7 +30,7 @@ const CategoryTreeItem: React.FC<{
   const isChecked = checked.includes(node.value);
 
   return (
-    <>
+    <div key={node.value}> {/* THÊM KEY Ở ĐÂY – FIX LỖI 1 */}
       <label
         className="category-tree-item"
         style={{ paddingLeft: `${level * 28 + 8}px` }}
@@ -40,6 +41,7 @@ const CategoryTreeItem: React.FC<{
             className="expand-btn"
             onClick={(e) => {
               e.preventDefault();
+              e.stopPropagation();
               onToggle(node.value);
             }}
           >
@@ -71,7 +73,7 @@ const CategoryTreeItem: React.FC<{
           ))}
         </div>
       )}
-    </>
+    </div>
   );
 };
 
@@ -81,15 +83,38 @@ export default function ProductBulkCategory() {
   const [selectedProducts, setSelectedProducts] = useState<string[]>([]);
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [expandedCategories, setExpandedCategories] = useState<string[]>([]);
-
   const [productSearch, setProductSearch] = useState('');
   const [categorySearch, setCategorySearch] = useState('');
   const [saving, setSaving] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
+  const [loading, setLoading] = useState(true);
 
+  // FIX LỖI 2 + 3: Dùng axiosInstance + try/catch + set state đúng
   useEffect(() => {
-    fetch('/api/products').then(r => r.json()).then(setProducts);
-    fetch('/api/admin/categories/tree').then(r => r.json()).then(setCategories);
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+        const [prodRes, catRes] = await Promise.all([
+          axiosInstance.get('/products'),
+          axiosInstance.get('/admin/categories/tree'),
+        ]);
+
+        setProducts(prodRes.data || []);
+        setCategories(catRes.data || []);
+      } catch (err: any) {
+        console.error('Lỗi tải dữ liệu:', err);
+        if (err.response?.status === 401) {
+          alert('Phiên đăng nhập hết hạn, vui lòng đăng nhập lại!');
+          window.location.href = '/tai-khoan-ca-nhan';
+        }
+        setProducts([]);
+        setCategories([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
   }, []);
 
   const filteredProducts = useMemo(() => {
@@ -100,20 +125,21 @@ export default function ProductBulkCategory() {
   }, [products, productSearch]);
 
   const filteredCategories = useMemo(() => {
-    if (!categorySearch) return categories;
+    if (!categorySearch || categories.length === 0) return categories;
 
     const filterNodes = (nodes: CategoryNode[]): CategoryNode[] => {
       return nodes
         .map(node => {
           const matches = node.label.toLowerCase().includes(categorySearch.toLowerCase());
-          const filteredChildren = node.children ? filterNodes(node.children) : [];
-          if (matches || filteredChildren.length > 0) {
-            return { ...node, children: filteredChildren.length > 0 ? filteredChildren : node.children };
+          const children = node.children ? filterNodes(node.children) : [];
+          if (matches || children.length > 0) {
+            return { ...node, children: children.length > 0 ? children : node.children };
           }
           return null;
         })
         .filter(Boolean) as CategoryNode[];
     };
+
     return filterNodes(categories);
   }, [categories, categorySearch]);
 
@@ -125,27 +151,37 @@ export default function ProductBulkCategory() {
     }
   };
 
-const handleSave = async () => {
-  if (selectedProducts.length === 0 || selectedCategories.length === 0) return;
+  const handleSave = async () => {
+    if (selectedProducts.length === 0 || selectedCategories.length === 0) return;
 
-  setSaving(true);
-  try {
-    await fetch('/api/admin/products/bulk-categories', {  // ← THÊM /admin VÀO ĐÂY
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
+    setSaving(true);
+    try {
+      await axiosInstance.post('/admin/products/bulk-categories', {
         productIds: selectedProducts,
-        categoryIds: selectedCategories
-      })
-    });
-    setShowSuccess(true);
-    setTimeout(() => setShowSuccess(false), 3000);
-  } catch (err) {
-    alert('Lỗi khi gán danh mục');
-  } finally {
-    setSaving(false);
+        categoryIds: selectedCategories,
+      });
+      setShowSuccess(true);
+      setTimeout(() => setShowSuccess(false), 3000);
+    } catch (err: any) {
+      alert(err.response?.data?.message || 'Lỗi khi gán danh mục');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="product-bulk-category">
+        <div className="page-header">
+          <h1 className="page-title">Gán danh mục hàng loạt</h1>
+        </div>
+        <div style={{ textAlign: 'center', padding: '100px' }}>
+          <Loader2 size={48} className="spin" />
+          <p>Đang tải dữ liệu...</p>
+        </div>
+      </div>
+    );
   }
-};
 
   return (
     <div className="product-bulk-category">
@@ -197,11 +233,11 @@ const handleSave = async () => {
                     type="checkbox"
                     checked={selectedProducts.includes(p._id)}
                     onChange={e => {
-                      if (e.target.checked) {
-                        setSelectedProducts(prev => [...prev, p._id]);
-                      } else {
-                        setSelectedProducts(prev => prev.filter(id => id !== p._id));
-                      }
+                      setSelectedProducts(prev =>
+                        e.target.checked
+                          ? [...prev, p._id]
+                          : prev.filter(id => id !== p._id)
+                      );
                     }}
                   />
                   <img src={p.images[0] || '/placeholder.jpg'} alt={p.name} />
@@ -212,7 +248,7 @@ const handleSave = async () => {
           </div>
         </div>
 
-        {/* Bên phải: Danh mục – ĐÃ ĐẸP HOÀN HẢO */}
+        {/* Bên phải: Danh mục */}
         <div className="bulk-card">
           <div className="card-header">
             <div className="header-left">
@@ -234,7 +270,7 @@ const handleSave = async () => {
 
           <div className="category-tree">
             {filteredCategories.length === 0 ? (
-              <p className="empty-text">Không tìm thấy danh mục</p>
+              <p className="empty-text">Không có danh mục nào</p>
             ) : (
               <div className="simple-category-tree">
                 {filteredCategories.map(node => (

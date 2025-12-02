@@ -1,16 +1,15 @@
+// src/api/axiosInstance.ts (hoặc tên file bạn đang dùng)
 import axios from "axios";
 
 const axiosInstance = axios.create({
-  baseURL: "http://localhost:5000/api",
-  withCredentials: false,
-  timeout: 10000,
+  baseURL: import.meta.env.VITE_API_URL || "http://localhost:5000/api", // TỐT HƠN: dùng .env
+  timeout: 15000,
 });
 
 axiosInstance.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem("token");
     if (token) {
-      config.headers = config.headers || {};
       config.headers.Authorization = `Bearer ${token}`;
     }
     return config;
@@ -18,28 +17,20 @@ axiosInstance.interceptors.request.use(
   (error) => Promise.reject(error)
 );
 
+// Giữ nguyên phần response interceptor của bạn (có xử lý 401 rất tốt)
 axiosInstance.interceptors.response.use(
   (response) => response,
   (error) => {
-    // debug log only — DO NOT show user toast here
     console.debug("API Error:", error.response?.data || error.message);
 
     if (error.response?.status === 401) {
-      // Remove token and notify AuthContext (no UI toast)
       localStorage.removeItem("token");
-      setAuthToken(null);
-      try { window.dispatchEvent(new CustomEvent("app:auth-logout")); } catch (e) {}
+      delete axiosInstance.defaults.headers.common["Authorization"];
+      window.dispatchEvent(new CustomEvent("app:auth-logout"));
+      // Có thể thêm: window.location.href = '/tai-khoan-ca-nhan';
     }
     return Promise.reject(error);
   }
 );
-
-export const setAuthToken = (token) => {
-  if (token) {
-    axiosInstance.defaults.headers.common["Authorization"] = `Bearer ${token}`;
-  } else {
-    delete axiosInstance.defaults.headers.common["Authorization"];
-  }
-};
 
 export default axiosInstance;
