@@ -9,6 +9,7 @@ interface Category {
   _id: string;
   name: string;
   slug: string;
+  children?: Category[];
 }
 
 interface CurrentUser {
@@ -32,6 +33,8 @@ const Header: React.FC = () => {
   const [loadingSuggestions, setLoadingSuggestions] = useState(false);
   const suggestionsRef = useRef<HTMLDivElement>(null);
   const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const [hoveredParent, setHoveredParent] = useState<string | null>(null);
+  const [hoveredChild, setHoveredChild] = useState<string | null>(null);
 
   const navigate = useNavigate();
   const location = useLocation();
@@ -215,7 +218,9 @@ const Header: React.FC = () => {
               }
               autoComplete="off"
             />
-            <button type="submit"><FaSearch className="search-icon"/></button>
+            <button type="submit">
+              <FaSearch className="search-icon" />
+            </button>
 
             {/* DROPDOWN GỢI Ý */}
             {showSuggestions && suggestions.length > 0 && (
@@ -372,29 +377,89 @@ const Header: React.FC = () => {
         </div>
       </div>
 
-      {/* NAV MENU */}
+      {/* NAV MENU - TREE MENU ĐÚNG Ý ANH 100% */}
       <nav className={`nav-menu ${!isAtTop ? "fixed-when-scrolled" : ""}`}>
         <div className="container nav-container">
-          <div
-            className={`category-main-item ${
-              isAtTop && isHomePage ? "show-dropdown-at-top" : ""
-            }`}
-          >
+          <div className="tree-menu-wrapper">
             <div className="category-trigger">
               <span className="menu-icon">☰</span>
               DANH MỤC SẢN PHẨM
             </div>
-            <div className="category-dropdown">
-              {loading ? (
-                <div className="loading">Đang tải...</div>
-              ) : (
-                categories.map((cat) => (
-                  <Link key={cat._id} to={`/${cat.slug}`} className="cat-item">
-                    <span className="cat-name">{cat.name}</span>
-                    <span className="arrow">›</span>
-                  </Link>
-                ))
-              )}
+
+            <div className={`tree-dropdown ${isAtTop ? "show-at-top" : ""}`}>
+              <div className="tree-level">
+                {loading ? (
+                  <div className="loading">Đang tải...</div>
+                ) : (
+                  categories.map((cat) => (
+                    <div
+                      key={cat._id}
+                      className={`tree-item ${
+                        hoveredParent === cat._id ? "active" : ""
+                      }`}
+                      onMouseEnter={() => setHoveredParent(cat._id)}
+                      onMouseLeave={() => setHoveredParent(null)}
+                    >
+                      <Link to={`/${cat.slug}`} className="tree-link">
+                        <span>{cat.name}</span>
+                        {cat.children && cat.children.length > 0 && (
+                          <span className="tree-arrow">›</span>
+                        )}
+                      </Link>
+
+                      {/* CẤP 2 - HIỆN DANH MỤC CON KHI HOVER */}
+                      {hoveredParent === cat._id &&
+                        cat.children &&
+                        cat.children.length > 0 && (
+                          <div className="tree-submenu">
+                            {cat.children.map((child) => (
+                              <div
+                                key={child._id}
+                                className={`tree-item ${
+                                  hoveredChild === child._id ? "active" : ""
+                                }`}
+                                onMouseEnter={() => setHoveredChild(child._id)}
+                                onMouseLeave={() => setHoveredChild(null)}
+                              >
+                                <Link
+                                  to={`/${child.slug}`}
+                                  className="tree-link"
+                                >
+                                  <span>{child.name}</span>
+                                  {child.children &&
+                                    child.children.length > 0 && (
+                                      <span className="tree-arrow">›</span>
+                                    )}
+                                </Link>
+
+                                {/* CẤP 3 */}
+                                {hoveredChild === child._id &&
+                                  child.children &&
+                                  child.children.length > 0 && (
+                                    <div className="tree-submenu">
+                                      {child.children.map((grandchild) => (
+                                        <div
+                                          key={grandchild._id}
+                                          className="tree-item"
+                                        >
+                                          <Link
+                                            to={`/${grandchild.slug}`}
+                                            className="tree-link"
+                                          >
+                                            {grandchild.name}
+                                          </Link>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  )}
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                    </div>
+                  ))
+                )}
+              </div>
             </div>
           </div>
 
@@ -402,9 +467,15 @@ const Header: React.FC = () => {
             <Link to="/gioi-thieu" className="menu-item">
               Giới thiệu
             </Link>
-            {/* <Link to="/theo-doi-don-hang" className="menu-item">
-              Kiểm tra đơn hàng
-            </Link> */}
+            <Link to="/khuyen-mai" className="menu-item">
+              Khuyến mãi
+            </Link>
+            <Link to="/tin-tuc" className="menu-item">
+              Tin tức
+            </Link>
+            <Link to="/lien-he" className="menu-item">
+              Liên hệ
+            </Link>
           </div>
         </div>
       </nav>
