@@ -405,112 +405,119 @@
   }
 
   /* ==================== TREE MENU - ĐÚNG Ý ANH 100% ==================== */
-.tree-menu-wrapper {
-  position: relative;
-}
+  .tree-menu-wrapper {
+    position: relative;
+    overflow: visible !important;
+  }
 
-.category-trigger {
-  color: white;
-  padding: 14px 28px;
-  cursor: pointer;
-  font-weight: bold;
-  text-transform: uppercase;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  font-size: 15px;
-  transition: background 0.3s;
-}
-.category-trigger .menu-icon { font-size: 26px; }
-.category-trigger:hover { background: rgba(255,255,255,0.1); }
+  .category-trigger {
+    color: white;
+    padding: 14px 28px;
+    cursor: pointer;
+    font-weight: bold;
+    text-transform: uppercase;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 15px;
+    transition: background 0.3s;
+  }
+  .category-trigger .menu-icon {
+    font-size: 26px;
+  }
+  .category-trigger:hover {
+    background: rgba(255, 255, 255, 0.1);
+  }
 
-.tree-dropdown {
-  position: absolute;
-  top: 100%;
-  left: 0;
-  background: #001f3f;
-  min-width: 280px;
-  border-radius: 0 0 12px 12px;
-  box-shadow: 0 10px 30px rgba(0,0,0,0.3);
-  opacity: 0;
-  visibility: hidden;
-  transform: translateY(-10px);
-  transition: all 0.35s ease;
-  pointer-events: none;
-  z-index: 999;
-  overflow: hidden;
-}
+  .tree-dropdown {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    background: #001f3f;
+    min-width: 280px;
+    border-radius: 0 0 12px 12px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(-10px);
+    transition: all 0.35s ease;
+    pointer-events: none;
+    z-index: 999;
+    overflow: visible !important;
+  }
 
-.tree-menu-wrapper:hover .tree-dropdown,
-.tree-dropdown.show-at-top {
-  opacity: 1;
-  visibility: visible;
-  transform: translateY(0);
-  pointer-events: all;
-}
+  .tree-menu-wrapper:hover .tree-dropdown,
+  .tree-dropdown.show-at-top {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+    pointer-events: all;
+  }
 
-.tree-level {
-  display: flex;
-  flex-direction: column;
-}
+  .tree-level {
+    display: flex;
+    flex-direction: column;
+  }
 
-.tree-item {
-  position: relative;
-  transition: background 0.3s;
-}
+  .tree-item {
+    position: relative;
+    transition: background 0.3s;
+  }
 
-.tree-item:hover,
-.tree-item.active {
-  background: #d6a041;
-}
+  // .tree-item:hover,
+  // .tree-item.active {
+  //   background: #d6a041;
+  // }
 
-.tree-link {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 10px 20px;
-  color: white;
-  text-decoration: none;
-  font-weight: 500;
-  font-size: 15px;
-}
+  .tree-link {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 20px;
+    color: white;
+    text-decoration: none;
+    font-weight: 500;
+    font-size: 15px;
+  }
 
-.tree-arrow {
-  font-size: 24px;
-  font-weight: bold;
-  transition: transform 0.2s;
-}
+  .tree-arrow {
+    font-size: 24px;
+    font-weight: bold;
+    transition: transform 0.2s;
+  }
 
-.tree-item:hover > .tree-link > .tree-arrow {
-  transform: translateX(4px);
-}
+  .tree-item:hover > .tree-link > .tree-arrow {
+    transform: translateX(4px);
+  }
 
-/* Submenu cấp 2, cấp 3 */
-.tree-submenu {
-  position: absolute;
-  top: 0;
-  left: 100%;
-  background: #001f3f;
-  min-width: 260px;
-  box-shadow: 5px 5px 15px rgba(0,0,0,0.3);
-  display: flex;
-  flex-direction: column;
-}
+  /* Submenu cấp 2, cấp 3 */
+  .tree-submenu {
+    position: absolute;
+    top: 0;
+    left: 100%;
+    background: #001f3f;
+    min-width: 260px;
+    box-shadow: 5px 5px 15px rgba(0, 0, 0, 0.3);
+    display: flex;
+    flex-direction: column;
+  }
 
-.tree-submenu .tree-item:hover,
-.tree-submenu .tree-item.active {
-  background: #d6a041;
-}
+  .tree-submenu .tree-item:hover,
+  .tree-submenu .tree-item.active {
+    background: #d6a041;
+  }
 
-.tree-submenu .tree-link {
-  padding: 12px 20px;
-  font-size: 14.5px;
-}
+  .tree-submenu .tree-link {
+    padding: 12px 20px;
+    font-size: 14.5px;
+  }
 
-/* Mobile: ẩn */
-@media (max-width: 992px) {
-  .tree-dropdown { display: none !important; }
-}
+  /* Mobile: ẩn */
+  @media (max-width: 992px) {
+    .tree-dropdown {
+      display: none !important;
+    }
+  }
 
   /* MENU BÊN PHẢI */
   .main-menu-items {
@@ -697,4 +704,111 @@
       background: rgba(0, 0, 0, 0.1);
     }
   }
+}
+
+/* ==================== MEGA MENU HOÀN HẢO – CẤP 2 & CẤP 3 HIỆN BÊN PHẢI ==================== */
+.tree-item {
+  position: relative;
+}
+
+/* Hover hiệu ứng nhẹ cho cấp 1 */
+.tree-item:hover > .tree-link {
+  background: rgba(255, 255, 255, 0.12);
+  color: #d6a041;
+}
+
+/* MEGA MENU SIÊU ỔN ĐỊNH – CHỈ DÙNG CSS HOVER – HỖ TRỢ VÔ HẠN CẤP */
+.mega-submenu {
+  position: absolute;
+  left: 100%;
+  top: 0;
+  background: #001f3f;
+  min-width: 280px;
+  border-radius: 0 8px 8px 0;
+  box-shadow: 8px 8px 30px rgba(0,0,0,0.4);
+  z-index: 99999;
+  opacity: 0;
+  visibility: hidden;
+  transform: translateX(-10px);
+  transition: all 0.3s ease;
+  padding: 8px 0;
+  margin-left: 1px;
+}
+
+.tree-item:hover > .mega-submenu {
+  opacity: 1;
+  visibility: visible;
+  transform: translateX(0);
+}
+
+.submenu-item {
+  position: relative;
+}
+
+.submenu-title {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 11px 24px;
+  color: white;
+  font-weight: 500;
+  font-size: 15px;
+  text-decoration: none;
+  transition: all 0.25s;
+}
+
+.submenu-title:hover {
+  background: rgba(255,255,255,0.12);
+  color: #d6a041;
+}
+
+.submenu-title .submenu-arrow {
+  font-size: 20px;
+  font-weight: bold;
+}
+
+.submenu-dropdown {
+  position: absolute;
+  left: 100%;
+  top: 0;
+  background: #001f3f;
+  min-width: 260px;
+  padding: 8px 0;
+  border-radius: 0 8px 8px 0;
+  box-shadow: 8px 8px 30px rgba(0,0,0,0.4);
+  opacity: 0;
+  visibility: hidden;
+  transform: translateX(-10px);
+  transition: all 0.3s ease;
+  margin-left: 1px;
+  z-index: 99999;
+}
+
+.submenu-item:hover > .submenu-dropdown {
+  opacity: 1;
+  visibility: visible;
+  transform: translateX(0);
+}
+
+.submenu-leaf {
+  display: block;
+  padding: 10px 24px;
+  color: #eee;
+  font-size: 14.8px;
+  text-decoration: none;
+  transition: all 0.25s;
+}
+
+.submenu-leaf:hover {
+  background: rgba(255,255,255,0.1);
+  color: #d6a041;
+  padding-left: 30px;
+}
+
+/* Đảm bảo không bị cắt */
+.tree-dropdown,
+.tree-menu-wrapper,
+.mega-submenu,
+.submenu-dropdown {
+  overflow: visible !important;
 }
