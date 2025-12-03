@@ -388,9 +388,7 @@ const Header: React.FC = () => {
 
             <div className={`tree-dropdown ${isAtTop ? "show-at-top" : ""}`}>
               <div className="tree-level">
-                {loading ? (
-                  <div className="loading">Đang tải...</div>
-                ) : (
+                {Array.isArray(categories) && categories.length > 0 ? (
                   categories.map((cat) => (
                     <div
                       key={cat._id}
@@ -407,57 +405,79 @@ const Header: React.FC = () => {
                         )}
                       </Link>
 
-                      {/* CẤP 2 - HIỆN DANH MỤC CON KHI HOVER */}
+                      {/* MEGA MENU ĐỆ QUY – CHỈ DÙNG CSS HOVER, HỖ TRỢ CẤP 5+ */}
                       {hoveredParent === cat._id &&
                         cat.children &&
                         cat.children.length > 0 && (
-                          <div className="tree-submenu">
-                            {cat.children.map((child) => (
-                              <div
-                                key={child._id}
-                                className={`tree-item ${
-                                  hoveredChild === child._id ? "active" : ""
-                                }`}
-                                onMouseEnter={() => setHoveredChild(child._id)}
-                                onMouseLeave={() => setHoveredChild(null)}
-                              >
-                                <Link
-                                  to={`/${child.slug}`}
-                                  className="tree-link"
-                                >
-                                  <span>{child.name}</span>
+                          <div className="mega-submenu">
+                            <div className="mega-submenu-inner">
+                              {cat.children.map((child) => (
+                                <div key={child._id} className="submenu-item">
+                                  <Link
+                                    to={`/${child.slug}`}
+                                    className="submenu-title"
+                                  >
+                                    {child.name}
+                                    {child.children &&
+                                      child.children.length > 0 && (
+                                        <span className="submenu-arrow">›</span>
+                                      )}
+                                  </Link>
+
+                                  {/* CẤP 3 TRỞ ĐI – ĐỆ QUY */}
                                   {child.children &&
                                     child.children.length > 0 && (
-                                      <span className="tree-arrow">›</span>
-                                    )}
-                                </Link>
-
-                                {/* CẤP 3 */}
-                                {hoveredChild === child._id &&
-                                  child.children &&
-                                  child.children.length > 0 && (
-                                    <div className="tree-submenu">
-                                      {child.children.map((grandchild) => (
-                                        <div
-                                          key={grandchild._id}
-                                          className="tree-item"
-                                        >
-                                          <Link
-                                            to={`/${grandchild.slug}`}
-                                            className="tree-link"
+                                      <div className="submenu-dropdown">
+                                        {child.children.map((grandchild) => (
+                                          <div
+                                            key={grandchild._id}
+                                            className="submenu-item"
                                           >
-                                            {grandchild.name}
-                                          </Link>
-                                        </div>
-                                      ))}
-                                    </div>
-                                  )}
-                              </div>
-                            ))}
+                                            <Link
+                                              to={`/${grandchild.slug}`}
+                                              className="submenu-title"
+                                            >
+                                              {grandchild.name}
+                                              {grandchild.children &&
+                                                grandchild.children.length >
+                                                  0 && (
+                                                  <span className="submenu-arrow">
+                                                    ›
+                                                  </span>
+                                                )}
+                                            </Link>
+
+                                            {/* CẤP 4, 5, 6... */}
+                                            {grandchild.children &&
+                                              grandchild.children.length >
+                                                0 && (
+                                                <div className="submenu-dropdown">
+                                                  {grandchild.children.map(
+                                                    (great) => (
+                                                      <Link
+                                                        key={great._id}
+                                                        to={`/${great.slug}`}
+                                                        className="submenu-leaf"
+                                                      >
+                                                        {great.name}
+                                                      </Link>
+                                                    )
+                                                  )}
+                                                </div>
+                                              )}
+                                          </div>
+                                        ))}
+                                      </div>
+                                    )}
+                                </div>
+                              ))}
+                            </div>
                           </div>
                         )}
                     </div>
                   ))
+                ) : (
+                  <div className="no-categories">Không có danh mục</div>
                 )}
               </div>
             </div>

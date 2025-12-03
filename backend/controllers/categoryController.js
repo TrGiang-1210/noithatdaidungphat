@@ -1,4 +1,5 @@
 const CategoryService = require('../services/categoryService');
+const Category = require('../models/Category');   // ← THÊM DÒNG NÀY NGAY ĐÂY!
 const Joi = require('joi');
 
 const categorySchema = Joi.object({
@@ -16,47 +17,58 @@ const updateCategorySchema = Joi.object({
   parent: Joi.string().allow(null, '').optional(),
 }).unknown(true).min(1); // ít nhất 1 field để update
 
-// THAY TOÀN BỘ HÀM getCategories BẰNG HÀM NÀY
 exports.getCategories = async (req, res) => {
   try {
-    // Lấy tất cả danh mục + chỉ lấy những cái active
-    const allCats = await Category.find({ isActive: true }).sort({ sortOrder: 1, name: 1 }).lean();
+    // BỎ .lean() ĐI → hoặc convert _id thành string ngay từ đầu
+    const allCats = await Category.find({ isActive: true })
+      .sort({ sortOrder: 1, name: 1 });
 
-    const map = {};
+    const map = new Map(); // Dùng Map thay vì object → hỗ trợ ObjectId làm key
     const roots = [];
 
-    // Tạo map và gán children = []
     allCats.forEach(cat => {
       const item = {
-        _id: cat._id,
+        _id: cat._id.toString(),    // ← convert ngay từ đầu
         name: cat.name,
         slug: cat.slug,
-        image: cat.image,
+        image: cat.image || null,
         children: []
       };
-      map[cat._id] = item;
 
-      if (!cat.parent) {
+      map.set(cat._id.toString(), item); // dùng string làm key
+
+      if (!cat.parent || cat.parent === null) {
         roots.push(item);
       }
     });
 
     // Gắn con vào cha
     allCats.forEach(cat => {
-      if (cat.parent && map[cat.parent.toString()]) {
-        map[cat.parent.toString()].children.push(map[cat._id]);
+      if (cat.parent && map.has(cat.parent.toString())) {
+        map.get(cat.parent.toString()).children.push(map.get(cat._id.toString()));
       }
     });
 
-    // Sắp xếp con theo sortOrder hoặc tên
-    roots.forEach(root => {
-      root.children.sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0) || a.name.localeCompare(b.name));
-    });
+    // Sắp xếp children
+    const sortChildren = (nodes) => {
+      nodes.forEach(node => {
+        if (node.children && node.children.length > 0) {
+          node.children.sort((a, b) => 
+            (a.sortOrder || 0) - (b.sortOrder || 0) || a.name.localeCompare(b.name)
+          );
+          sortChildren(node.children); // đệ quy
+        }
+      });
+    };
+    sortChildren(roots);
 
     res.json(roots);
   } catch (error) {
     console.error("Lỗi getCategories tree:", error);
-    res.status(500).json({ message: "Lỗi server" });
+    res.status(500).json({ 
+      message: "Lỗi server khi lấy danh mục", 
+      error: error.message 
+    });
   }
 };
 
