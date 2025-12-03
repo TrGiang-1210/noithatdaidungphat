@@ -16,16 +16,47 @@ const updateCategorySchema = Joi.object({
   parent: Joi.string().allow(null, '').optional(),
 }).unknown(true).min(1); // ít nhất 1 field để update
 
+// THAY TOÀN BỘ HÀM getCategories BẰNG HÀM NÀY
 exports.getCategories = async (req, res) => {
   try {
-    const { name } = req.query;
-    const filters = {};
-    if (name) filters.name = new RegExp(name, 'i');
+    // Lấy tất cả danh mục + chỉ lấy những cái active
+    const allCats = await Category.find({ isActive: true }).sort({ sortOrder: 1, name: 1 }).lean();
 
-    const categories = await CategoryService.getAll(filters);
-    res.json(categories);
+    const map = {};
+    const roots = [];
+
+    // Tạo map và gán children = []
+    allCats.forEach(cat => {
+      const item = {
+        _id: cat._id,
+        name: cat.name,
+        slug: cat.slug,
+        image: cat.image,
+        children: []
+      };
+      map[cat._id] = item;
+
+      if (!cat.parent) {
+        roots.push(item);
+      }
+    });
+
+    // Gắn con vào cha
+    allCats.forEach(cat => {
+      if (cat.parent && map[cat.parent.toString()]) {
+        map[cat.parent.toString()].children.push(map[cat._id]);
+      }
+    });
+
+    // Sắp xếp con theo sortOrder hoặc tên
+    roots.forEach(root => {
+      root.children.sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0) || a.name.localeCompare(b.name));
+    });
+
+    res.json(roots);
   } catch (error) {
-    res.status(500).json({ message: error.message || 'Error fetching categories' });
+    console.error("Lỗi getCategories tree:", error);
+    res.status(500).json({ message: "Lỗi server" });
   }
 };
 
