@@ -178,7 +178,7 @@ export default function ProductBulkCategory() {
       // window.location.reload(); // ← HOẶC dùng cách nhẹ hơn bên dưới
 
       // HOẶC cách nhẹ hơn (nếu bạn không muốn reload cả trang):
-      window.dispatchEvent(new Event('product-updated'));
+      window.dispatchEvent(new Event("categories-updated"));
     } catch (err: any) {
       console.error("Lỗi gán danh mục:", err);
       alert("Lỗi: " + (err.response?.data?.message || err.message));

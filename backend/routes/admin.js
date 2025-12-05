@@ -19,8 +19,8 @@ router.get('/categories/tree', auth, admin, categoryController.getCategoryTree);
 router.post('/products/bulk-categories', auth, admin, productController.bulkUpdateCategories);
 
 // Thêm các route admin khác sau này ở đây:
-// router.post('/products', auth, admin, productController.createProduct);
-// router.put('/products/:id', auth, admin, productController.updateProduct);
+// router.get('/products', productController.getProducts);
+router.put('/products/:id', auth, admin, productController.updateProduct);
 // ...
 
 module.exports = router;

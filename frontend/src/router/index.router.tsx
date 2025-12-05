@@ -36,7 +36,7 @@ const MainRouter = () => {
         <Route path="/dat-hang-thanh-cong" element={<OrderSuccess />} />
         <Route path="/theo-doi-don-hang" element={<OrderTrackingPage />} />
         <Route path="/cap-nhat-thong-tin" element={<UpdateProfile />} />
-        <Route path="/danh-muc/:categorySlug" element={<CategoryProducts />} />
+        <Route path="/danh-muc/:slug" element={<CategoryProducts />} />
       </Route>
 
       <Route path="/tai-khoan-ca-nhan" element={<AuthPage />} />

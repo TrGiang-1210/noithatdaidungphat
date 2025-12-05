@@ -152,6 +152,19 @@ const Header: React.FC = () => {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
+  // Trong useEffect của Header.tsx, thêm:
+useEffect(() => {
+  if (isHomePage) {
+    document.body.classList.add("homepage");
+  } else {
+    document.body.classList.remove("homepage");
+  }
+
+  return () => {
+    document.body.classList.remove("homepage");
+  };
+}, [isHomePage]);
+
   // Hover handlers
   const handleMouseEnter = () => {
     if (user) userBoxRef.current?.classList.add("show-dropdown");
@@ -385,8 +398,8 @@ const Header: React.FC = () => {
               <span className="menu-icon">☰</span>
               DANH MỤC SẢN PHẨM
             </div>
-
-            <div className={`tree-dropdown ${isAtTop ? "show-at-top" : ""}`}>
+            {/* {isHomePage && ( */}
+            <div className={`tree-dropdown ${isHomePage && isAtTop ? "show-at-top" : ""}`}>
               <div className="tree-level">
                 {Array.isArray(categories) && categories.length > 0 ? (
                   categories.map((cat) => (
@@ -471,6 +484,7 @@ const Header: React.FC = () => {
                 )}
               </div>
             </div>
+            {/* )} */}
           </div>
 
           <div className="main-menu-items">

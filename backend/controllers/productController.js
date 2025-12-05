@@ -1,7 +1,9 @@
 // controllers/productController.js
 const ProductService = require("../services/productService");
 const Product = require("../models/Product");
+const Category = require("../models/Category");
 const Joi = require("joi");
+const mongoose = require("mongoose");
 
 // Helper escape regex
 const escapeRegex = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
@@ -19,14 +21,55 @@ const normalizeString = (s) => {
 // GET /api/products
 exports.getProducts = async (req, res) => {
   try {
-    const limit = parseInt(req.query.limit, 10) || 0;
-    const filters = {}; // mở rộng từ req.query nếu cần
-    const sort = {}; // parse req.query.sort nếu cần
-    const products = await ProductService.getAll(filters, limit, sort);
-    return res.json(Array.isArray(products) ? products : []);
+    let filters = {};
+
+    // === LỌC THEO DANH MỤC (slug) ===
+    if (req.query.category) {
+      const category = await Category.findOne({
+        slug: req.query.category,
+        isActive: true,
+      });
+      if (!category) return res.json([]); // không tìm thấy → trả rỗng
+
+      // Lấy tất cả con cháu (đệ quy)
+      const getChildIds = async (parentId) => {
+        const children = await Category.find({ parent: parentId }).select(
+          "_id"
+        );
+        let ids = children.map((c) => c._id);
+        for (const child of children) {
+          ids = ids.concat(await getChildIds(child._id));
+        }
+        return ids;
+      };
+
+      const childIds = await getChildIds(category._id);
+      filters.categories = { $in: [category._id, ...childIds] };
+    }
+
+    // === LỌC GIÁ ===
+    if (req.query.minPrice || req.query.maxPrice) {
+      filters.priceSale = {};
+      if (req.query.minPrice)
+        filters.priceSale.$gte = Number(req.query.minPrice);
+      if (req.query.maxPrice)
+        filters.priceSale.$lte = Number(req.query.maxPrice);
+    }
+
+    // === SẮP XẾP ===
+    let sort = { created_at: -1 };
+    if (req.query.sort === "price-asc") sort = { priceSale: 1 };
+    if (req.query.sort === "price-desc") sort = { priceSale: -1 };
+    if (req.query.sort === "-sold") sort = { sold: -1 };
+
+    const products = await Product.find(filters)
+      .sort(sort)
+      .select("name slug images priceSale priceOriginal onSale hot sold");
+
+    res.json(products);
   } catch (err) {
-    console.error("getProducts error:", err);
-    return res.status(500).json({ message: err.message || "Server error" });
+    console.error("Lỗi getProducts:", err);
+    res.status(500).json({ message: "Lỗi server" });
   }
 };
 
@@ -206,16 +249,32 @@ exports.bulkUpdateCategories = async (req, res) => {
     const { productIds, categoryIds } = req.body;
 
     if (!Array.isArray(productIds) || !Array.isArray(categoryIds)) {
-      return res.status(400).json({ message: "productIds và categoryIds phải là mảng" });
+      return res
+        .status(400)
+        .json({ message: "productIds và categoryIds phải là mảng" });
     }
 
     if (productIds.length === 0 || categoryIds.length === 0) {
-      return res.status(400).json({ message: "Chọn ít nhất 1 sản phẩm và 1 danh mục" });
+      return res
+        .status(400)
+        .json({ message: "Chọn ít nhất 1 sản phẩm và 1 danh mục" });
     }
+
+    // ÉP KIỂU CHUỖI THÀNH ObjectId — ĐÂY LÀ CHỖ CHẾT NGƯỜI!!!
+    const validCategoryObjectIds = categoryIds.map((id) => {
+      if (!mongoose.Types.ObjectId.isValid(id)) {
+        throw new Error(`Category ID không hợp lệ: ${id}`);
+      }
+      return new mongoose.Types.ObjectId(id);
+    });
 
     const result = await Product.updateMany(
       { _id: { $in: productIds } },
-      { $addToSet: { categories: { $each: categoryIds } } }
+      {
+        $addToSet: {
+          categories: { $each: validCategoryObjectIds },
+        },
+      }
     );
 
     return res.json({
@@ -225,6 +284,8 @@ exports.bulkUpdateCategories = async (req, res) => {
     });
   } catch (error) {
     console.error("Lỗi bulkUpdateCategories:", error);
-    return res.status(500).json({ message: "Lỗi server" });
+    return res.status(500).json({
+      message: error.message || "Lỗi server",
+    });
   }
 };
