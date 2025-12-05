@@ -398,7 +398,7 @@ const Header: React.FC = () => {
                       onMouseEnter={() => setHoveredParent(cat._id)}
                       onMouseLeave={() => setHoveredParent(null)}
                     >
-                      <Link to={`/${cat.slug}`} className="tree-link">
+                      <Link to={`/danh-muc/${cat.slug}`} className="tree-link">
                         <span>{cat.name}</span>
                         {cat.children && cat.children.length > 0 && (
                           <span className="tree-arrow">›</span>
@@ -413,10 +413,7 @@ const Header: React.FC = () => {
                             <div className="mega-submenu-inner">
                               {cat.children.map((child) => (
                                 <div key={child._id} className="submenu-item">
-                                  <Link
-                                    to={`/${child.slug}`}
-                                    className="submenu-title"
-                                  >
+                                  <Link to={`/danh-muc/${child.slug}`} className="submenu-title">
                                     {child.name}
                                     {child.children &&
                                       child.children.length > 0 && (
@@ -433,10 +430,7 @@ const Header: React.FC = () => {
                                             key={grandchild._id}
                                             className="submenu-item"
                                           >
-                                            <Link
-                                              to={`/${grandchild.slug}`}
-                                              className="submenu-title"
-                                            >
+                                            <Link to={`/danh-muc/${grandchild.slug}`} className="submenu-title">
                                               {grandchild.name}
                                               {grandchild.children &&
                                                 grandchild.children.length >
@@ -454,11 +448,7 @@ const Header: React.FC = () => {
                                                 <div className="submenu-dropdown">
                                                   {grandchild.children.map(
                                                     (great) => (
-                                                      <Link
-                                                        key={great._id}
-                                                        to={`/${great.slug}`}
-                                                        className="submenu-leaf"
-                                                      >
+                                                      <Link key={great._id} to={`/danh-muc/${great.slug}`} className="submenu-leaf">
                                                         {great.name}
                                                       </Link>
                                                     )
