@@ -1,8 +1,12 @@
 import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { useParams, Link } from "react-router-dom";
-import axios from "axios";
+import axiosInstance from "../../axios";
 import { debounce } from "lodash";
-import { formatPrice, formatCurrencyInput, parseCurrencyInput } from "@/utils";
+import {
+  formatPrice,
+  formatCurrencyInput,
+  parseCurrencyInput,
+} from "../../utils";
 import "@/styles/pages/user/categoryProduct.scss";
 
 // XÓA formatPrice ở đây vì đã có trong utils
@@ -39,7 +43,10 @@ const CategoryProducts: React.FC = () => {
 
   // Filters
   const [sortBy, setSortBy] = useState<string>("");
-  const [priceRange, setPriceRange] = useState<[number, number]>([0, MAX_PRICE]);
+  const [priceRange, setPriceRange] = useState<[number, number]>([
+    0,
+    MAX_PRICE,
+  ]);
   const [minInput, setMinInput] = useState<string>("");
   const [maxInput, setMaxInput] = useState<string>("");
 
@@ -69,12 +76,19 @@ const CategoryProducts: React.FC = () => {
     params.append("category", slug);
     if (sortBy) params.append("sort", sortBy);
     if (priceRange[0] > 0) params.append("minPrice", priceRange[0].toString());
-    if (priceRange[1] < MAX_PRICE) params.append("maxPrice", priceRange[1].toString());
+    if (priceRange[1] < MAX_PRICE)
+      params.append("maxPrice", priceRange[1].toString());
 
-    axios
+    axiosInstance // dùng axiosInstance
       .get<Product[]>(`/products?${params.toString()}`)
-      .then((res) => setProducts(res.data))
-      .catch(console.error)
+      .then((res) => {
+        const data = res.data;
+        setProducts(Array.isArray(data) ? data : []);
+      })
+      .catch((err) => {
+        console.error("Load sản phẩm thất bại:", err);
+        setProducts([]);
+      })
       .finally(() => setLoading(false));
   }, [slug, sortBy, priceRange]);
 
@@ -106,8 +120,8 @@ const CategoryProducts: React.FC = () => {
 
   // Lấy tất cả danh mục
   useEffect(() => {
-    axios
-      .get<Category[]>("/categories")
+    axiosInstance
+      .get<Category[]>("/categories") // đã đổi thành axiosInstance
       .then((res) => setAllCategories(res.data))
       .catch(console.error);
   }, []);
@@ -137,104 +151,88 @@ const CategoryProducts: React.FC = () => {
     );
   }
 
+  // Trong file categoryProduct.tsx, thay phần return bằng đoạn này:
+
   return (
-    <div className="bg-gray-50 min-h-screen">
-      <div className="container mx-auto px-4 py-6">
+    <div className="category-product-page">
+      <div className="container">
         {/* Breadcrumb */}
-        <div className="text-sm text-gray-600 mb-6">
-          <Link to="/" className="hover:text-orange-600">Trang chủ</Link>
-          <span className="mx-2">›</span>
-          <span className="text-black font-medium">
-            {category?.name || "Danh mục"}
-          </span>
+        <div className="breadcrumb">
+          <Link to="/">Trang chủ</Link>
+          <span className="separator">›</span>
+          <span>{category?.name || "Danh mục"}</span>
         </div>
 
-        <div className="flex flex-col lg:flex-row gap-8">
+        <div className="main-wrapper">
           {/* Sidebar */}
-          <aside className="lg:w-64 space-y-6">
+          <aside className="sidebar">
+            {/* Danh mục con */}
             {subCategories.length > 0 && (
-              <div className="bg-white rounded-lg shadow-sm p-5">
-                <h3 className="font-bold text-lg text-orange-600 mb-4">
-                  {category?.name}
-                </h3>
-                <ul className="space-y-2">
-                  {subCategories.map((sub) => (
-                    <li key={sub._id}>
-                      <Link
-                        to={`/danh-muc/${sub.slug}`}
-                        className="block py-2 px-3 rounded hover:bg-orange-50 hover:text-orange-600 transition"
-                      >
-                        {sub.name}
-                      </Link>
-                    </li>
-                  ))}
-                </ul>
+              <div className="widget">
+                <h3>{category?.name}</h3>
+                <div className="sub-categories">
+                  <ul>
+                    {subCategories.map((sub) => (
+                      <li key={sub._id}>
+                        <Link to={`/danh-muc/${sub.slug}`}>{sub.name}</Link>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
               </div>
             )}
 
             {/* Lọc giá */}
-            <div className="bg-white rounded-lg shadow-sm p-5">
-              <h3 className="font-bold text-lg text-orange-600 mb-4">
-                Lọc theo giá
-              </h3>
-
-              <div className="mb-6">
+            <div className="widget price-filter">
+              <h3>Lọc theo giá</h3>
+              <div className="range-slider">
                 <input
                   type="range"
                   min="0"
                   max="50"
                   value={priceRange[1] / 1_000_000}
                   onChange={(e) =>
-                    setPriceRange([priceRange[0], parseInt(e.target.value) * 1_000_000])
+                    setPriceRange([
+                      priceRange[0],
+                      parseInt(e.target.value) * 1_000_000,
+                    ])
                   }
-                  className="w-full h-2 bg-gray-300 rounded-lg appearance-none cursor-pointer slider-orange"
                 />
-                <div className="flex justify-between text-sm text-gray-600 mt-2">
-                  <span>0đ</span>
-                  <span>50.000.000đ</span>
-                </div>
               </div>
-
-              <div className="flex items-center gap-3 mb-4">
+              <div className="price-inputs">
                 <input
                   type="text"
                   placeholder="Từ"
                   value={minInput}
-                  onChange={(e) => setMinInput(formatCurrencyInput(e.target.value))}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-orange-500"
+                  onChange={(e) =>
+                    setMinInput(formatCurrencyInput(e.target.value))
+                  }
                 />
-                <span className="text-gray-500">-</span>
+                <span>-</span>
                 <input
                   type="text"
                   placeholder="Đến"
                   value={maxInput}
-                  onChange={(e) => setMaxInput(formatCurrencyInput(e.target.value))}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-orange-500"
+                  onChange={(e) =>
+                    setMaxInput(formatCurrencyInput(e.target.value))
+                  }
                 />
               </div>
-
-              <button
-                onClick={() => loadProducts()}
-                className="w-full bg-orange-600 text-white py-2.5 rounded-lg hover:bg-orange-700 transition font-medium"
-              >
-                Áp dụng giá
+              <button className="apply-btn" onClick={loadProducts}>
+                Áp dụng
               </button>
             </div>
           </aside>
 
-          {/* Main */}
-          <div className="flex-1">
-            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
-              <h1 className="text-2xl font-bold text-gray-800">
-                {category?.name || "Sản phẩm"}
-              </h1>
-
-              <div className="flex items-center gap-3">
-                <span className="text-gray-600">Sắp xếp:</span>
+          {/* Main content */}
+          <section className="main-content">
+            <div className="page-header">
+              <h1>{category?.name || "Tất cả sản phẩm"}</h1>
+              <div className="sort-group">
+                <span>Sắp xếp:</span>
                 <select
                   value={sortBy}
                   onChange={(e) => setSortBy(e.target.value)}
-                  className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-orange-500"
                 >
                   <option value="">Mới nhất</option>
                   <option value="price-asc">Giá tăng dần</option>
@@ -245,53 +243,49 @@ const CategoryProducts: React.FC = () => {
             </div>
 
             {products.length === 0 ? (
-              <div className="text-center py-20 text-gray-500 text-lg">
-                Không tìm thấy sản phẩm nào.
+              <div className="no-products">
+                Không tìm thấy sản phẩm nào trong danh mục này.
               </div>
             ) : (
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+              <div className="products-grid">
                 {products.map((product) => (
                   <Link
                     key={product._id}
                     to={`/san-pham/${product.slug}`}
-                    className="bg-white rounded-lg shadow-sm overflow-hidden hover:shadow-lg transition group"
+                    className="product-card"
                   >
-                    <div className="relative aspect-square bg-gray-100">
+                    <div className="image">
                       <img
                         src={product.images[0] || "/placeholder.jpg"}
                         alt={product.name}
-                        className="w-full h-full object-cover group-hover:scale-105 transition"
                       />
                       {product.onSale && (
-                        <span className="absolute top-2 left-2 bg-red-600 text-white text-xs font-bold px-3 py-1 rounded-full">
-                          SALE
-                        </span>
+                        <span className="badge sale">Sale</span>
                       )}
-                      {product.hot && (
-                        <span className="absolute top-2 right-2 bg-orange-600 text-white text-xs font-bold px-3 py-1 rounded-full">
-                          HOT
-                        </span>
-                      )}
+                      {product.hot && <span className="badge hot">Hot</span>}
                     </div>
-
-                    <div className="p-4">
-                      <h3 className="font-medium text-gray-800 line-clamp-2 text-sm mb-3">
-                        {product.name}
-                      </h3>
-                      <div className="flex items-center justify-between">
+                    <div className="info">
+                      <h3 className="name">{product.name}</h3>
+                      <div className="price-info">
                         <div>
-                          <p className="text-orange-600 font-bold text-lg">
+                          <div className="price-sale">
                             {formatPrice(product.priceSale)}
-                          </p>
+                          </div>
                           {product.priceSale < product.priceOriginal && (
-                            <p className="text-xs text-gray-500 line-through">
+                            <div className="price-original">
                               {formatPrice(product.priceOriginal)}
-                            </p>
+                            </div>
                           )}
                         </div>
                         {product.priceSale < product.priceOriginal && (
-                          <span className="text-xs bg-red-100 text-red-600 px-2 py-1 rounded font-bold">
-                            -{Math.round(((product.priceOriginal - product.priceSale) / product.priceOriginal) * 100)}%
+                          <span className="discount">
+                            -
+                            {Math.round(
+                              ((product.priceOriginal - product.priceSale) /
+                                product.priceOriginal) *
+                                100
+                            )}
+                            %
                           </span>
                         )}
                       </div>
@@ -300,7 +294,7 @@ const CategoryProducts: React.FC = () => {
                 ))}
               </div>
             )}
-          </div>
+          </section>
         </div>
       </div>
     </div>
