@@ -14,6 +14,7 @@ import PayCart from "../pages/user/payCart";
 import OrderSuccess from "../pages/user/orderSuccess";
 import ResetPassPage from "../pages/user/resetPass";
 import OrderTrackingPage from "../pages/user/orderTracking";
+import CategoryProducts from "../pages/user/categoryProduct";
 
 // === ADMIN PAGES ===  ← THÊM TỪ ĐÂY
 import ProductBulkCategory from "../pages/admin/productBulkCategory";  // trang gán danh mục
@@ -35,6 +36,7 @@ const MainRouter = () => {
         <Route path="/dat-hang-thanh-cong" element={<OrderSuccess />} />
         <Route path="/theo-doi-don-hang" element={<OrderTrackingPage />} />
         <Route path="/cap-nhat-thong-tin" element={<UpdateProfile />} />
+        <Route path="/danh-muc/:categorySlug" element={<CategoryProducts />} />
       </Route>
 
       <Route path="/tai-khoan-ca-nhan" element={<AuthPage />} />
