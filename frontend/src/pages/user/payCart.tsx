@@ -9,6 +9,7 @@ import { AuthContext } from "@/context/AuthContext";
 import { toast } from "react-toastify";
 import provinces from "../../vn-provinces";
 import axiosInstance from "@/axios";
+import { getFirstImageUrl } from "@/utils/imageUrl";
 
 const PayCart: React.FC = () => {
   const navigate = useNavigate();
@@ -302,7 +303,14 @@ const PayCart: React.FC = () => {
                   <div key={product._id || index} className="cart-item">
                     {/* Ảnh + badge số lượng */}
                     <div className="product-image-wrapper">
-                      <img src={imageUrl} alt={product.name || "Sản phẩm"} />
+                      <img
+                        src={getFirstImageUrl(product.images)}
+                        alt={product.name || "Sản phẩm"}
+                        onError={(e) => {
+                          e.currentTarget.src =
+                            "https://via.placeholder.com/300x300?text=No+Image";
+                        }}
+                      />
                       {item.quantity > 1 && (
                         <span className="quantity-badge">{item.quantity}</span>
                       )}

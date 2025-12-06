@@ -1,13 +1,8 @@
 // src/admin/pages/ProductManager.tsx
 import { useState, useEffect } from "react";
-import {
-  Plus,
-  Edit2,
-  Trash2,
-  Loader2,
-  Image as ImageIcon,
-} from "lucide-react";
+import { Plus, Edit2, Trash2, Loader2, Image as ImageIcon } from "lucide-react";
 import axiosInstance from "../../axios";
+import { getImageUrl, getFirstImageUrl } from "@/utils/imageUrl";
 import "@/styles/pages/admin/productManager.scss";
 
 interface Product {
@@ -20,7 +15,7 @@ interface Product {
   priceOriginal: number;
   priceSale: number;
   quantity: number;
-  categories: { _id: string; name: string }[]; // Populate từ backend
+  categories: { _id: string; name: string }[];
   hot: boolean;
   onSale: boolean;
   sold: number;
@@ -31,6 +26,7 @@ interface Category {
   name: string;
   level: number;
   path: string[];
+  children?: Category[];
 }
 
 export default function ProductManager() {
@@ -54,11 +50,10 @@ export default function ProductManager() {
   });
   const [imagePreviews, setImagePreviews] = useState<string[]>([]);
 
-  // Load sản phẩm
   const fetchProducts = async () => {
     try {
       setLoading(true);
-      const res = await axiosInstance.get("/admin/products"); // Giả định route admin/products tồn tại
+      const res = await axiosInstance.get("/admin/products");
       setProducts(res.data || []);
     } catch (err) {
       alert("Lỗi tải sản phẩm");
@@ -67,16 +62,21 @@ export default function ProductManager() {
     }
   };
 
-  // Load flat categories để select
   const fetchFlatCategories = async () => {
     try {
       const res = await axiosInstance.get("/admin/categories/tree");
-      const flatten = (cats: Category[], level = 0, path: string[] = []): Category[] => {
+      const flatten = (
+        cats: Category[],
+        level = 0,
+        path: string[] = []
+      ): Category[] => {
         let list: Category[] = [];
         cats.forEach((cat) => {
           list.push({ ...cat, level, path: [...path, cat.name] });
           if (cat.children?.length) {
-            list = list.concat(flatten(cat.children, level + 1, [...path, cat.name]));
+            list = list.concat(
+              flatten(cat.children, level + 1, [...path, cat.name])
+            );
           }
         });
         return list;
@@ -92,7 +92,6 @@ export default function ProductManager() {
     fetchFlatCategories();
   }, []);
 
-  // Cleanup previews để tránh memory leak
   useEffect(() => {
     return () => {
       imagePreviews.forEach((prev) => URL.revokeObjectURL(prev));
@@ -129,7 +128,7 @@ export default function ProductManager() {
       categories: prod.categories.map((c) => c._id),
       hot: prod.hot,
       onSale: prod.onSale,
-      images: [], // Không preload file, chỉ previews
+      images: [],
     });
     setImagePreviews(prod.images);
     setShowModal(true);
@@ -205,7 +204,9 @@ export default function ProductManager() {
 
       <div className="product-table">
         {products.length === 0 ? (
-          <p className="empty">Chưa có sản phẩm nào. Hãy thêm sản phẩm đầu tiên!</p>
+          <p className="empty">
+            Chưa có sản phẩm nào. Hãy thêm sản phẩm đầu tiên!
+          </p>
         ) : (
           <table>
             <thead>
@@ -224,11 +225,16 @@ export default function ProductManager() {
               {products.map((prod) => (
                 <tr key={prod._id}>
                   <td>
-                    {prod.images[0] ? (
-                      <img src={prod.images[0]} alt={prod.name} className="thumbnail" />
-                    ) : (
-                      <ImageIcon size={32} />
-                    )}
+                    <img
+                      src={getFirstImageUrl(prod.images)}
+                      alt={prod.name}
+                      className="thumbnail"
+                      onError={(e) => {
+                        // Nếu ảnh lỗi, hiển thị placeholder
+                        e.currentTarget.src =
+                          "https://via.placeholder.com/150?text=Error";
+                      }}
+                    />
                   </td>
                   <td>{prod.name}</td>
                   <td>{prod.sku}</td>
@@ -237,7 +243,10 @@ export default function ProductManager() {
                   <td>{prod.quantity}</td>
                   <td>{prod.categories.map((c) => c.name).join(", ")}</td>
                   <td className="actions">
-                    <button onClick={() => openEditModal(prod)} className="btn-small">
+                    <button
+                      onClick={() => openEditModal(prod)}
+                      className="btn-small"
+                    >
                       <Edit2 size={16} />
                     </button>
                     <button
@@ -260,93 +269,170 @@ export default function ProductManager() {
           <div className="modal" onClick={(e) => e.stopPropagation()}>
             <h3>{editingProd ? "Sửa" : "Thêm"} sản phẩm</h3>
             <form onSubmit={handleSubmit}>
+              {/* Tên sản phẩm */}
               <input
                 type="text"
                 placeholder="Tên sản phẩm"
                 value={formData.name}
-                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                onChange={(e) =>
+                  setFormData({ ...formData, name: e.target.value })
+                }
                 required
               />
+
+              {/* SKU */}
               <input
                 type="text"
                 placeholder="SKU"
                 value={formData.sku}
-                onChange={(e) => setFormData({ ...formData, sku: e.target.value })}
+                onChange={(e) =>
+                  setFormData({ ...formData, sku: e.target.value })
+                }
                 required
               />
+
+              {/* Giá gốc */}
               <input
                 type="number"
-                placeholder="Giá gốc"
+                placeholder="Giá gốc (₫)"
                 value={formData.priceOriginal}
-                onChange={(e) => setFormData({ ...formData, priceOriginal: e.target.value })}
+                onChange={(e) =>
+                  setFormData({ ...formData, priceOriginal: e.target.value })
+                }
                 required
               />
+
+              {/* Giá bán */}
               <input
                 type="number"
-                placeholder="Giá bán"
+                placeholder="Giá bán (₫)"
                 value={formData.priceSale}
-                onChange={(e) => setFormData({ ...formData, priceSale: e.target.value })}
+                onChange={(e) =>
+                  setFormData({ ...formData, priceSale: e.target.value })
+                }
                 required
               />
+
+              {/* Số lượng */}
               <input
                 type="number"
                 placeholder="Số lượng"
                 value={formData.quantity}
-                onChange={(e) => setFormData({ ...formData, quantity: e.target.value })}
+                onChange={(e) =>
+                  setFormData({ ...formData, quantity: e.target.value })
+                }
                 required
               />
+
+              {/* Mô tả */}
               <textarea
-                placeholder="Mô tả"
+                placeholder="Mô tả sản phẩm"
                 value={formData.description}
-                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-              />
-              <select
-                multiple
-                value={formData.categories}
                 onChange={(e) =>
-                  setFormData({
-                    ...formData,
-                    categories: Array.from(e.target.selectedOptions, (option) => option.value),
-                  })
+                  setFormData({ ...formData, description: e.target.value })
                 }
-              >
-                {flatCategories.map((cat) => (
-                  <option key={cat._id} value={cat._id}>
-                    {"─".repeat(cat.level)} {cat.path.join(" > ")}
-                  </option>
-                ))}
-              </select>
-              <label>
-                <input
-                  type="checkbox"
-                  checked={formData.hot}
-                  onChange={(e) => setFormData({ ...formData, hot: e.target.checked })}
-                />
-                Hot
-              </label>
-              <label>
-                <input
-                  type="checkbox"
-                  checked={formData.onSale}
-                  onChange={(e) => setFormData({ ...formData, onSale: e.target.checked })}
-                />
-                On Sale
-              </label>
-              <input type="file" multiple accept="image/*" onChange={handleImageChange} />
-              <div className="image-previews">
-                {imagePreviews.map((prev, idx) => (
-                  <img key={idx} src={prev} alt="preview" />
-                ))}
+              />
+
+              {/* Danh mục */}
+              <div className="category-select-wrapper">
+                <label>Chọn danh mục (giữ Ctrl/Cmd để chọn nhiều)</label>
+                <select
+                  multiple
+                  value={formData.categories}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      categories: Array.from(
+                        e.target.selectedOptions,
+                        (option) => option.value
+                      ),
+                    })
+                  }
+                >
+                  {flatCategories.map((cat) => (
+                    <option key={cat._id} value={cat._id}>
+                      {"  ".repeat(cat.level)}
+                      {cat.level > 0 && "└─ "}
+                      {cat.name}
+                    </option>
+                  ))}
+                </select>
+                <span className="select-hint">
+                  Đã chọn: {formData.categories.length} danh mục
+                </span>
               </div>
-              <div className="modal-actions">
-                <button type="button" onClick={() => setShowModal(false)}>
-                  Hủy
-                </button>
-                <button type="submit" className="btn-primary">
-                  {editingProd ? "Cập nhật" : "Thêm mới"}
-                </button>
+
+              {/* Checkbox Hot & On Sale */}
+              <div className="checkbox-group">
+                <label>
+                  <input
+                    type="checkbox"
+                    checked={formData.hot}
+                    onChange={(e) =>
+                      setFormData({ ...formData, hot: e.target.checked })
+                    }
+                  />
+                  🔥 Hot
+                </label>
+                <label>
+                  <input
+                    type="checkbox"
+                    checked={formData.onSale}
+                    onChange={(e) =>
+                      setFormData({ ...formData, onSale: e.target.checked })
+                    }
+                  />
+                  💰 On Sale
+                </label>
               </div>
+
+              {/* Upload ảnh */}
+              <div className="file-input-wrapper">
+                <label className="file-label">Hình ảnh sản phẩm</label>
+                <input
+                  type="file"
+                  multiple
+                  accept="image/*"
+                  onChange={handleImageChange}
+                />
+                <span className="file-hint">
+                  Tối đa 3 ảnh, mỗi ảnh dưới 5MB
+                </span>
+              </div>
+
+              {/* Preview ảnh */}
+              {imagePreviews.length > 0 && (
+                <div className="image-previews">
+                  {imagePreviews.map((prev, idx) => (
+                    <img
+                      key={idx}
+                      src={
+                        // Nếu là ảnh cũ từ server (bắt đầu bằng /uploads) → dùng getImageUrl
+                        prev.startsWith("/uploads") ? getImageUrl(prev) : prev // Nếu là blob URL (file mới upload) → giữ nguyên
+                      }
+                      alt={`preview-${idx}`}
+                      onError={(e) => {
+                        e.currentTarget.src =
+                          "https://via.placeholder.com/150?text=Error";
+                      }}
+                    />
+                  ))}
+                </div>
+              )}
             </form>
+
+            <div className="modal-actions">
+              <button type="button" onClick={() => setShowModal(false)}>
+                Hủy
+              </button>
+              <button
+                type="submit"
+                className="btn-primary"
+                onClick={handleSubmit}
+              >
+                {editingProd ? "Cập nhật" : "Thêm mới"}
+              </button>
+            </div>
           </div>
         </div>
       )}
@@ -356,12 +442,18 @@ export default function ProductManager() {
         <div className="modal-overlay" onClick={() => setDeletingProd(null)}>
           <div className="modal" onClick={(e) => e.stopPropagation()}>
             <h3>Xác nhận xóa</h3>
-            <p>Xóa sản phẩm <strong>{deletingProd.name}</strong>?</p>
+            <p>
+              Xóa sản phẩm <strong>{deletingProd.name}</strong>?
+            </p>
             <div className="modal-actions">
               <button type="button" onClick={() => setDeletingProd(null)}>
                 Hủy
               </button>
-              <button type="button" onClick={handleDelete} className="btn-danger">
+              <button
+                type="button"
+                onClick={handleDelete}
+                className="btn-danger"
+              >
                 Xóa vĩnh viễn
               </button>
             </div>

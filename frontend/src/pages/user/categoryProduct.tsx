@@ -7,6 +7,7 @@ import {
   formatCurrencyInput,
   parseCurrencyInput,
 } from "../../utils";
+import { getFirstImageUrl } from "@/utils/imageUrl";
 import "@/styles/pages/user/categoryProduct.scss";
 
 // XÓA formatPrice ở đây vì đã có trong utils
@@ -256,8 +257,12 @@ const CategoryProducts: React.FC = () => {
                   >
                     <div className="image">
                       <img
-                        src={product.images[0] || "/placeholder.jpg"}
+                        src={getFirstImageUrl(product.images)}
                         alt={product.name}
+                        onError={(e) => {
+                          e.currentTarget.src =
+                            "https://via.placeholder.com/300x300?text=No+Image";
+                        }}
                       />
                       {product.onSale && (
                         <span className="badge sale">Sale</span>
