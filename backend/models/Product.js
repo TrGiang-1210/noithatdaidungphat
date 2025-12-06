@@ -20,13 +20,13 @@ const productSchema = new mongoose.Schema({
 
   quantity: { type: Number, required: true },
 
+  // FIX: Bỏ required, cho phép array rỗng
   categories: [{
-  type: mongoose.Schema.Types.ObjectId,
-  ref: "Category",
-  required: true
-}],
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "Category"
+  }],
 
-hot: { type: Boolean, default: false },
+  hot: { type: Boolean, default: false },
   onSale: { type: Boolean, default: false },
   sold: { type: Number, default: 0 },
 

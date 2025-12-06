@@ -48,7 +48,7 @@ export default function AdminLayout() {
           {/* Quản lý danh mục */}
           <Link 
             to="/admin/quan-ly-danh-muc" 
-            className={`menu-item ${location.pathname.startsWith('/admin/quan-ly-danh muc') ? 'active' : ''}`}
+            className={`menu-item ${location.pathname.startsWith('/admin/quan-ly-danh-muc') ? 'active' : ''}`}
           >
             <Package className="icon" />
             <span>Quản lý danh mục</span>
@@ -56,8 +56,8 @@ export default function AdminLayout() {
 
           {/* Tất cả sản phẩm */}
           <Link 
-            to="/admin/products" 
-            className={`menu-item ${location.pathname.startsWith('/admin/products') ? 'active' : ''}`}
+            to="/admin/quan-ly-san-pham" 
+            className={`menu-item ${location.pathname.startsWith('/admin/quan-ly-san-pham') ? 'active' : ''}`}
           >
             <Package className="icon" />
             <span>Tất cả sản phẩm</span>

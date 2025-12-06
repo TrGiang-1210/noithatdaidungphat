@@ -20,6 +20,7 @@ import CategoryProducts from "../pages/user/categoryProduct";
 import ProductBulkCategory from "../pages/admin/productBulkCategory";  // trang gán danh mục
 import Dashboard from "../pages/admin/dashboard";                      // (tạo sau cũng được)
 import CategoryManager from "../pages/admin/categoryManager";
+import ProductManager from "../pages/admin/productManager";
 
 const MainRouter = () => {
   return (
@@ -46,8 +47,9 @@ const MainRouter = () => {
       {/* THÊM TOÀN BỘ ĐOẠN NÀY */}
       <Route path="/admin" element={<AdminLayout />}>
         <Route index element={<Dashboard />} />
-        <Route path="gan-danh-muc" element={<ProductBulkCategory />} />   {/* ← TRANG QUAN TRỌNG NHẤT */}
-        <Route path="quan-ly-danh-muc" element={<CategoryManager />} />   {/* ← TRANG QUAN TRỌNG THỨ HAI */}
+        <Route path="gan-danh-muc" element={<ProductBulkCategory />} />
+        <Route path="quan-ly-danh-muc" element={<CategoryManager />} />
+        <Route path="quan-ly-san-pham" element={<ProductManager />} />
       </Route>
       {/* HẾT ĐOẠN THÊM */}
 

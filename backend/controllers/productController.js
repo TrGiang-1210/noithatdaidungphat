@@ -18,7 +18,7 @@ const normalizeString = (s) => {
     .toLowerCase();
 };
 
-// GET /api/products
+// GET /api/products – ĐÃ FIX: THÊM POPULATE CATEGORIES
 exports.getProducts = async (req, res) => {
   try {
     let filters = {};
@@ -62,9 +62,11 @@ exports.getProducts = async (req, res) => {
     if (req.query.sort === "price-desc") sort = { priceSale: -1 };
     if (req.query.sort === "-sold") sort = { sold: -1 };
 
+    // FIX: THÊM .populate('categories') 
     const products = await Product.find(filters)
+      .populate('categories') // ← POPULATE ĐẦY ĐỦ
       .sort(sort)
-      .select("name slug images priceSale priceOriginal onSale hot sold");
+      .lean(); // ← THÊM .lean() để trả về plain object
 
     res.json(products);
   } catch (err) {
@@ -114,7 +116,7 @@ exports.searchProducts = async (req, res) => {
     // Remove conditions that reference fields you don't have (optional)
     const finalConditions = orConditions.filter((cond) => {
       const key = Object.keys(cond)[0];
-      // if normalized fields not present in schema it's OK — Mongo ignores non-existing fields
+      // if normalized fields not present in schema it's OK – Mongo ignores non-existing fields
       return true;
     });
 
@@ -243,7 +245,7 @@ exports.searchSuggestions = async (req, res) => {
   }
 };
 
-// ← thêm ngay dòng này vào cuối file (cùng kiểu với các hàm khác)
+// POST /api/admin/products/bulk-categories – GÁN DANH MỤC HÀNG LOẠT
 exports.bulkUpdateCategories = async (req, res) => {
   try {
     const { productIds, categoryIds } = req.body;
@@ -260,7 +262,7 @@ exports.bulkUpdateCategories = async (req, res) => {
         .json({ message: "Chọn ít nhất 1 sản phẩm và 1 danh mục" });
     }
 
-    // ÉP KIỂU CHUỖI THÀNH ObjectId — ĐÂY LÀ CHỖ CHẾT NGƯỜI!!!
+    // ÉP KIỂU CHUỖI THÀNH ObjectId – ĐÂY LÀ CHỖ CHẾT NGƯỜI!!!
     const validCategoryObjectIds = categoryIds.map((id) => {
       if (!mongoose.Types.ObjectId.isValid(id)) {
         throw new Error(`Category ID không hợp lệ: ${id}`);
@@ -268,11 +270,12 @@ exports.bulkUpdateCategories = async (req, res) => {
       return new mongoose.Types.ObjectId(id);
     });
 
+    // FIX: DÙNG $SET THAY VÌ $addToSet ĐỂ GHI ĐÈ HOÀN TOÀN
     const result = await Product.updateMany(
       { _id: { $in: productIds } },
       {
-        $addToSet: {
-          categories: { $each: validCategoryObjectIds },
+        $set: {
+          categories: validCategoryObjectIds, // ← GHI ĐÈ, không merge
         },
       }
     );
