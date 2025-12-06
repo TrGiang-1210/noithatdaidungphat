@@ -20,6 +20,7 @@ router.post('/products/bulk-categories', auth, admin, productController.bulkUpda
 
 // Thêm các route admin khác sau này ở đây:
 // router.get('/products', productController.getProducts);
+router.get('/products', auth, admin, productController.getAdminProducts);
 router.put('/products/:id', auth, admin, productController.updateProduct);
 // ...
 

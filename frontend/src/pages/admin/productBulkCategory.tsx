@@ -8,6 +8,7 @@ interface Product {
   _id: string;
   name: string;
   images: string[];
+  categories?: Array<string | { _id: string; name?: string; slug?: string }>; // Có thể là string hoặc object
 }
 
 interface CategoryNode {
@@ -16,7 +17,18 @@ interface CategoryNode {
   children?: CategoryNode[];
 }
 
-// Component cây danh mục (giữ nguyên)
+// Helper: Chuyển categories thành array string ID
+const normalizeCategoryIds = (categories?: Array<string | { _id: string }>): string[] => {
+  if (!categories || !Array.isArray(categories)) return [];
+  
+  return categories.map(cat => {
+    if (typeof cat === 'string') return cat;
+    if (cat && typeof cat === 'object' && cat._id) return cat._id;
+    return '';
+  }).filter(Boolean);
+};
+
+// Component cây danh mục
 const CategoryTreeItem: React.FC<{
   node: CategoryNode;
   level: number;
@@ -31,8 +43,6 @@ const CategoryTreeItem: React.FC<{
 
   return (
     <div key={node.value}>
-      {" "}
-      {/* THÊM KEY Ở ĐÂY – FIX LỖI 1 */}
       <label
         className="category-tree-item"
         style={{ paddingLeft: `${level * 28 + 8}px` }}
@@ -47,7 +57,9 @@ const CategoryTreeItem: React.FC<{
               onToggle(node.value);
             }}
           >
-            {isExpanded ? "▼" : "▶"}
+            <span className={`expand-icon ${isExpanded ? "expanded" : ""}`}>
+              ▶
+            </span>
           </button>
         )}
         {!hasChildren && <span className="expand-placeholder" />}
@@ -90,7 +102,7 @@ export default function ProductBulkCategory() {
   const [showSuccess, setShowSuccess] = useState(false);
   const [loading, setLoading] = useState(true);
 
-  // FIX LỖI 2 + 3: Dùng axiosInstance + try/catch + set state đúng
+  // Fetch data
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -100,7 +112,10 @@ export default function ProductBulkCategory() {
           axiosInstance.get("/admin/categories/tree"),
         ]);
 
-        setProducts(prodRes.data || []);
+        const productsData = prodRes.data || [];
+        console.log("Products loaded:", productsData[0]); // Debug
+        
+        setProducts(productsData);
         setCategories(catRes.data || []);
       } catch (err: any) {
         console.error("Lỗi tải dữ liệu:", err);
@@ -117,6 +132,61 @@ export default function ProductBulkCategory() {
 
     fetchData();
   }, []);
+
+  // Load danh mục của sản phẩm được chọn
+  useEffect(() => {
+    if (selectedProducts.length === 1) {
+      const product = products.find((p) => p._id === selectedProducts[0]);
+      
+      if (product) {
+        // Normalize categories thành array string ID
+        const categoryIds = normalizeCategoryIds(product.categories);
+        
+        console.log("Selected product categories:", categoryIds); // Debug
+        
+        if (categoryIds.length > 0) {
+          setSelectedCategories(categoryIds);
+          expandParentCategories(categoryIds);
+        } else {
+          setSelectedCategories([]);
+        }
+      }
+    } else if (selectedProducts.length === 0) {
+      setSelectedCategories([]);
+    }
+  }, [selectedProducts, products]);
+
+  // Hàm expand các nhánh cha của danh mục
+  const expandParentCategories = (categoryIds: string[]) => {
+    const toExpand: string[] = [];
+    
+    const findParents = (nodes: CategoryNode[], targetIds: string[]): void => {
+      nodes.forEach((node) => {
+        if (node.children && node.children.length > 0) {
+          const hasMatchingChild = node.children.some((child) =>
+            targetIds.includes(child.value) ||
+            (child.children && hasChildMatch(child.children, targetIds))
+          );
+          
+          if (hasMatchingChild) {
+            toExpand.push(node.value);
+            findParents(node.children, targetIds);
+          }
+        }
+      });
+    };
+
+    const hasChildMatch = (nodes: CategoryNode[], targetIds: string[]): boolean => {
+      return nodes.some((node) => {
+        if (targetIds.includes(node.value)) return true;
+        if (node.children) return hasChildMatch(node.children, targetIds);
+        return false;
+      });
+    };
+
+    findParents(categories, categoryIds);
+    setExpandedCategories((prev) => [...new Set([...prev, ...toExpand])]);
+  };
 
   const filteredProducts = useMemo(() => {
     if (!productSearch) return products;
@@ -171,13 +241,17 @@ export default function ProductBulkCategory() {
         categoryIds: selectedCategories,
       });
 
+      // Cập nhật state local với categories mới (dạng string ID)
+      setProducts((prevProducts) =>
+        prevProducts.map((p) =>
+          selectedProducts.includes(p._id)
+            ? { ...p, categories: selectedCategories }
+            : p
+        )
+      );
+
       setShowSuccess(true);
       setTimeout(() => setShowSuccess(false), 4000);
-
-      // DỪNG LẠI ĐÂY – THÊM 1 DÒNG DUY NHẤT NÀY LÀ XONG 100%!
-      // window.location.reload(); // ← HOẶC dùng cách nhẹ hơn bên dưới
-
-      // HOẶC cách nhẹ hơn (nếu bạn không muốn reload cả trang):
       window.dispatchEvent(new Event("categories-updated"));
     } catch (err: any) {
       console.error("Lỗi gán danh mục:", err);
@@ -203,18 +277,11 @@ export default function ProductBulkCategory() {
 
   return (
     <div className="product-bulk-category">
-      <div className="page-header">
-        <h1 className="page-title">Gán danh mục hàng loạt</h1>
-        <p className="page-desc">
-          Chọn nhiều sản phẩm và gán cùng lúc vào nhiều danh mục
-        </p>
-      </div>
-
       {showSuccess && (
         <div className="success-banner">
           <CheckCircle size={20} />
           <span>
-            Gán danh mục thành công cho {selectedProducts.length} sản phẩm!
+            Đã lưu danh mục cho {selectedProducts.length} sản phẩm vào database!
           </span>
         </div>
       )}
@@ -252,23 +319,32 @@ export default function ProductBulkCategory() {
             {filteredProducts.length === 0 ? (
               <p className="empty-text">Không tìm thấy sản phẩm</p>
             ) : (
-              filteredProducts.map((p) => (
-                <label key={p._id} className="product-item">
-                  <input
-                    type="checkbox"
-                    checked={selectedProducts.includes(p._id)}
-                    onChange={(e) => {
-                      setSelectedProducts((prev) =>
-                        e.target.checked
-                          ? [...prev, p._id]
-                          : prev.filter((id) => id !== p._id)
-                      );
-                    }}
-                  />
-                  <img src={p.images[0] || "/placeholder.jpg"} alt={p.name} />
-                  <span className="product-name">{p.name}</span>
-                </label>
-              ))
+              filteredProducts.map((p) => {
+                const categoryCount = normalizeCategoryIds(p.categories).length;
+                
+                return (
+                  <label key={p._id} className="product-item">
+                    <input
+                      type="checkbox"
+                      checked={selectedProducts.includes(p._id)}
+                      onChange={(e) => {
+                        if (e.target.checked) {
+                          setSelectedProducts([p._id]);
+                        } else {
+                          setSelectedProducts([]);
+                        }
+                      }}
+                    />
+                    <img src={p.images[0] || "/placeholder.jpg"} alt={p.name} />
+                    <span className="product-name">{p.name}</span>
+                    {categoryCount > 0 && (
+                      <span className="category-badge">
+                        {categoryCount} DM
+                      </span>
+                    )}
+                  </label>
+                );
+              })
             )}
           </div>
         </div>
@@ -283,6 +359,15 @@ export default function ProductBulkCategory() {
                 {selectedCategories.length} danh mục
               </span>
             </div>
+            {selectedProducts.length === 1 && (
+              <span className="hint-text">
+                {normalizeCategoryIds(
+                  products.find((p) => p._id === selectedProducts[0])?.categories
+                ).length > 0
+                  ? "Đang xem danh mục đã lưu"
+                  : "Chưa có danh mục"}
+              </span>
+            )}
           </div>
 
           <div className="search-box">
@@ -342,10 +427,10 @@ export default function ProductBulkCategory() {
           {saving ? (
             <>
               <Loader2 className="spin" size={20} />
-              Đang lưu...
+              Đang lưu vào database...
             </>
           ) : (
-            `Gán danh mục cho ${selectedProducts.length.toLocaleString()} sản phẩm`
+            `Lưu danh mục cho ${selectedProducts.length.toLocaleString()} sản phẩm`
           )}
         </button>
       </div>

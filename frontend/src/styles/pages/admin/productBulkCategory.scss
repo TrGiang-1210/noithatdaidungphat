@@ -1,10 +1,8 @@
-// src/styles/pages/admin/productBulkCategory.scss
-
 .product-bulk-category {
   padding: 1.5rem;
   max-width: 1400px;
   margin: 0 auto;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
 }
 
 .page-header {
@@ -83,7 +81,16 @@
     color: #3b82f6;
     font-size: 0.9rem;
     cursor: pointer;
-    &:hover { text-decoration: underline; }
+    &:hover {
+      text-decoration: underline;
+    }
+  }
+
+  .hint-text {
+    font-size: 0.85rem;
+    color: #10b981;
+    font-weight: 500;
+    font-style: italic;
   }
 }
 
@@ -112,7 +119,8 @@
   }
 }
 
-.product-list, .category-tree {
+.product-list,
+.category-tree {
   flex: 1;
   max-height: 65vh;
   overflow-y: auto;
@@ -137,6 +145,7 @@
 
   input[type="checkbox"] {
     transform: scale(1.1);
+    flex-shrink: 0;
   }
 
   img {
@@ -145,12 +154,23 @@
     object-fit: cover;
     border-radius: 8px;
     background: #f1f5f9;
+    flex-shrink: 0;
   }
 
   .product-name {
     flex: 1;
     font-size: 0.95rem;
     color: #334155;
+  }
+
+  .category-badge {
+    background: #e0f2fe;
+    color: #0369a1;
+    font-size: 0.75rem;
+    padding: 0.25rem 0.5rem;
+    border-radius: 6px;
+    font-weight: 600;
+    flex-shrink: 0;
   }
 }
 
@@ -208,21 +228,35 @@
 }
 
 @keyframes spin {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 @keyframes loading {
-  0% { background-position: 200% 0; }
-  100% { background-position: -200% 0; }
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
 }
 
 @keyframes slideDown {
-  from { opacity: 0; transform: translateY(-10px); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
-// === THÊM VÀO CUỐI FILE ===
+// === CATEGORY TREE ===
 .simple-category-tree {
   padding: 0.5rem 0;
 }
@@ -242,13 +276,39 @@
     background: #f0f9ff;
   }
 
-  .expand-btn,
+  .expand-btn {
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: transparent;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    padding: 0;
+    transition: all 0.2s ease;
+    
+    &:hover {
+      background: #e2e8f0;
+    }
+
+    .expand-icon {
+      font-size: 10px;
+      color: #64748b;
+      transition: transform 0.2s ease;
+      display: inline-block;
+      
+      &.expanded {
+        transform: rotate(90deg);
+      }
+    }
+  }
+
   .expand-placeholder {
-    width: 20px;
-    font-size: 12px;
-    color: #64748b;
-    text-align: center;
-    font-weight: bold;
+    width: 24px;
+    height: 24px;
+    flex-shrink: 0;
   }
 
   input[type="checkbox"] {
@@ -276,6 +336,10 @@
         left: 50%;
         transform: translate(-50%, -50%);
       }
+    }
+
+    &:hover {
+      border-color: #3b82f6;
     }
   }
 
