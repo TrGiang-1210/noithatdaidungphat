@@ -24,7 +24,7 @@
       align-items: center;
       gap: 8px;
       padding: 10px 20px;
-      background: #3b82f6;
+      background: #10b981;
       color: white;
       border: none;
       border-radius: 8px;
@@ -33,9 +33,9 @@
       transition: all 0.2s;
 
       &:hover {
-        background: #2563eb;
+        background: #059669;
         transform: translateY(-1px);
-        box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+        box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
       }
 
       &:active {
@@ -65,36 +65,65 @@
 
       thead tr {
         background: #f3f4f6;
+        
         th {
           padding: 14px 16px;
           text-align: left;
           font-weight: 600;
           color: #4b5563;
+          font-size: 14px;
           border-bottom: 1px solid #e5e7eb;
+          white-space: nowrap;
+
+          &:first-child {
+            border-top-left-radius: 12px;
+          }
+
+          &:last-child {
+            border-top-right-radius: 12px;
+          }
         }
       }
 
       tbody tr {
+        // transition: all 0.2s;
+        border-bottom: 1px solid #f3f4f6;
+
         &:hover {
           background: #f8faff;
+          border-left: 4px solid #3b82f6;
+        }
+
+        &:last-child td {
+          border-bottom: none;
         }
 
         td {
           padding: 14px 16px;
-          border-bottom: 1px solid #f3f4f6;
           vertical-align: middle;
+          color: #374151;
+          font-size: 14px;
 
           .thumbnail {
             width: 60px;
             height: 60px;
             object-fit: cover;
             border-radius: 8px;
+            border: 1px solid #e5e7eb;
+            transition: transform 0.2s;
+
+            &:hover {
+              transform: scale(1.5);
+              box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+              z-index: 10;
+            }
           }
 
-          .actions {
-            display: flex;
-            gap: 6px;
+          svg {
+            color: #9ca3af;
+          }
 
+          &.actions {
             .btn-small {
               padding: 6px 10px;
               border-radius: 6px;
@@ -102,30 +131,60 @@
               font-weight: 500;
               border: none;
               cursor: pointer;
-              display: flex;
+              display: inline-flex;
               align-items: center;
               gap: 4px;
               transition: all 0.2s;
+              margin-right: 6px;
+
+              &:last-child {
+                margin-right: 0;
+              }
 
               &:first-child {
                 background: #3b82f6;
                 color: white;
+                
                 &:hover {
                   background: #2563eb;
+                  transform: translateY(-1px);
+                  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
                 }
               }
 
               &.btn-danger {
                 background: #ef4444;
                 color: white;
+                
                 &:hover {
                   background: #dc2626;
+                  transform: translateY(-1px);
+                  box-shadow: 0 2px 8px rgba(239, 68, 68, 0.3);
                 }
+              }
+
+              &:active {
+                transform: translateY(0);
               }
             }
           }
         }
       }
+    }
+  }
+
+  // Loading spinner
+  .spin {
+    animation: spin 1s linear infinite;
+    color: #3b82f6;
+  }
+
+  @keyframes spin {
+    from {
+      transform: rotate(0deg);
+    }
+    to {
+      transform: rotate(360deg);
     }
   }
 
@@ -139,16 +198,29 @@
     justify-content: center;
     z-index: 999;
     backdrop-filter: blur(4px);
+    animation: fadeIn 0.2s ease;
+  }
+
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
   }
 
   .modal {
     background: white;
     border-radius: 16px;
-    width: 600px;
+    width: 700px;
     max-width: 94vw;
+    max-height: 90vh;
     box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
     overflow: hidden;
     animation: modalPop 0.3s ease;
+    display: flex;
+    flex-direction: column;
 
     h3 {
       margin: 0;
@@ -157,56 +229,206 @@
       color: white;
       font-size: 18px;
       font-weight: 600;
+      flex-shrink: 0;
     }
 
     form {
       padding: 24px;
-      display: flex;
-      flex-direction: column;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
       gap: 16px;
+      overflow-y: auto;
+      flex: 1;
 
-      input,
-      select,
+      // Form fields
+      input:not([type="checkbox"]):not([type="file"]),
       textarea {
-        width: 100%;
         padding: 12px 16px;
         border: 1px solid #d1d5db;
         border-radius: 8px;
         font-size: 15px;
-        transition: border 0.2s;
+        font-family: inherit;
+        transition: all 0.2s;
+        box-sizing: border-box;
 
         &:focus {
           outline: none;
           border-color: #3b82f6;
           box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
         }
+
+        &::placeholder {
+          color: #9ca3af;
+        }
+      }
+
+      // Full width elements
+      textarea,
+      .category-select-wrapper,
+      .checkbox-group,
+      .file-input-wrapper,
+      .image-previews {
+        grid-column: 1 / -1;
       }
 
       textarea {
         min-height: 100px;
+        resize: vertical;
       }
 
-      select[multiple] {
-        height: 150px;
-      }
-
-      label {
+      // Category select với label
+      .category-select-wrapper {
         display: flex;
-        align-items: center;
+        flex-direction: column;
         gap: 8px;
+
+        label {
+          font-size: 14px;
+          font-weight: 600;
+          color: #374151;
+          margin: 0;
+        }
+
+        select[multiple] {
+          height: 160px;
+          padding: 8px;
+          border: 1px solid #d1d5db;
+          border-radius: 8px;
+          font-size: 14px;
+          font-family: inherit;
+          transition: all 0.2s;
+          background: white;
+
+          &:focus {
+            outline: none;
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+          }
+
+          option {
+            padding: 10px 12px;
+            border-radius: 6px;
+            margin-bottom: 4px;
+            cursor: pointer;
+            transition: background 0.15s;
+
+            &:hover {
+              background: #eff6ff;
+            }
+
+            &:checked {
+              background: #dbeafe;
+              color: #1e40af;
+              font-weight: 500;
+            }
+          }
+        }
+
+        .select-hint {
+          font-size: 13px;
+          color: #6b7280;
+          font-style: italic;
+        }
       }
 
+      // Checkbox group
+      .checkbox-group {
+        display: flex;
+        gap: 24px;
+        padding: 12px 0;
+
+        label {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          cursor: pointer;
+          font-size: 15px;
+          color: #374151;
+          user-select: none;
+          font-weight: 500;
+
+          input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
+            accent-color: #3b82f6;
+          }
+
+          &:hover {
+            color: #1f2937;
+          }
+        }
+      }
+
+      // File input wrapper
+      .file-input-wrapper {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+
+        .file-label {
+          font-size: 14px;
+          font-weight: 600;
+          color: #374151;
+        }
+
+        input[type="file"] {
+          padding: 10px;
+          cursor: pointer;
+          border: 2px dashed #d1d5db;
+          border-radius: 8px;
+          transition: all 0.2s;
+
+          &:hover {
+            border-color: #3b82f6;
+            background: #f8faff;
+          }
+          
+          &::file-selector-button {
+            padding: 8px 16px;
+            background: #3b82f6;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.2s;
+            margin-right: 12px;
+
+            &:hover {
+              background: #2563eb;
+              transform: translateY(-1px);
+            }
+          }
+        }
+
+        .file-hint {
+          font-size: 13px;
+          color: #6b7280;
+          font-style: italic;
+        }
+      }
+
+      // Image previews
       .image-previews {
         display: flex;
         gap: 12px;
         flex-wrap: wrap;
+        padding: 12px 0;
 
         img {
           width: 100px;
           height: 100px;
           object-fit: cover;
           border-radius: 8px;
-          border: 1px solid #e5e7eb;
+          border: 2px solid #e5e7eb;
+          transition: all 0.2s;
+
+          &:hover {
+            transform: scale(1.05);
+            border-color: #3b82f6;
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.2);
+          }
         }
       }
     }
@@ -215,40 +437,70 @@
       display: flex;
       justify-content: flex-end;
       gap: 12px;
-      padding: 0 24px 24px;
+      padding: 20px 24px;
+      border-top: 1px solid #e5e7eb;
+      flex-shrink: 0;
+      background: #f9fafb;
 
       button {
-        padding: 10px 20px;
+        padding: 10px 24px;
         border-radius: 8px;
         font-weight: 600;
         cursor: pointer;
         transition: all 0.2s;
+        border: none;
+        font-size: 14px;
 
         &:first-child {
           background: #e5e7eb;
           color: #374151;
-          border: none;
+          
           &:hover {
             background: #d1d5db;
           }
         }
 
-        &:last-child {
+        &.btn-primary,
+        &:last-child:not(.btn-danger) {
           background: #3b82f6;
           color: white;
-          border: none;
+          
           &:hover {
             background: #2563eb;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+          }
+
+          &:active {
+            transform: translateY(0);
           }
         }
 
         &.btn-danger {
           background: #ef4444;
           color: white;
+          
           &:hover {
             background: #dc2626;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
+          }
+
+          &:active {
+            transform: translateY(0);
           }
         }
+      }
+    }
+
+    p {
+      padding: 0 24px;
+      margin: 16px 0;
+      color: #4b5563;
+      line-height: 1.6;
+
+      strong {
+        color: #1f2937;
       }
     }
   }
@@ -257,11 +509,11 @@
   @keyframes modalPop {
     from {
       opacity: 0;
-      transform: scale(0.9);
+      transform: scale(0.9) translateY(-20px);
     }
     to {
       opacity: 1;
-      transform: scale(1);
+      transform: scale(1) translateY(0);
     }
   }
 
@@ -280,11 +532,82 @@
       }
     }
 
-    .product-table table {
-      font-size: 14px;
+    .product-table {
+      table {
+        font-size: 13px;
 
-      td, th {
-        padding: 10px;
+        thead th {
+          padding: 10px 8px;
+          font-size: 13px;
+        }
+
+        tbody td {
+          padding: 10px 8px;
+
+          .thumbnail {
+            width: 50px;
+            height: 50px;
+          }
+
+          &.actions {
+            white-space: nowrap;
+
+            .btn-small {
+              padding: 5px 8px;
+              font-size: 11px;
+              margin-right: 4px;
+
+              svg {
+                width: 14px;
+                height: 14px;
+              }
+            }
+          }
+        }
+      }
+    }
+
+    .modal {
+      width: 95vw;
+      max-height: 85vh;
+
+      form {
+        grid-template-columns: 1fr;
+        padding: 16px;
+        gap: 12px;
+
+        input,
+        select,
+        textarea {
+          padding: 10px 12px;
+          font-size: 14px;
+        }
+
+        .image-previews img {
+          width: 80px;
+          height: 80px;
+        }
+      }
+
+      .modal-actions {
+        padding: 16px;
+        
+        button {
+          padding: 8px 16px;
+          font-size: 13px;
+        }
+      }
+    }
+  }
+
+  @media (max-width: 480px) {
+    .product-table table {
+      thead th,
+      tbody td {
+        &:nth-child(4),
+        &:nth-child(5) {
+          display: none;
+        }
       }
     }
   }

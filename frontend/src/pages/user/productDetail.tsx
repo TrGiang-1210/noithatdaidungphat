@@ -4,6 +4,7 @@ import { useCart } from "@/context/CartContext";
 import "@/styles/pages/user/productDetail.scss";
 import { toast } from "react-toastify";
 import { AuthContext } from "@/context/AuthContext";
+import { getImageUrls } from "@/utils/imageUrl";
 type Product = any;
 
 const endpointCandidates = (param: string) => [
@@ -18,7 +19,7 @@ const ProductDetail: React.FC = () => {
   const [product, setProduct] = useState<Product | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-
+  const [selectedImageIndex, setSelectedImageIndex] = useState(0);
   const { addToCart } = useCart();
   const { user } = useContext(AuthContext);
   const navigate = useNavigate();
@@ -68,14 +69,15 @@ const ProductDetail: React.FC = () => {
     };
 
     fetchProduct();
+    setSelectedImageIndex(0);
   }, [param]);
 
   if (loading) return <div>Đang tải sản phẩm...</div>;
   if (error) return <div style={{ color: "red" }}>Lỗi: {error}</div>;
   if (!product) return <div>Không có dữ liệu sản phẩm</div>;
 
-  const currentImage =
-    product.images?.[0] || product.img_url || "/images/no-image.png";
+  const productImages = getImageUrls(product.images);
+  const currentImage = productImages[selectedImageIndex]; // Dùng index từ state
   const discount =
     product.priceOriginal > product.priceSale
       ? Math.round(
@@ -138,14 +140,35 @@ const ProductDetail: React.FC = () => {
               {discount > 0 && <div className="sale-badge">-{discount}%</div>}
 
               <div className="main-image">
-                <img src={currentImage} alt={product.name} />
+                <img
+                  src={currentImage}
+                  alt={product.name}
+                  onError={(e) => {
+                    e.currentTarget.src =
+                      "https://via.placeholder.com/600x600?text=No+Image";
+                  }}
+                />
               </div>
 
-              {product.images && product.images.length > 1 && (
+              {productImages.length > 1 && (
                 <div className="thumbnail-row">
-                  {product.images.map((img: string, i: number) => (
-                    <div key={i} className={`thumb ${0 === i ? "active" : ""}`}>
-                      <img src={img} alt={`${product.name} ${i + 1}`} />
+                  {productImages.map((img: string, i: number) => (
+                    <div
+                      key={i}
+                      className={`thumb ${
+                        selectedImageIndex === i ? "active" : ""
+                      }`}
+                      onClick={() => setSelectedImageIndex(i)}
+                      style={{ cursor: "pointer" }}
+                    >
+                      <img
+                        src={img}
+                        alt={`${product.name} ${i + 1}`}
+                        onError={(e) => {
+                          e.currentTarget.src =
+                            "https://via.placeholder.com/100x100?text=Error";
+                        }}
+                      />
                     </div>
                   ))}
                 </div>

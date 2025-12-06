@@ -1,7 +1,8 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-import { fetchAllProducts } from "../../api/user/productAPI";
+import { getFirstImageUrl } from "@/utils/imageUrl";
 import "@/styles/pages/user/home.scss";
+import { ChevronRight } from "lucide-react";
 
 // Banner images
 import banner1 from "@/assets/banner/banner1.jpg";
@@ -15,6 +16,15 @@ interface Product {
   images: string[];
   priceOriginal: number;
   priceSale: number;
+  sold?: number;
+  created_at?: string;
+}
+
+interface Category {
+  _id: string;
+  name: string;
+  slug: string;
+  level: number;
 }
 
 const Home: React.FC = () => {
@@ -24,10 +34,14 @@ const Home: React.FC = () => {
     { src: banner3, alt: "Banner 3" },
   ];
 
-  const [products, setProducts] = useState<Product[]>([]);
-  const [loadingProducts, setLoadingProducts] = useState(true);
   const [currentSlide, setCurrentSlide] = useState(0);
-  const sliderWrapperRef = useRef<HTMLDivElement>(null);
+  const [bestSellers, setBestSellers] = useState<Product[]>([]);
+  const [newProducts, setNewProducts] = useState<Product[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [categoryProducts, setCategoryProducts] = useState<
+    Record<string, Product[]>
+  >({});
+  const [loading, setLoading] = useState(true);
 
   // Auto slide
   useEffect(() => {
@@ -45,25 +59,146 @@ const Home: React.FC = () => {
     setCurrentSlide((prev) => (prev + 1) % banners.length);
   };
 
-  // Load sản phẩm nổi bật
+  // Load dữ liệu
   useEffect(() => {
-    const loadProducts = async () => {
+    const loadData = async () => {
       try {
-        const data = await fetchAllProducts();
-        setProducts(data.slice(0, 12)); // lấy 12 sp nổi bật
-        setLoadingProducts(false);
-      } catch (err) {
-        console.error(err);
-        setLoadingProducts(false);
+        setLoading(true);
+
+        // 1. Load tất cả sản phẩm
+        const productsRes = await fetch("http://localhost:5000/api/products");
+        const allProducts: Product[] = await productsRes.json();
+
+        // 2. Sản phẩm bán chạy (sort theo sold, giảm dần)
+        const sortedBySold = [...allProducts].sort(
+          (a, b) => (b.sold || 0) - (a.sold || 0)
+        );
+        setBestSellers(sortedBySold.slice(0, 8));
+
+        // 3. Sản phẩm mới (sort theo created_at, mới nhất trước)
+        const sortedByDate = [...allProducts].sort((a, b) => {
+          const dateA = new Date(a.created_at || 0).getTime();
+          const dateB = new Date(b.created_at || 0).getTime();
+          return dateB - dateA;
+        });
+        setNewProducts(sortedByDate.slice(0, 8));
+
+        // 4. Load danh mục cha (level = 0)
+        const categoriesRes = await fetch(
+          "http://localhost:5000/api/categories"
+        );
+        const allCategories: Category[] = await categoriesRes.json();
+
+        // Flatten categories nếu API trả về dạng tree
+        const flattenCategories = (cats: any[]): Category[] => {
+          let result: Category[] = [];
+          cats.forEach((cat) => {
+            result.push(cat);
+            if (cat.children && cat.children.length > 0) {
+              result = result.concat(flattenCategories(cat.children));
+            }
+          });
+          return result;
+        };
+
+        const flatCats = flattenCategories(allCategories);
+        const parentCategories = flatCats.filter((cat) => cat.level === 0);
+        setCategories(parentCategories);
+
+        // 5. Load sản phẩm cho từng danh mục cha (tối đa 4 danh mục)
+        const categoryProds: Record<string, Product[]> = {};
+        for (const cat of parentCategories.slice(0, 4)) {
+          const res = await fetch(
+            `http://localhost:5000/api/products?category=${cat.slug}`
+          );
+          const prods = await res.json();
+          categoryProds[cat._id] = prods.slice(0, 8);
+        }
+        setCategoryProducts(categoryProds);
+      } catch (error) {
+        console.error("Lỗi load dữ liệu:", error);
+      } finally {
+        setLoading(false);
       }
     };
-    loadProducts();
+
+    loadData();
   }, []);
+
+  // Component ProductCard
+  const ProductCard: React.FC<{ product: Product }> = ({ product }) => {
+    const discount =
+      product.priceOriginal > product.priceSale
+        ? Math.round(
+            ((product.priceOriginal - product.priceSale) /
+              product.priceOriginal) *
+              100
+          )
+        : 0;
+
+    return (
+      <Link to={`/san-pham/${product.slug}`} className="product-card">
+        <div className="product-image">
+          <img
+            src={getFirstImageUrl(product.images)}
+            alt={product.name}
+            onError={(e) => {
+              e.currentTarget.src =
+                "https://via.placeholder.com/300x300?text=No+Image";
+            }}
+          />
+        </div>
+        <div className="product-info">
+          <h3 className="product-name">{product.name}</h3>
+
+          {/* ✅ THÊM discount-percent vào .product-price */}
+          <div className="product-price">
+            <div className="price-left">
+              <span className="price-sale">
+                {product.priceSale.toLocaleString()}₫
+              </span>
+              {discount > 0 && (
+                <span className="price-original">
+                  {product.priceOriginal.toLocaleString()}₫
+                </span>
+              )}
+            </div>
+            {discount > 0 && (
+              <span className="discount-percent">-{discount}%</span>
+            )}
+          </div>
+        </div>
+      </Link>
+    );
+  };
+
+  // Component Section Header
+  const SectionHeader: React.FC<{ title: string; link?: string }> = ({
+    title,
+    link,
+  }) => (
+    <div className="section-header">
+      <h2 className="section-title">{title}</h2>
+      {link && (
+        <Link to={link} className="view-all">
+          Xem tất cả <ChevronRight size={16} />
+        </Link>
+      )}
+    </div>
+  );
+
+  if (loading) {
+    return (
+      <div className="loading-container">
+        <div className="spinner"></div>
+        <p>Đang tải dữ liệu...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="home-page">
       {/* ==================== BANNER ==================== */}
-      {/* ==================== BANNER - CHUẨN DOGOVIET.COM ==================== */}
       <section className="banner-section">
         <div className="container banner-container">
           <div className="slider-wrapper">
@@ -104,47 +239,46 @@ const Home: React.FC = () => {
         </div>
       </section>
 
-      {/* ==================== SẢN PHẨM NỔI BẬT ==================== */}
+      {/* ==================== SẢN PHẨM BÁN CHẠY ==================== */}
       <section className="product-section">
         <div className="container">
-          <h2 className="section-title">Sản phẩm nổi bật</h2>
-
+          <SectionHeader title="Sản phẩm bán chạy" />
           <div className="product-grid">
-            {loadingProducts ? (
-              <p>Đang tải sản phẩm...</p>
-            ) : products.length > 0 ? (
-              products.map((product) => (
-                <div className="product-card" key={product._id}>
-                  <Link
-                    to={`/san-pham/${product.slug}`}
-                    className="product-link"
-                  >
-                    <img
-                      src={product.images?.[0] ?? "/placeholder.jpg"}
-                      alt={product.name}
-                      className="product-img"
-                    />
-                    <h3 className="product-name">{product.name}</h3>
-
-                    <div className="product-price">
-                      <span className="price-sale">
-                        {product.priceSale.toLocaleString()}₫
-                      </span>
-                      {product.priceOriginal > product.priceSale && (
-                        <span className="price-original">
-                          {product.priceOriginal.toLocaleString()}₫
-                        </span>
-                      )}
-                    </div>
-                  </Link>
-                </div>
-              ))
-            ) : (
-              <p>Không có sản phẩm</p>
-            )}
+            {bestSellers.map((product) => (
+              <ProductCard key={product._id} product={product} />
+            ))}
           </div>
         </div>
       </section>
+
+      {/* ==================== SẢN PHẨM MỚI ==================== */}
+      <section className="product-section">
+        <div className="container">
+          <SectionHeader title="Sản phẩm mới" />
+          <div className="product-grid">
+            {newProducts.map((product) => (
+              <ProductCard key={product._id} product={product} />
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ==================== DANH MỤC CHA ==================== */}
+      {categories.slice(0, 4).map((category) => (
+        <section key={category._id} className="product-section">
+          <div className="container">
+            <SectionHeader
+              title={category.name}
+              link={`/danh-muc/${category.slug}`}
+            />
+            <div className="product-grid">
+              {(categoryProducts[category._id] || []).map((product) => (
+                <ProductCard key={product._id} product={product} />
+              ))}
+            </div>
+          </div>
+        </section>
+      ))}
     </div>
   );
 };
