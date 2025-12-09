@@ -2,6 +2,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { Search, Package, Folders, Loader2, CheckCircle } from "lucide-react";
 import "@/styles/pages/admin/productBulkCategory.scss";
+import { getImageUrl, getFirstImageUrl } from "@/utils/imageUrl";
 import axiosInstance from "../../axios";
 
 interface Product {
@@ -18,14 +19,18 @@ interface CategoryNode {
 }
 
 // Helper: Chuyển categories thành array string ID
-const normalizeCategoryIds = (categories?: Array<string | { _id: string }>): string[] => {
+const normalizeCategoryIds = (
+  categories?: Array<string | { _id: string }>
+): string[] => {
   if (!categories || !Array.isArray(categories)) return [];
-  
-  return categories.map(cat => {
-    if (typeof cat === 'string') return cat;
-    if (cat && typeof cat === 'object' && cat._id) return cat._id;
-    return '';
-  }).filter(Boolean);
+
+  return categories
+    .map((cat) => {
+      if (typeof cat === "string") return cat;
+      if (cat && typeof cat === "object" && cat._id) return cat._id;
+      return "";
+    })
+    .filter(Boolean);
 };
 
 // Component cây danh mục
@@ -114,7 +119,7 @@ export default function ProductBulkCategory() {
 
         const productsData = prodRes.data || [];
         console.log("Products loaded:", productsData[0]); // Debug
-        
+
         setProducts(productsData);
         setCategories(catRes.data || []);
       } catch (err: any) {
@@ -137,13 +142,13 @@ export default function ProductBulkCategory() {
   useEffect(() => {
     if (selectedProducts.length === 1) {
       const product = products.find((p) => p._id === selectedProducts[0]);
-      
+
       if (product) {
         // Normalize categories thành array string ID
         const categoryIds = normalizeCategoryIds(product.categories);
-        
+
         console.log("Selected product categories:", categoryIds); // Debug
-        
+
         if (categoryIds.length > 0) {
           setSelectedCategories(categoryIds);
           expandParentCategories(categoryIds);
@@ -159,15 +164,16 @@ export default function ProductBulkCategory() {
   // Hàm expand các nhánh cha của danh mục
   const expandParentCategories = (categoryIds: string[]) => {
     const toExpand: string[] = [];
-    
+
     const findParents = (nodes: CategoryNode[], targetIds: string[]): void => {
       nodes.forEach((node) => {
         if (node.children && node.children.length > 0) {
-          const hasMatchingChild = node.children.some((child) =>
-            targetIds.includes(child.value) ||
-            (child.children && hasChildMatch(child.children, targetIds))
+          const hasMatchingChild = node.children.some(
+            (child) =>
+              targetIds.includes(child.value) ||
+              (child.children && hasChildMatch(child.children, targetIds))
           );
-          
+
           if (hasMatchingChild) {
             toExpand.push(node.value);
             findParents(node.children, targetIds);
@@ -176,7 +182,10 @@ export default function ProductBulkCategory() {
       });
     };
 
-    const hasChildMatch = (nodes: CategoryNode[], targetIds: string[]): boolean => {
+    const hasChildMatch = (
+      nodes: CategoryNode[],
+      targetIds: string[]
+    ): boolean => {
       return nodes.some((node) => {
         if (targetIds.includes(node.value)) return true;
         if (node.children) return hasChildMatch(node.children, targetIds);
@@ -321,7 +330,7 @@ export default function ProductBulkCategory() {
             ) : (
               filteredProducts.map((p) => {
                 const categoryCount = normalizeCategoryIds(p.categories).length;
-                
+
                 return (
                   <label key={p._id} className="product-item">
                     <input
@@ -335,12 +344,16 @@ export default function ProductBulkCategory() {
                         }
                       }}
                     />
-                    <img src={p.images[0] || "/placeholder.jpg"} alt={p.name} />
+                    <img 
+                      src={getFirstImageUrl(p.images)} 
+                      alt={p.name}
+                      onError={(e) => {
+                        e.currentTarget.src = "https://via.placeholder.com/150?text=Error";
+                      }}
+                    />
                     <span className="product-name">{p.name}</span>
                     {categoryCount > 0 && (
-                      <span className="category-badge">
-                        {categoryCount} DM
-                      </span>
+                      <span className="category-badge">{categoryCount} DM</span>
                     )}
                   </label>
                 );
@@ -362,7 +375,8 @@ export default function ProductBulkCategory() {
             {selectedProducts.length === 1 && (
               <span className="hint-text">
                 {normalizeCategoryIds(
-                  products.find((p) => p._id === selectedProducts[0])?.categories
+                  products.find((p) => p._id === selectedProducts[0])
+                    ?.categories
                 ).length > 0
                   ? "Đang xem danh mục đã lưu"
                   : "Chưa có danh mục"}

@@ -1,39 +1,45 @@
 // ===============================================
-// TRANG DANH MỤC SẢN PHẨM – ĐẸP NHƯ SHOP LỚN
+// TRANG DANH MỤC SẢN PHẨM – LAYOUT CHUYÊN NGHIỆP
 // ===============================================
 
 .category-product-page {
-  background: #f8f9fa;
+  background: #f5f5f5;
   min-height: 100vh;
   padding: 20px 0 60px;
 
   // Container chính
   .container {
-    max-width: 1400px;
+    max-width: 1320px;
     margin: 0 auto;
-    padding: 0 16px;
-
-    @media (min-width: 1200px) {
-      padding: 0 24px;
-    }
+    padding: 0 20px;
   }
 
   // ==================== BREADCRUMB ====================
   .breadcrumb {
-    font-size: 15px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 14px;
     color: #666;
     margin-bottom: 24px;
     padding: 12px 0;
+    flex-wrap: wrap;
 
     a {
       color: #ea580c;
       text-decoration: none;
       font-weight: 500;
-      transition: all 0.2s;
+      transition: color 0.2s;
 
       &:hover {
+        color: #c2410c;
         text-decoration: underline;
       }
+    }
+
+    .separator {
+      color: #999;
+      margin: 0 4px;
     }
 
     span:last-child {
@@ -42,56 +48,124 @@
     }
   }
 
+  // ==================== CATEGORY TABS (Danh mục con nằm ngang) ====================
+  .category-tabs {
+    display: flex;
+    gap: 12px;
+    overflow-x: auto;
+    padding: 16px 0 24px;
+    margin-bottom: 16px;
+    scrollbar-width: thin;
+    scrollbar-color: #ddd transparent;
+
+    // Hide scrollbar nhưng vẫn scroll được
+    &::-webkit-scrollbar {
+      height: 4px;
+    }
+
+    &::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    &::-webkit-scrollbar-thumb {
+      background: #ddd;
+      border-radius: 4px;
+
+      &:hover {
+        background: #bbb;
+      }
+    }
+
+    a {
+      display: inline-flex;
+      align-items: center;
+      padding: 10px 20px;
+      background: white;
+      border: 2px solid #e5e5e5;
+      border-radius: 24px;
+      color: #555;
+      font-size: 14px;
+      font-weight: 600;
+      text-decoration: none;
+      white-space: nowrap;
+      transition: all 0.25s ease;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.04);
+
+      &:hover {
+        border-color: #ea580c;
+        color: #ea580c;
+        background: #fff7ed;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(234, 88, 12, 0.15);
+      }
+
+      &.active {
+        background: linear-gradient(135deg, #ea580c, #f97316);
+        border-color: #ea580c;
+        color: white;
+        box-shadow: 0 4px 12px rgba(234, 88, 12, 0.3);
+      }
+    }
+
+    @media (max-width: 640px) {
+      padding: 12px 0 20px;
+      gap: 8px;
+
+      a {
+        padding: 8px 16px;
+        font-size: 13px;
+      }
+    }
+  }
+
   // ==================== LAYOUT CHÍNH ====================
   .main-wrapper {
-    display: flex;
-    flex-direction: column;
-    gap: 32px;
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 24px;
 
     @media (min-width: 1024px) {
-      flex-direction: row;
+      grid-template-columns: 280px 1fr;
+      gap: 32px;
     }
   }
 
   // ==================== SIDEBAR ====================
   .sidebar {
-    width: 100%;
-    max-width: 280px;
-
     @media (min-width: 1024px) {
       position: sticky;
-      top: 100px;
+      top: 20px;
       height: fit-content;
+      align-self: flex-start;
     }
 
     .widget {
       background: white;
       border-radius: 12px;
-      box-shadow: 0 4px 15px rgba(0,0,0,0.06);
-      padding: 24px;
-      margin-bottom: 24px;
-      overflow: hidden;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+      padding: 20px;
+      margin-bottom: 20px;
 
       &:last-child {
         margin-bottom: 0;
       }
 
       h3 {
-        font-size: 19px;
+        font-size: 18px;
         font-weight: 700;
-        color: #ea580c;
-        margin-bottom: 18px;
-        padding-bottom: 10px;
-        border-bottom: 3px solid #fff3e0;
+        color: #222;
+        margin: 0 0 16px 0;
+        padding-bottom: 12px;
+        border-bottom: 2px solid #f0f0f0;
         position: relative;
 
         &::after {
           content: '';
           position: absolute;
-          bottom: -3px;
+          bottom: -2px;
           left: 0;
-          width: 60px;
-          height: 3px;
+          width: 50px;
+          height: 2px;
           background: #ea580c;
         }
       }
@@ -105,114 +179,142 @@
         margin: 0;
 
         li {
-          margin-bottom: 8px;
+          margin-bottom: 6px;
+
+          &:last-child {
+            margin-bottom: 0;
+          }
 
           a {
-            display: block;
-            padding: 12px 16px;
-            border-radius: 10px;
-            color: #444;
-            font-size: 15px;
+            display: flex;
+            align-items: center;
+            padding: 10px 14px;
+            border-radius: 8px;
+            color: #555;
+            font-size: 14px;
             font-weight: 500;
-            transition: all 0.3s;
-            background: #f9f9f9;
+            text-decoration: none;
+            transition: all 0.25s ease;
+            background: #fafafa;
 
             &:hover {
               background: #fff3e0;
               color: #ea580c;
-              padding-left: 24px;
+              padding-left: 20px;
               font-weight: 600;
-              box-shadow: 0 2px 8px rgba(234,88,12,0.1);
             }
           }
         }
       }
     }
 
-    // Bộ lọc giá đẹp như Shopee
+    // Bộ lọc giá
     .price-filter {
-      .range-slider {
-        margin: 20px 0 25px;
-        height: 8px;
-        border-radius: 8px;
-        background: #e9ecef;
-        position: relative;
-        overflow: hidden;
+      .price-options {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        margin-bottom: 16px;
 
-        &::before {
+        button {
+          padding: 12px 16px;
+          border: 2px solid #e5e5e5;
+          border-radius: 8px;
+          background: white;
+          color: #555;
+          font-size: 14px;
+          font-weight: 600;
+          cursor: pointer;
+          transition: all 0.2s ease;
+          text-align: left;
+
+          &:hover {
+            border-color: #ea580c;
+            color: #ea580c;
+            background: #fff7ed;
+          }
+
+          &.active {
+            border-color: #ea580c;
+            background: #ea580c;
+            color: white;
+            box-shadow: 0 2px 8px rgba(234, 88, 12, 0.3);
+          }
+        }
+      }
+
+      .price-divider {
+        text-align: center;
+        margin: 20px 0 16px;
+        position: relative;
+
+        &::before,
+        &::after {
           content: '';
           position: absolute;
-          top: 0;
-          left: 0;
-          height: 100%;
-          width: 70%;
-          background: linear-gradient(90deg, #ffd8b1, #ea580c);
-          border-radius: 8px;
+          top: 50%;
+          width: 30%;
+          height: 1px;
+          background: #e0e0e0;
         }
 
-        input[type="range"] {
-          -webkit-appearance: none;
-          width: 100%;
-          height: 8px;
-          background: transparent;
+        &::before {
+          left: 0;
+        }
+
+        &::after {
+          right: 0;
+        }
+
+        span {
+          font-size: 13px;
+          color: #999;
+          background: white;
+          padding: 0 12px;
           position: relative;
-          z-index: 2;
-          cursor: pointer;
-
-          &::-webkit-slider-thumb {
-            -webkit-appearance: none;
-            width: 28px;
-            height: 28px;
-            background: white;
-            border: 4px solid #ea580c;
-            border-radius: 50%;
-            cursor: pointer;
-            box-shadow: 0 4px 12px rgba(234,88,12,0.4);
-            transition: all 0.2s;
-
-            &:hover {
-              transform: scale(1.15);
-            }
-          }
-
-          &::-moz-range-thumb {
-            width: 28px;
-            height: 28px;
-            background: white;
-            border: 4px solid #ea580c;
-            border-radius: 50%;
-            cursor: pointer;
-            box-shadow: 0 4px 12px rgba(234,88,12,0.4);
-          }
         }
       }
 
       .price-inputs {
         display: flex;
-        align-items: center;
-        gap: 12px;
-        margin: 20px 0;
+        flex-direction: column;
+        gap: 8px;
+        margin-bottom: 16px;
 
         input {
-          flex: 1;
-          padding: 12px 16px;
-          border: 2px solid #ddd;
-          border-radius: 10px;
+          width: 88%;
+          padding: 14px 12px;
+          border: 2px solid #e5e5e5;
+          border-radius: 8px;
           text-align: center;
-          font-size: 15px;
-          font-weight: 500;
+          font-size: 14px;
+          font-weight: 600;
+          color: #333;
           transition: all 0.2s;
+          background: white;
 
           &:focus {
             outline: none;
             border-color: #ea580c;
-            box-shadow: 0 0 0 4px rgba(234,88,12,0.15);
+            background: #fff7ed;
+            box-shadow: 0 0 0 3px rgba(234, 88, 12, 0.1);
+          }
+
+          &::placeholder {
+            color: #aaa;
+            font-weight: 600;
+            font-size: 13px;
+            letter-spacing: 0.5px;
           }
         }
 
-        span {
-          font-size: 18px;
-          color: #999;
+        .separator {
+          text-align: center;
+          font-size: 24px;
+          color: #ea580c;
+          font-weight: 700;
+          line-height: 1;
+          margin: 4px 0;
         }
       }
 
@@ -221,17 +323,19 @@
         background: linear-gradient(135deg, #ea580c, #f97316);
         color: white;
         border: none;
-        padding: 14px;
-        border-radius: 10px;
-        font-size: 16px;
-        font-weight: 600;
+        padding: 13px;
+        border-radius: 8px;
+        font-size: 15px;
+        font-weight: 700;
         cursor: pointer;
-        transition: all 0.3s;
-        box-shadow: 0 4px 15px rgba(234,88,12,0.3);
+        transition: all 0.3s ease;
+        box-shadow: 0 4px 12px rgba(234, 88, 12, 0.3);
+        letter-spacing: 0.3px;
+        text-transform: uppercase;
 
         &:hover {
           transform: translateY(-2px);
-          box-shadow: 0 8px 25px rgba(234,88,12,0.4);
+          box-shadow: 0 6px 20px rgba(234, 88, 12, 0.4);
         }
 
         &:active {
@@ -243,15 +347,15 @@
 
   // ==================== MAIN CONTENT ====================
   .main-content {
-    flex: 1;
-
     .page-header {
       display: flex;
       flex-direction: column;
       gap: 16px;
-      margin-bottom: 30px;
-      padding-bottom: 20px;
-      border-bottom: 1px solid #eee;
+      margin-bottom: 24px;
+      padding: 20px;
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
 
       @media (min-width: 768px) {
         flex-direction: row;
@@ -260,155 +364,192 @@
       }
 
       h1 {
-        font-size: 32px;
+        font-size: 28px;
         font-weight: 700;
         color: #1a1a1a;
         margin: 0;
+
+        @media (min-width: 768px) {
+          font-size: 32px;
+        }
       }
 
       .sort-group {
         display: flex;
         align-items: center;
         gap: 12px;
-        font-size: 15px;
-        color: #555;
+        font-size: 14px;
+        color: #666;
+        font-weight: 500;
+
+        span {
+          white-space: nowrap;
+        }
 
         select {
-          padding: 10px 20px;
-          border: 2px solid #ddd;
-          border-radius: 10px;
+          padding: 10px 16px;
+          border: 1px solid #ddd;
+          border-radius: 8px;
           background: white;
-          font-size: 15px;
+          font-size: 14px;
+          font-weight: 500;
           cursor: pointer;
           transition: all 0.2s;
+          min-width: 180px;
 
           &:focus {
             outline: none;
             border-color: #ea580c;
-            box-shadow: 0 0 0 3px rgba(234,88,12,0.1);
+            box-shadow: 0 0 0 3px rgba(234, 88, 12, 0.1);
+          }
+
+          &:hover {
+            border-color: #ea580c;
           }
         }
       }
     }
 
-    // Grid sản phẩm
+    // Grid sản phẩm - MẶC ĐỊNH 4 CỘT
     .products-grid {
       display: grid;
-      grid-template-columns: repeat(2, 1fr);
       gap: 20px;
-
-      @media (min-width: 640px) {
-        grid-template-columns: repeat(3,1fr);
+      
+      // Mobile: 2 cột
+      grid-template-columns: repeat(2, 1fr);
+      
+      // Tablet: 3 cột
+      @media (min-width: 768px) {
+        grid-template-columns: repeat(3, 1fr);
         gap: 24px;
       }
-
+      
+      // Desktop: 4 cột (MẶC ĐỊNH)
       @media (min-width: 1024px) {
-        grid-template-columns: repeat(4,1fr);
-        gap: 28px;
-      }
-
-      @media (min-width: 1400px) {
-        grid-template-columns: repeat(5,1fr);
+        grid-template-columns: repeat(4, 1fr);
+        gap: 24px;
       }
     }
 
-    // Card sản phẩm đẹp xuất sắc
+    // Card sản phẩm
     .product-card {
       background: white;
-      border-radius: 16px;
+      border-radius: 12px;
       overflow: hidden;
-      box-shadow: 0 4px 20px rgba(0,0,0,0.08);
-      transition: all 0.4s cubic-bezier(0.4,0,0.2,1);
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      text-decoration: none;
+      display: block;
 
       &:hover {
-        transform: translateY(-12px);
-        box-shadow: 0 20px 40px rgba(0,0,0,0.15);
+        transform: translateY(-8px);
+        box-shadow: 0 12px 24px rgba(0, 0, 0, 0.15);
 
         .image img {
-          transform: scale(1.12);
+          transform: scale(1.08);
         }
       }
 
       .image {
         position: relative;
-        aspect-ratio: 1/1;
+        width: 100%;
+        padding-top: 100%; // Tạo tỷ lệ 1:1
         overflow: hidden;
         background: #f8f8f8;
 
         img {
+          position: absolute;
+          top: 0;
+          left: 0;
           width: 100%;
           height: 100%;
           object-fit: cover;
-          transition: transform 0.6s ease;
+          transition: transform 0.5s ease;
         }
 
         .badge {
           position: absolute;
-          top: 12px;
-          padding: 6px 14px;
-          border-radius: 30px;
-          font-size: 12px;
+          top: 10px;
+          padding: 5px 12px;
+          border-radius: 20px;
+          font-size: 11px;
           font-weight: 700;
           z-index: 10;
           text-transform: uppercase;
           letter-spacing: 0.5px;
+          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
 
           &.sale {
-            left: 12px;
-            background: #e11d48;
+            left: 10px;
+            background: #dc2626;
             color: white;
-            box-shadow: 0 2px 8px rgba(225,29,72,0.4);
           }
 
           &.hot {
-            right: 12px;
+            right: 10px;
             background: linear-gradient(135deg, #ea580c, #f97316);
             color: white;
-            box-shadow: 0 2px 8px rgba(234,88,12,0.4);
           }
         }
       }
 
       .info {
-        padding: 18px 16px 20px;
+        padding: 16px;
 
         .name {
-          font-size: 15px;
+          font-size: 14px;
           line-height: 1.5;
           color: #333;
-          height: 48px;
+          height: 42px;
           overflow: hidden;
           display: -webkit-box;
           -webkit-line-clamp: 2;
           -webkit-box-orient: vertical;
           margin-bottom: 12px;
           font-weight: 500;
+          transition: color 0.2s;
+
+          @media (min-width: 768px) {
+            font-size: 15px;
+          }
         }
 
         .price-info {
           display: flex;
           justify-content: space-between;
           align-items: flex-end;
+          gap: 8px;
+
+          > div {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+          }
 
           .price-sale {
-            font-size: 20px;
+            font-size: 18px;
             font-weight: 700;
             color: #ea580c;
+
+            @media (min-width: 768px) {
+              font-size: 20px;
+            }
           }
 
           .price-original {
-            font-size: 14px;
+            font-size: 13px;
             color: #999;
             text-decoration: line-through;
           }
 
           .discount {
-            background: linear-gradient(135deg, #fee2e2, #fecaca);
-            color: #dc2626;
-            font-size: 13px;
+            background-color: red;
+            color: white;
+            font-size: 12px;
             font-weight: 700;
-            padding: 6px 10px;
-            border-radius: 8px;
+            padding: 4px 8px;
+            border-radius: 6px;
+            white-space: nowrap;
           }
         }
       }
@@ -417,12 +558,51 @@
     // Không có sản phẩm
     .no-products {
       text-align: center;
-      padding: 100px 20px;
+      padding: 80px 20px;
       color: #888;
-      font-size: 20px;
+      font-size: 18px;
       background: white;
-      border-radius: 16px;
-      box-shadow: 0 4px 20px rgba(0,0,0,0.06);
+      border-radius: 12px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+
+      @media (min-width: 768px) {
+        padding: 120px 20px;
+        font-size: 20px;
+      }
+    }
+  }
+
+  // ==================== RESPONSIVE ====================
+  
+  // Mobile small
+  @media (max-width: 480px) {
+    padding: 12px 0 40px;
+    
+    .container {
+      padding: 0 12px;
+    }
+
+    .main-wrapper {
+      gap: 16px;
+    }
+
+    .sidebar .widget {
+      padding: 16px;
+      margin-bottom: 16px;
+    }
+
+    .main-content {
+      .page-header {
+        padding: 16px;
+        
+        h1 {
+          font-size: 22px;
+        }
+      }
+
+      .products-grid {
+        gap: 12px;
+      }
     }
   }
 }

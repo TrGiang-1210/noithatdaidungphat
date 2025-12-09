@@ -25,6 +25,7 @@ interface Category {
   name: string;
   slug: string;
   level: number;
+  children?: Category[];
 }
 
 const Home: React.FC = () => {
@@ -83,38 +84,44 @@ const Home: React.FC = () => {
         });
         setNewProducts(sortedByDate.slice(0, 8));
 
-        // 4. Load danh mục cha (level = 0)
+        // 4. Load danh mục
         const categoriesRes = await fetch(
           "http://localhost:5000/api/categories"
         );
         const allCategories: Category[] = await categoriesRes.json();
 
-        // Flatten categories nếu API trả về dạng tree
-        const flattenCategories = (cats: any[]): Category[] => {
-          let result: Category[] = [];
-          cats.forEach((cat) => {
-            result.push(cat);
-            if (cat.children && cat.children.length > 0) {
-              result = result.concat(flattenCategories(cat.children));
-            }
-          });
-          return result;
-        };
-
-        const flatCats = flattenCategories(allCategories);
-        const parentCategories = flatCats.filter((cat) => cat.level === 0);
+        // LẤY CHỈ DANH MỤC CHA (cấp 1) - KHÔNG flatten
+        // Nếu API trả về dạng flat array, filter theo parent = null
+        // Nếu API trả về dạng tree, lấy trực tiếp từ root
+        const parentCategories = allCategories.filter((cat) => !cat.parent);
+        
+        console.log("Parent Categories (level 1 only):", parentCategories);
         setCategories(parentCategories);
 
         // 5. Load sản phẩm cho từng danh mục cha (tối đa 4 danh mục)
         const categoryProds: Record<string, Product[]> = {};
+        
         for (const cat of parentCategories.slice(0, 4)) {
-          const res = await fetch(
-            `http://localhost:5000/api/products?category=${cat.slug}`
-          );
-          const prods = await res.json();
-          categoryProds[cat._id] = prods.slice(0, 8);
+          try {
+            // Thử cả 2 cách: với "danh-muc/" và không có
+            let url = `http://localhost:5000/api/products?category=${cat.slug}`;
+            console.log(`Loading products for category: ${cat.name} (${cat.slug})`);
+            console.log(`URL: ${url}`);
+            
+            const res = await fetch(url);
+            const prods = await res.json();
+            
+            console.log(`Products found for ${cat.name}:`, prods.length);
+            categoryProds[cat._id] = Array.isArray(prods) ? prods.slice(0, 8) : [];
+          } catch (err) {
+            console.error(`Error loading products for ${cat.name}:`, err);
+            categoryProds[cat._id] = [];
+          }
         }
+        
+        console.log("Category Products:", categoryProds);
         setCategoryProducts(categoryProds);
+        
       } catch (error) {
         console.error("Lỗi load dữ liệu:", error);
       } finally {
@@ -151,7 +158,6 @@ const Home: React.FC = () => {
         <div className="product-info">
           <h3 className="product-name">{product.name}</h3>
 
-          {/* ✅ THÊM discount-percent vào .product-price */}
           <div className="product-price">
             <div className="price-left">
               <span className="price-sale">
@@ -263,22 +269,29 @@ const Home: React.FC = () => {
         </div>
       </section>
 
-      {/* ==================== DANH MỤC CHA ==================== */}
-      {categories.slice(0, 4).map((category) => (
-        <section key={category._id} className="product-section">
-          <div className="container">
-            <SectionHeader
-              title={category.name}
-              link={`/danh-muc/${category.slug}`}
-            />
-            <div className="product-grid">
-              {(categoryProducts[category._id] || []).map((product) => (
-                <ProductCard key={product._id} product={product} />
-              ))}
+      {/* ==================== DANH MỤC CHA VÀ SẢN PHẨM ==================== */}
+      {categories.slice(0, 4).map((category) => {
+        const products = categoryProducts[category._id] || [];
+        
+        // Chỉ hiển thị section nếu có sản phẩm
+        if (products.length === 0) return null;
+        
+        return (
+          <section key={category._id} className="product-section">
+            <div className="container">
+              <SectionHeader
+                title={category.name}
+                link={`/danh-muc/${category.slug}`}
+              />
+              <div className="product-grid">
+                {products.map((product) => (
+                  <ProductCard key={product._id} product={product} />
+                ))}
+              </div>
             </div>
-          </div>
-        </section>
-      ))}
+          </section>
+        );
+      })}
     </div>
   );
 };

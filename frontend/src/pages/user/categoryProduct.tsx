@@ -10,9 +10,6 @@ import {
 import { getFirstImageUrl } from "@/utils/imageUrl";
 import "@/styles/pages/user/categoryProduct.scss";
 
-// XÓA formatPrice ở đây vì đã có trong utils
-// import { formatPrice, formatCurrencyInput, parseCurrencyInput } from "../../utils/index";
-
 interface Product {
   _id: string;
   slug: string;
@@ -44,15 +41,9 @@ const CategoryProducts: React.FC = () => {
 
   // Filters
   const [sortBy, setSortBy] = useState<string>("");
-  const [priceRange, setPriceRange] = useState<[number, number]>([
-    0,
-    MAX_PRICE,
-  ]);
+  const [priceRange, setPriceRange] = useState<[number, number]>([0, MAX_PRICE]);
   const [minInput, setMinInput] = useState<string>("");
   const [maxInput, setMaxInput] = useState<string>("");
-
-  // DÙNG formatPrice từ utils (đã có sẵn, không định nghĩa lại)
-  // Nếu utils chưa có → thêm vào src/utils/index.ts: export { formatPrice } from './formatPrice';
 
   // Flatten categories
   const flatCategories = useMemo(() => {
@@ -68,7 +59,7 @@ const CategoryProducts: React.FC = () => {
     return flat;
   }, [allCategories]);
 
-  // FIX: Tách riêng hàm fetch thật sự
+  // Load products - CHỈ GỌI KHI BẤM NÚT "ÁP DỤNG"
   const loadProducts = useCallback(() => {
     if (!slug) return;
     setLoading(true);
@@ -77,10 +68,9 @@ const CategoryProducts: React.FC = () => {
     params.append("category", slug);
     if (sortBy) params.append("sort", sortBy);
     if (priceRange[0] > 0) params.append("minPrice", priceRange[0].toString());
-    if (priceRange[1] < MAX_PRICE)
-      params.append("maxPrice", priceRange[1].toString());
+    if (priceRange[1] < MAX_PRICE) params.append("maxPrice", priceRange[1].toString());
 
-    axiosInstance // dùng axiosInstance
+    axiosInstance
       .get<Product[]>(`/products?${params.toString()}`)
       .then((res) => {
         const data = res.data;
@@ -93,18 +83,12 @@ const CategoryProducts: React.FC = () => {
       .finally(() => setLoading(false));
   }, [slug, sortBy, priceRange]);
 
-  // Debounced version để dùng khi gõ giá
-  const fetchProducts = useMemo(
-    () => debounce(loadProducts, 400),
-    [loadProducts]
-  );
-
-  // Load lần đầu + khi thay đổi filter
+  // Load lần đầu + khi thay đổi sortBy hoặc slug
   useEffect(() => {
     loadProducts();
-  }, [loadProducts]);
+  }, [slug, sortBy]); // BỎ priceRange khỏi dependencies
 
-  // Lắng nghe event cập nhật danh mục (từ admin)
+  // Lắng nghe event cập nhật danh mục
   useEffect(() => {
     const handler = () => loadProducts();
     window.addEventListener("categories-updated", handler);
@@ -122,27 +106,46 @@ const CategoryProducts: React.FC = () => {
   // Lấy tất cả danh mục
   useEffect(() => {
     axiosInstance
-      .get<Category[]>("/categories") // đã đổi thành axiosInstance
+      .get<Category[]>("/categories")
       .then((res) => setAllCategories(res.data))
       .catch(console.error);
   }, []);
 
-  // Xử lý input giá
-  useEffect(() => {
-    const clean = (val: string) => parseInt(val.replace(/\D/g), "") || 0;
-    const min = clean(minInput);
-    const max = clean(maxInput) || 50_000_000;
-
-    if (min <= max && max <= 50_000_000) {
-      setPriceRange([min * 1000, max * 1000]);
-    }
-  }, [minInput, maxInput]);
-
   // Subcategories
   const subCategories = useMemo(() => {
-    if (!category) return [];
-    return allCategories.filter((cat) => cat.parent === category._id);
-  }, [allCategories, category]);
+  if (!category || !category.children) return [];
+  return category.children; // Lấy trực tiếp từ children
+}, [category]);
+
+  // Handle range slider change
+  const handleRangeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = parseInt(e.target.value) * 1_000_000;
+    setPriceRange([priceRange[0], value]);
+    setMaxInput(formatCurrencyInput((value / 1000).toString()));
+  };
+
+  // Handle input change - KHÔNG tự động reload
+  const handleMinInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const formatted = formatCurrencyInput(e.target.value);
+    setMinInput(formatted);
+    const value = parseCurrencyInput(formatted) * 1000;
+    
+    // Giới hạn tối đa 50 triệu
+    if (value <= MAX_PRICE && value <= priceRange[1]) {
+      setPriceRange([value, priceRange[1]]);
+    }
+  };
+
+  const handleMaxInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const formatted = formatCurrencyInput(e.target.value);
+    setMaxInput(formatted);
+    const value = parseCurrencyInput(formatted) * 1000;
+    
+    // Giới hạn tối đa 50 triệu
+    if (value >= priceRange[0] && value <= MAX_PRICE) {
+      setPriceRange([priceRange[0], value]);
+    }
+  };
 
   if (loading) {
     return (
@@ -152,73 +155,130 @@ const CategoryProducts: React.FC = () => {
     );
   }
 
-  // Trong file categoryProduct.tsx, thay phần return bằng đoạn này:
-
   return (
     <div className="category-product-page">
       <div className="container">
-        {/* Breadcrumb */}
-        <div className="breadcrumb">
-          <Link to="/">Trang chủ</Link>
-          <span className="separator">›</span>
-          <span>{category?.name || "Danh mục"}</span>
-        </div>
+        {/* Danh mục con - Nằm ngang */}
+        {subCategories.length > 0 && (
+          <div className="category-tabs">
+            <Link
+              to={`/danh-muc/${category?.slug}`}
+              className={!slug || slug === category?.slug ? "active" : ""}
+            >
+              Tất cả
+            </Link>
+            {subCategories.map((sub) => (
+              <Link
+                key={sub._id}
+                to={`/danh-muc/${sub.slug}`}
+                className={slug === sub.slug ? "active" : ""}
+              >
+                {sub.name}
+              </Link>
+            ))}
+          </div>
+        )}
 
         <div className="main-wrapper">
           {/* Sidebar */}
           <aside className="sidebar">
-            {/* Danh mục con */}
-            {subCategories.length > 0 && (
-              <div className="widget">
-                <h3>{category?.name}</h3>
-                <div className="sub-categories">
-                  <ul>
-                    {subCategories.map((sub) => (
-                      <li key={sub._id}>
-                        <Link to={`/danh-muc/${sub.slug}`}>{sub.name}</Link>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              </div>
-            )}
-
             {/* Lọc giá */}
             <div className="widget price-filter">
-              <h3>Lọc theo giá</h3>
-              <div className="range-slider">
-                <input
-                  type="range"
-                  min="0"
-                  max="50"
-                  value={priceRange[1] / 1_000_000}
-                  onChange={(e) =>
-                    setPriceRange([
-                      priceRange[0],
-                      parseInt(e.target.value) * 1_000_000,
-                    ])
+              <h3>Khoảng giá</h3>
+
+              <div className="price-options">
+                <button
+                  className={
+                    priceRange[0] === 0 && priceRange[1] === 2_000_000
+                      ? "active"
+                      : ""
                   }
-                />
+                  onClick={() => {
+                    setPriceRange([0, 2_000_000]);
+                    setMinInput("0");
+                    setMaxInput("2.000.000");
+                  }}
+                >
+                  Dưới 2 triệu
+                </button>
+                <button
+                  className={
+                    priceRange[0] === 2_000_000 && priceRange[1] === 5_000_000
+                      ? "active"
+                      : ""
+                  }
+                  onClick={() => {
+                    setPriceRange([2_000_000, 5_000_000]);
+                    setMinInput("2.000.000");
+                    setMaxInput("5.000.000");
+                  }}
+                >
+                  2 - 5 triệu
+                </button>
+                <button
+                  className={
+                    priceRange[0] === 5_000_000 && priceRange[1] === 10_000_000
+                      ? "active"
+                      : ""
+                  }
+                  onClick={() => {
+                    setPriceRange([5_000_000, 10_000_000]);
+                    setMinInput("5.000.000");
+                    setMaxInput("10.000.000");
+                  }}
+                >
+                  5 - 10 triệu
+                </button>
+                <button
+                  className={
+                    priceRange[0] === 10_000_000 && priceRange[1] === 20_000_000
+                      ? "active"
+                      : ""
+                  }
+                  onClick={() => {
+                    setPriceRange([10_000_000, 20_000_000]);
+                    setMinInput("10.000.000");
+                    setMaxInput("20.000.000");
+                  }}
+                >
+                  10 - 20 triệu
+                </button>
+                <button
+                  className={
+                    priceRange[0] === 20_000_000 && priceRange[1] === MAX_PRICE
+                      ? "active"
+                      : ""
+                  }
+                  onClick={() => {
+                    setPriceRange([20_000_000, MAX_PRICE]);
+                    setMinInput("20.000.000");
+                    setMaxInput("50.000.000");
+                  }}
+                >
+                  Trên 20 triệu
+                </button>
               </div>
+
+              <div className="price-divider">
+                <span>Hoặc chọn khoảng giá</span>
+              </div>
+
               <div className="price-inputs">
                 <input
                   type="text"
-                  placeholder="Từ"
+                  placeholder="₫ TỪ"
                   value={minInput}
-                  onChange={(e) =>
-                    setMinInput(formatCurrencyInput(e.target.value))
-                  }
+                  onChange={handleMinInputChange}
                 />
-                <span>-</span>
+                <span className="separator">↓</span>
                 <input
                   type="text"
-                  placeholder="Đến"
+                  placeholder="₫ ĐẾN"
                   value={maxInput}
-                  onChange={(e) =>
-                    setMaxInput(formatCurrencyInput(e.target.value))
-                  }
+                  onChange={handleMaxInputChange}
                 />
               </div>
+
               <button className="apply-btn" onClick={loadProducts}>
                 Áp dụng
               </button>
