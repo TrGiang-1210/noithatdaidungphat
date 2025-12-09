@@ -5,9 +5,9 @@ import {
   LayoutDashboard, 
   Package, 
   Tags, 
-  ShoppingCart,
+  Newspaper,
   LogOut 
-} from "lucide-react"; // cài: npm install lucide-react
+} from "lucide-react";
 
 export default function AdminLayout() {
   const location = useLocation();
@@ -51,7 +51,7 @@ export default function AdminLayout() {
             className={`menu-item ${location.pathname.startsWith('/admin/quan-ly-danh-muc') ? 'active' : ''}`}
           >
             <Package className="icon" />
-            <span>Quản lý danh mục</span>
+            <span>Tất cả danh mục</span>
           </Link>
 
           {/* Tất cả sản phẩm */}
@@ -65,11 +65,11 @@ export default function AdminLayout() {
 
           {/* Đơn hàng */}
           <Link 
-            to="/admin/orders" 
-            className={`menu-item ${location.pathname.startsWith('/admin/orders') ? 'active' : ''}`}
+            to="/admin/quan-ly-bai-viet" 
+            className={`menu-item ${location.pathname.startsWith('/admin/quan-ly-bai-viet') ? 'active' : ''}`}
           >
-            <ShoppingCart className="icon" />
-            <span>Đơn hàng</span>
+            <Newspaper className="icon" />
+            <span>Tất cả bài viết</span>
           </Link>
         </nav>
 

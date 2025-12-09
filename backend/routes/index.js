@@ -10,6 +10,8 @@ const productController = require('../controllers/productController');
 const userController = require('../controllers/userController');
 const cartController = require('../controllers/cartController');
 const orderController = require('../controllers/orderController');
+const postController = require('../controllers/postController');
+const postCategoryController = require('../controllers/postCategoryController');
 
 // Middleware
 const { protect: auth } = require('../middlewares/auth');
@@ -51,6 +53,14 @@ router.post('/orders', auth, orderController.createOrder);
 router.post('/track', orderController.trackPublic);
 router.put('/orders/:id', auth, orderController.updateOrder);
 router.delete('/orders/:id', auth, orderController.deleteOrder);
+
+// Posts
+router.get('/posts', postController.getAllPostsPublic);
+router.get('/posts/:slug', postController.getPostBySlug);
+
+// Post Categories
+router.get('/post-categories', postCategoryController.getAllCategories);
+router.get('/post-categories/:slug', postCategoryController.getPostsByCategory);
 
 // ==================== PROTECTED ROUTES ====================
 router.get('/auth/me', auth, userController.getCurrentUser);

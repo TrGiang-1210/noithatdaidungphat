@@ -3,7 +3,7 @@ import { FaSearch } from "react-icons/fa";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useCart } from "@/context/CartContext";
 import "@/styles/components/user/header.scss";
-import { AuthContext } from "@/context/AuthContext"; // <-- added
+import { AuthContext } from "@/context/AuthContext";
 
 interface Category {
   _id: string;

@@ -15,12 +15,14 @@ import OrderSuccess from "../pages/user/orderSuccess";
 import ResetPassPage from "../pages/user/resetPass";
 import OrderTrackingPage from "../pages/user/orderTracking";
 import CategoryProducts from "../pages/user/categoryProduct";
+import Posts from "../pages/user/post";  // trang bài viết (tạo sau cũng được)
 
 // === ADMIN PAGES ===  ← THÊM TỪ ĐÂY
 import ProductBulkCategory from "../pages/admin/productBulkCategory";  // trang gán danh mục
 import Dashboard from "../pages/admin/dashboard";                      // (tạo sau cũng được)
 import CategoryManager from "../pages/admin/categoryManager";
 import ProductManager from "../pages/admin/productManager";
+import PostManager from "../pages/admin/postManager"; // trang quản lý bài viết (tạo sau cũng được)
 
 const MainRouter = () => {
   return (
@@ -38,18 +40,19 @@ const MainRouter = () => {
         <Route path="/theo-doi-don-hang" element={<OrderTrackingPage />} />
         <Route path="/cap-nhat-thong-tin" element={<UpdateProfile />} />
         <Route path="/danh-muc/:slug" element={<CategoryProducts />} />
+        <Route path="/tin-tuc" element={<Posts />} />
       </Route>
 
       <Route path="/tai-khoan-ca-nhan" element={<AuthPage />} />
       <Route path="/quen-mat-khau" element={<ResetPassPage />} />
 
       {/* ==================== ADMIN ROUTES ==================== */}
-      {/* THÊM TOÀN BỘ ĐOẠN NÀY */}
       <Route path="/admin" element={<AdminLayout />}>
         <Route index element={<Dashboard />} />
         <Route path="gan-danh-muc" element={<ProductBulkCategory />} />
         <Route path="quan-ly-danh-muc" element={<CategoryManager />} />
         <Route path="quan-ly-san-pham" element={<ProductManager />} />
+        <Route path="quan-ly-bai-viet" element={<PostManager />} />
       </Route>
       {/* HẾT ĐOẠN THÊM */}
 
