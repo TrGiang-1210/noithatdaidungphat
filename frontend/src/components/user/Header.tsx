@@ -494,7 +494,7 @@ useEffect(() => {
             <Link to="/khuyen-mai" className="menu-item">
               Khuyến mãi
             </Link>
-            <Link to="/tin-tuc" className="menu-item">
+            <Link to="/posts" className="menu-item">
               Tin tức
             </Link>
             <Link to="/lien-he" className="menu-item">

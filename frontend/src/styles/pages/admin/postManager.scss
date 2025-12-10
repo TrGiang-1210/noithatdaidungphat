@@ -1,4 +1,4 @@
-// PostManager.scss - WordPress Style
+// PostManager.scss - WordPress Style - FIXED
 
 .post-manager {
   padding: 30px;
@@ -52,7 +52,7 @@
     display: flex;
     align-items: center;
     gap: 8px;
-    padding: 12px 24px;
+    padding: 12px 40px;
     border: none;
     border-radius: 10px;
     font-size: 1rem;
@@ -67,11 +67,11 @@
   }
 
   .btn-primary {
-    background: #2c3e50;
+    background: #10b981;
     color: white;
 
     &:hover {
-      background: #1a252f;
+      background: #059669;
       transform: translateY(-2px);
       box-shadow: 0 4px 12px rgba(44, 62, 80, 0.3);
     }
@@ -114,7 +114,7 @@
     }
 
     input {
-      width: 100%;
+      width: 96.3%;
       padding: 12px 16px 12px 48px;
       border: 2px solid #e0e0e0;
       border-radius: 10px;
@@ -131,6 +131,7 @@
   .category-filter {
     min-width: 200px;
     padding: 12px 16px;
+    margin: 12px 0px;
     border: 2px solid #e0e0e0;
     border-radius: 10px;
     font-size: 1rem;
@@ -287,7 +288,7 @@
 
   .status-badge {
     display: inline-block;
-    padding: 4px 12px;
+    padding: 6px 14px;
     border-radius: 20px;
     font-size: 0.85rem;
     font-weight: 600;
@@ -325,22 +326,22 @@
     }
 
     .btn-edit {
-      background: #e8f0f7;
-      color: #2c3e50;
+      background: #3b82f6;
+      color: white;
 
       &:hover {
-        background: #2c3e50;
+        background: #2563eb;
         color: white;
         transform: translateY(-2px);
       }
     }
 
     .btn-delete {
-      background: #fee;
-      color: #dc3545;
+      background: #ef4444;
+      color: white;
 
       &:hover {
-        background: #dc3545;
+        background: #dc2626;
         color: white;
         transform: translateY(-2px);
       }
@@ -487,7 +488,7 @@
 
       input,
       textarea {
-        width: 100%;
+        width: 96.5%;
         padding: 12px 16px;
         border: 2px solid #e0e0e0;
         border-radius: 10px;
@@ -512,41 +513,10 @@
       }
     }
 
-    // Quill Editor Styling
-    .quill {
-      background: white;
-      border-radius: 10px;
-      overflow: hidden;
-
-      .ql-toolbar {
-        background: #f8f9fa;
-        border: 2px solid #e0e0e0;
-        border-bottom: none;
-        border-radius: 10px 10px 0 0;
-        padding: 12px;
-      }
-
-      .ql-container {
-        border: 2px solid #e0e0e0;
-        border-radius: 0 0 10px 10px;
-        min-height: 400px;
-        font-size: 1rem;
-        line-height: 1.8;
-
-        &.ql-snow {
-          border-top: none;
-        }
-      }
-
-      .ql-editor {
-        min-height: 400px;
-        padding: 20px;
-
-        &.ql-blank::before {
-          color: #999;
-          font-style: normal;
-        }
-      }
+    // TinyMCE Editor
+    .tox-tinymce {
+      border: 2px solid #e0e0e0 !important;
+      border-radius: 10px !important;
     }
   }
 
@@ -589,7 +559,7 @@
         input,
         textarea,
         select {
-          width: 100%;
+          width: 90%;
           padding: 10px 12px;
           border: 2px solid #e0e0e0;
           border-radius: 8px;
@@ -629,10 +599,23 @@
         label {
           margin: 0;
           white-space: nowrap;
+          font-size: 0.9rem;
+          font-weight: 600;
         }
 
         select {
           flex: 1;
+          padding: 10px 12px;
+          border: 2px solid #e0e0e0;
+          border-radius: 8px;
+          font-size: 0.95rem;
+          cursor: pointer;
+          transition: all 0.2s ease;
+
+          &:focus {
+            outline: none;
+            border-color: #2c3e50;
+          }
         }
       }
 
@@ -740,6 +723,7 @@
 
         .url-input {
           font-size: 0.85rem;
+          width: 100%;
         }
       }
 
@@ -747,6 +731,7 @@
       .tags-input-box {
         input {
           margin-bottom: 12px;
+          width: 100%;
         }
 
         .tags-list {

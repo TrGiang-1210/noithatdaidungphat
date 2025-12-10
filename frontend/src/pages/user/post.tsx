@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import axios from 'axios';
+import { getImageUrl } from "@/utils/imageUrl"; // ← Import utils
 import "@/styles/pages/user/post.scss";
 
 interface PostCategory {
@@ -153,9 +154,12 @@ const Posts: React.FC = () => {
                     <article key={post._id} className="post-card">
                       <Link to={`/posts/${post.slug}`} className="post-thumbnail">
                         <img
-                          src={post.thumbnail || '/placeholder-post.jpg'}
+                          src={post.thumbnail ? getImageUrl(post.thumbnail) : '/placeholder-post.jpg'}
                           alt={post.title}
                           loading="lazy"
+                          onError={(e) => {
+                            e.currentTarget.src = 'https://via.placeholder.com/400x300?text=No+Image';
+                          }}
                         />
                         {post.category_id && (
                           <span className="post-category-badge">

@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import { Editor } from '@tinymce/tinymce-react';
+import { getImageUrl } from "@/utils/imageUrl";
 import "@/styles/pages/admin/postManager.scss";
 
 interface PostCategory {
@@ -74,6 +75,7 @@ const PostManager: React.FC = () => {
     setLoading(true);
     try {
       const res = await axios.get(`${API_URL}/admin/posts`, axiosConfig);
+      console.log('Posts fetched:', res.data); // Debug
       setPosts(res.data);
     } catch (error) {
       console.error('Error fetching posts:', error);
@@ -183,14 +185,16 @@ const PostManager: React.FC = () => {
     
     try {
       if (editingPost) {
-        await axios.put(`${API_URL}/admin/posts/${editingPost._id}`, formData, axiosConfig);
+        const res = await axios.put(`${API_URL}/admin/posts/${editingPost._id}`, formData, axiosConfig);
+        console.log('Post updated:', res.data); // Debug
         alert('Cập nhật bài viết thành công!');
       } else {
-        await axios.post(`${API_URL}/admin/posts`, formData, axiosConfig);
+        const res = await axios.post(`${API_URL}/admin/posts`, formData, axiosConfig);
+        console.log('Post created:', res.data); // Debug
         alert('Tạo bài viết thành công!');
       }
       
-      fetchPosts();
+      await fetchPosts(); // Reload lại danh sách
       closeModal();
     } catch (error: any) {
       console.error('Error saving post:', error);
@@ -221,7 +225,7 @@ const PostManager: React.FC = () => {
         description: post.description || '',
         content: post.content || '',
         category_id: typeof post.category_id === 'object' ? post.category_id._id : post.category_id,
-        status: post.status || 'draft',
+        status: post.status || 'draft', // ✅ Fix: Đảm bảo lấy đúng status
         tags: post.tags || [],
         meta_title: post.meta_title || post.title,
         meta_description: post.meta_description || post.description || ''
@@ -368,7 +372,13 @@ const PostManager: React.FC = () => {
                     <td>
                       <div className="thumbnail-cell">
                         {post.thumbnail ? (
-                          <img src={post.thumbnail} alt={post.title} />
+                          <img 
+                            src={getImageUrl(post.thumbnail)} 
+                            alt={post.title}
+                            onError={(e) => {
+                              e.currentTarget.src = 'https://via.placeholder.com/150?text=Error';
+                            }}
+                          />
                         ) : (
                           <div className="no-image">No Image</div>
                         )}
@@ -388,6 +398,7 @@ const PostManager: React.FC = () => {
                       )}
                     </td>
                     <td>
+                      {/* ✅ Fix: Hiển thị đúng status */}
                       <span className={`status-badge status-${post.status || 'draft'}`}>
                         {post.status === 'published' ? 'Đã xuất bản' : 'Nháp'}
                       </span>
@@ -436,210 +447,218 @@ const PostManager: React.FC = () => {
               </button>
             </div>
 
-            <form className="modal-body wordpress-editor" onSubmit={handleSubmit}>
-              {/* Main Editor Area */}
-              <div className="editor-main">
-                <div className="form-group">
-                  <input
-                    type="text"
-                    name="title"
-                    className="title-input"
-                    value={formData.title}
-                    onChange={handleInputChange}
-                    required
-                    placeholder="Nhập tiêu đề bài viết..."
-                  />
-                  <p className="helper-text">Permalink: {formData.slug || 'auto-generate-from-title'}</p>
-                </div>
-
-                <div className="form-group">
-                  <label>Nội dung bài viết</label>
-                  <Editor
-                    apiKey="your-tinymce-api-key"
-                    onInit={(evt, editor) => editorRef.current = editor}
-                    value={formData.content}
-                    onEditorChange={handleEditorChange}
-                    init={{
-                      height: 500,
-                      menubar: true,
-                      plugins: [
-                        'advlist', 'autolink', 'lists', 'link', 'image', 'charmap', 'preview',
-                        'anchor', 'searchreplace', 'visualblocks', 'code', 'fullscreen',
-                        'insertdatetime', 'media', 'table', 'code', 'help', 'wordcount'
-                      ],
-                      toolbar: 'undo redo | blocks | ' +
-                        'bold italic forecolor | alignleft aligncenter ' +
-                        'alignright alignjustify | bullist numlist outdent indent | ' +
-                        'removeformat | image media link | code | help',
-                      content_style: 'body { font-family:Helvetica,Arial,sans-serif; font-size:14px }',
-                      language: 'vi',
-                      skin: 'oxide',
-                      content_css: 'default'
-                    }}
-                  />
-                </div>
-
-                <div className="form-group">
-                  <label>Mô tả ngắn (Excerpt)</label>
-                  <textarea
-                    name="description"
-                    value={formData.description}
-                    onChange={handleInputChange}
-                    rows={3}
-                    placeholder="Mô tả ngắn gọn về bài viết, hiển thị trong danh sách bài viết..."
-                  />
-                </div>
-              </div>
-
-              {/* Sidebar */}
-              <div className="editor-sidebar">
-                {/* Publish Box */}
-                <div className="sidebar-box">
-                  <h3>Xuất bản</h3>
-                  <div className="publish-actions">
-                    <div className="form-group-inline">
-                      <label>Trạng thái:</label>
-                      <select
-                        name="status"
-                        value={formData.status}
-                        onChange={handleInputChange}
-                      >
-                        <option value="draft">Nháp</option>
-                        <option value="published">Xuất bản</option>
-                      </select>
-                    </div>
-                    <button type="submit" className="btn-publish">
-                      {formData.status === 'published' ? 'Xuất Bản' : 'Lưu Nháp'}
-                    </button>
-                  </div>
-                </div>
-
-                {/* Featured Image */}
-                <div className="sidebar-box">
-                  <h3>Ảnh đại diện</h3>
-                  <div className="featured-image-box">
-                    {formData.thumbnail ? (
-                      <div className="image-preview">
-                        <img src={formData.thumbnail} alt="Featured" />
-                        <button
-                          type="button"
-                          className="btn-remove-image"
-                          onClick={() => setFormData(prev => ({ ...prev, thumbnail: '' }))}
-                        >
-                          ✕
-                        </button>
-                      </div>
-                    ) : (
-                      <div className="upload-placeholder">
-                        <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
-                          <path d="M24 16V32M16 24H32" stroke="currentColor" strokeWidth="3" strokeLinecap="round"/>
-                        </svg>
-                        <p>Thêm ảnh đại diện</p>
-                      </div>
-                    )}
-                    <input
-                      type="file"
-                      ref={fileInputRef}
-                      onChange={handleImageUpload}
-                      accept="image/*"
-                      style={{ display: 'none' }}
-                    />
-                    <button
-                      type="button"
-                      className="btn-upload"
-                      onClick={() => fileInputRef.current?.click()}
-                      disabled={uploadingImage}
-                    >
-                      {uploadingImage ? 'Đang upload...' : 'Chọn ảnh'}
-                    </button>
-                    <input
-                      type="text"
-                      name="thumbnail"
-                      value={formData.thumbnail}
-                      onChange={handleInputChange}
-                      placeholder="Hoặc nhập URL ảnh"
-                      className="url-input"
-                    />
-                  </div>
-                </div>
-
-                {/* Category */}
-                <div className="sidebar-box">
-                  <h3>Danh mục</h3>
-                  <select
-                    name="category_id"
-                    value={formData.category_id}
-                    onChange={handleInputChange}
-                  >
-                    <option value="">-- Chọn danh mục --</option>
-                    {categories.map(cat => (
-                      <option key={cat._id} value={cat._id}>{cat.name}</option>
-                    ))}
-                  </select>
-                </div>
-
-                {/* Tags */}
-                <div className="sidebar-box">
-                  <h3>Tags</h3>
-                  <div className="tags-input-box">
-                    <input
-                      type="text"
-                      value={tagInput}
-                      onChange={(e) => setTagInput(e.target.value)}
-                      onKeyDown={handleAddTag}
-                      placeholder="Nhập tag và nhấn Enter"
-                    />
-                    <div className="tags-list">
-                      {formData.tags.map((tag, index) => (
-                        <span key={index} className="tag-item">
-                          {tag}
-                          <button type="button" onClick={() => handleRemoveTag(tag)}>✕</button>
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-
-                {/* SEO Settings */}
-                <div className="sidebar-box">
-                  <h3>SEO</h3>
+            <form onSubmit={handleSubmit}>
+              <div className="wordpress-editor">
+                {/* Main Editor Area */}
+                <div className="editor-main">
                   <div className="form-group">
-                    <label>Meta Title</label>
                     <input
                       type="text"
-                      name="meta_title"
-                      value={formData.meta_title}
+                      name="title"
+                      className="title-input"
+                      value={formData.title}
                       onChange={handleInputChange}
-                      placeholder="Tiêu đề SEO"
-                      maxLength={60}
+                      required
+                      placeholder="Nhập tiêu đề bài viết..."
                     />
-                    <p className="char-count">{formData.meta_title.length}/60 ký tự</p>
+                    <p className="helper-text">Permalink: {formData.slug || 'auto-generate-from-title'}</p>
                   </div>
+
                   <div className="form-group">
-                    <label>Meta Description</label>
+                    <label>Nội dung bài viết</label>
+                    <Editor
+                      apiKey="6xggb1bi1xu937evzkkxhjl8469qlt2l03hg1zpep5c4a6i7"
+                      onInit={(evt, editor) => editorRef.current = editor}
+                      value={formData.content}
+                      onEditorChange={handleEditorChange}
+                      init={{
+                        height: 500,
+                        menubar: true,
+                        plugins: [
+                          'advlist', 'autolink', 'lists', 'link', 'image', 'charmap', 'preview',
+                          'anchor', 'searchreplace', 'visualblocks', 'code', 'fullscreen',
+                          'insertdatetime', 'media', 'table', 'code', 'help', 'wordcount'
+                        ],
+                        toolbar: 'undo redo | blocks | ' +
+                          'bold italic forecolor | alignleft aligncenter ' +
+                          'alignright alignjustify | bullist numlist outdent indent | ' +
+                          'removeformat | image media link | code | help',
+                        content_style: 'body { font-family:Helvetica,Arial,sans-serif; font-size:14px }',
+                        language: 'vi',
+                        skin: 'oxide',
+                        content_css: 'default'
+                      }}
+                    />
+                  </div>
+
+                  <div className="form-group">
+                    <label>Mô tả ngắn (Excerpt)</label>
                     <textarea
-                      name="meta_description"
-                      value={formData.meta_description}
+                      name="description"
+                      value={formData.description}
                       onChange={handleInputChange}
                       rows={3}
-                      placeholder="Mô tả SEO"
-                      maxLength={160}
+                      placeholder="Mô tả ngắn gọn về bài viết, hiển thị trong danh sách bài viết..."
                     />
-                    <p className="char-count">{formData.meta_description.length}/160 ký tự</p>
                   </div>
                 </div>
 
-                {/* Slug */}
-                <div className="sidebar-box">
-                  <h3>URL Slug</h3>
-                  <input
-                    type="text"
-                    name="slug"
-                    value={formData.slug}
-                    onChange={handleInputChange}
-                    required
-                    placeholder="url-bai-viet"
-                  />
+                {/* Sidebar */}
+                <div className="editor-sidebar">
+                  {/* Publish Box */}
+                  <div className="sidebar-box">
+                    <h3>Xuất bản</h3>
+                    <div className="publish-actions">
+                      <div className="form-group-inline">
+                        <label>Trạng thái:</label>
+                        <select
+                          name="status"
+                          value={formData.status}
+                          onChange={handleInputChange}
+                        >
+                          <option value="draft">Nháp</option>
+                          <option value="published">Xuất bản</option>
+                        </select>
+                      </div>
+                      <button type="submit" className="btn-publish">
+                        {formData.status === 'published' ? 'Xuất Bản' : 'Lưu Nháp'}
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Featured Image */}
+                  <div className="sidebar-box">
+                    <h3>Ảnh đại diện</h3>
+                    <div className="featured-image-box">
+                      {formData.thumbnail ? (
+                        <div className="image-preview">
+                          <img 
+                            src={getImageUrl(formData.thumbnail)} 
+                            alt="Featured"
+                            onError={(e) => {
+                              e.currentTarget.src = 'https://via.placeholder.com/150?text=Error';
+                            }}
+                          />
+                          <button
+                            type="button"
+                            className="btn-remove-image"
+                            onClick={() => setFormData(prev => ({ ...prev, thumbnail: '' }))}
+                          >
+                            ✕
+                          </button>
+                        </div>
+                      ) : (
+                        <div className="upload-placeholder">
+                          <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
+                            <path d="M24 16V32M16 24H32" stroke="currentColor" strokeWidth="3" strokeLinecap="round"/>
+                          </svg>
+                          <p>Thêm ảnh đại diện</p>
+                        </div>
+                      )}
+                      <input
+                        type="file"
+                        ref={fileInputRef}
+                        onChange={handleImageUpload}
+                        accept="image/*"
+                        style={{ display: 'none' }}
+                      />
+                      <button
+                        type="button"
+                        className="btn-upload"
+                        onClick={() => fileInputRef.current?.click()}
+                        disabled={uploadingImage}
+                      >
+                        {uploadingImage ? 'Đang upload...' : 'Chọn ảnh'}
+                      </button>
+                      <input
+                        type="text"
+                        name="thumbnail"
+                        value={formData.thumbnail}
+                        onChange={handleInputChange}
+                        placeholder="Hoặc nhập URL ảnh"
+                        className="url-input"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Category */}
+                  <div className="sidebar-box">
+                    <h3>Danh mục</h3>
+                    <select
+                      name="category_id"
+                      value={formData.category_id}
+                      onChange={handleInputChange}
+                    >
+                      <option value="">-- Chọn danh mục --</option>
+                      {categories.map(cat => (
+                        <option key={cat._id} value={cat._id}>{cat.name}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {/* Tags */}
+                  <div className="sidebar-box">
+                    <h3>Tags</h3>
+                    <div className="tags-input-box">
+                      <input
+                        type="text"
+                        value={tagInput}
+                        onChange={(e) => setTagInput(e.target.value)}
+                        onKeyDown={handleAddTag}
+                        placeholder="Nhập tag và nhấn Enter"
+                      />
+                      <div className="tags-list">
+                        {formData.tags.map((tag, index) => (
+                          <span key={index} className="tag-item">
+                            {tag}
+                            <button type="button" onClick={() => handleRemoveTag(tag)}>✕</button>
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* SEO Settings */}
+                  <div className="sidebar-box">
+                    <h3>SEO</h3>
+                    <div className="form-group">
+                      <label>Meta Title</label>
+                      <input
+                        type="text"
+                        name="meta_title"
+                        value={formData.meta_title}
+                        onChange={handleInputChange}
+                        placeholder="Tiêu đề SEO"
+                        maxLength={60}
+                      />
+                      <p className="char-count">{formData.meta_title.length}/60 ký tự</p>
+                    </div>
+                    <div className="form-group">
+                      <label>Meta Description</label>
+                      <textarea
+                        name="meta_description"
+                        value={formData.meta_description}
+                        onChange={handleInputChange}
+                        rows={3}
+                        placeholder="Mô tả SEO"
+                        maxLength={160}
+                      />
+                      <p className="char-count">{formData.meta_description.length}/160 ký tự</p>
+                    </div>
+                  </div>
+
+                  {/* Slug */}
+                  <div className="sidebar-box">
+                    <h3>URL Slug</h3>
+                    <input
+                      type="text"
+                      name="slug"
+                      value={formData.slug}
+                      onChange={handleInputChange}
+                      required
+                      placeholder="url-bai-viet"
+                    />
+                  </div>
                 </div>
               </div>
             </form>
