@@ -13,35 +13,107 @@ const postCategoryController = require('../controllers/postCategoryController');
 
 const { protect: auth, admin } = require('../middlewares/auth');
 
-// Tạo thư mục uploads nếu chưa có
-const uploadsDir = path.join(__dirname, '../uploads/products');
-if (!fs.existsSync(uploadsDir)) {
-  fs.mkdirSync(uploadsDir, { recursive: true });
+// ==================== TẠO FOLDERS ====================
+// Tạo thư mục uploads cho products
+const productsDir = path.join(__dirname, '../uploads/products');
+if (!fs.existsSync(productsDir)) {
+  fs.mkdirSync(productsDir, { recursive: true });
   console.log('✅ Đã tạo folder uploads/products');
 }
 
-// Cấu hình multer cho upload ảnh
-const storage = multer.diskStorage({
+// Tạo thư mục uploads cho posts
+const postsDir = path.join(__dirname, '../uploads/posts');
+if (!fs.existsSync(postsDir)) {
+  fs.mkdirSync(postsDir, { recursive: true });
+  console.log('✅ Đã tạo folder uploads/posts');
+}
+
+// ==================== MULTER CONFIG ====================
+// Cấu hình multer cho products
+const productStorage = multer.diskStorage({
   destination: (req, file, cb) => {
-    cb(null, uploadsDir);
+    cb(null, productsDir);
   },
   filename: (req, file, cb) => {
     const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
-    cb(null, uniqueSuffix + path.extname(file.originalname));
+    cb(null, 'product-' + uniqueSuffix + path.extname(file.originalname));
   }
 });
 
-const upload = multer({
-  storage,
+// Cấu hình multer cho posts
+const postStorage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, postsDir);
+  },
+  filename: (req, file, cb) => {
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
+    cb(null, 'post-' + uniqueSuffix + path.extname(file.originalname));
+  }
+});
+
+// File filter chung
+const fileFilter = (req, file, cb) => {
+  const allowedTypes = /jpeg|jpg|png|gif|webp/;
+  const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
+  const mimetype = allowedTypes.test(file.mimetype);
+  if (mimetype && extname) {
+    return cb(null, true);
+  }
+  cb(new Error('Chỉ chấp nhận file ảnh (jpg, jpeg, png, gif, webp)!'));
+};
+
+// Upload instance cho products
+const productUpload = multer({
+  storage: productStorage,
   limits: { fileSize: 5 * 1024 * 1024 }, // 5MB
-  fileFilter: (req, file, cb) => {
-    const allowedTypes = /jpeg|jpg|png|gif|webp/;
-    const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
-    const mimetype = allowedTypes.test(file.mimetype);
-    if (mimetype && extname) {
-      return cb(null, true);
+  fileFilter: fileFilter
+});
+
+// Upload instance cho posts
+const postUpload = multer({
+  storage: postStorage,
+  limits: { fileSize: 5 * 1024 * 1024 }, // 5MB
+  fileFilter: fileFilter
+});
+
+// ==================== UPLOAD ROUTES ====================
+// Upload ảnh cho posts (featured image)
+router.post('/upload-image', auth, admin, postUpload.single('image'), (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ error: 'Không có file nào được upload' });
     }
-    cb(new Error('Chỉ chấp nhận file ảnh!'));
+
+    const imageUrl = `/uploads/posts/${req.file.filename}`;
+    
+    res.json({
+      success: true,
+      url: imageUrl,
+      filename: req.file.filename
+    });
+  } catch (error) {
+    console.error('Upload error:', error);
+    res.status(500).json({ error: error.message || 'Lỗi khi upload ảnh' });
+  }
+});
+
+// Upload nhiều ảnh cho products (nếu cần route riêng)
+router.post('/upload-product-images', auth, admin, productUpload.array('images', 5), (req, res) => {
+  try {
+    if (!req.files || req.files.length === 0) {
+      return res.status(400).json({ error: 'Không có file nào được upload' });
+    }
+
+    const imageUrls = req.files.map(file => `/uploads/products/${file.filename}`);
+    
+    res.json({
+      success: true,
+      urls: imageUrls,
+      count: req.files.length
+    });
+  } catch (error) {
+    console.error('Upload error:', error);
+    res.status(500).json({ error: error.message || 'Lỗi khi upload ảnh' });
   }
 });
 
@@ -52,12 +124,12 @@ router.put('/categories/:id', auth, admin, categoryController.updateCategory);
 router.delete('/categories/:id', auth, admin, categoryController.deleteCategory);
 
 // ==================== PRODUCT ROUTES ====================
-// GET: Lấy tất cả sản phẩm (cho admin panel) - ✅ FIX ĐÂY
+// GET: Lấy tất cả sản phẩm (cho admin panel)
 router.get('/products', auth, admin, productController.getAllProductsAdmin);
 // POST: Tạo sản phẩm mới
-router.post('/products', auth, admin, upload.array('images', 3), productController.createProduct);
+router.post('/products', auth, admin, productUpload.array('images', 3), productController.createProduct);
 // PUT: Cập nhật sản phẩm
-router.put('/products/:id', auth, admin, upload.array('images', 3), productController.updateProduct);
+router.put('/products/:id', auth, admin, productUpload.array('images', 3), productController.updateProduct);
 // DELETE: Xóa sản phẩm
 router.delete('/products/:id', auth, admin, productController.deleteProduct);
 // POST: Gán danh mục hàng loạt
@@ -69,7 +141,6 @@ router.get("/posts/:slug", auth, admin, postController.getPostBySlug);
 router.post("/posts", auth, admin, postController.createPost);
 router.put("/posts/:id", auth, admin, postController.updatePost);
 router.delete("/posts/:id", auth, admin, postController.deletePost);
-router.post('/post-categories', auth, admin, postCategoryController.createCategory);
 
 // ==================== POST CATEGORY ROUTES ====================
 router.post('/post-categories', auth, admin, postCategoryController.createCategory);

@@ -1,7 +1,6 @@
-// src/router/index.router.tsx
 import { Route, Routes } from "react-router-dom";
 import UserLayout from "../layouts/UserLayout";
-import AdminLayout from "../layouts/admin.layout";        // ← THÊM DÒNG NÀY
+import AdminLayout from "../layouts/admin.layout";
 
 // === USER PAGES ===
 import Home from "../pages/user/home";
@@ -15,14 +14,15 @@ import OrderSuccess from "../pages/user/orderSuccess";
 import ResetPassPage from "../pages/user/resetPass";
 import OrderTrackingPage from "../pages/user/orderTracking";
 import CategoryProducts from "../pages/user/categoryProduct";
-import Posts from "../pages/user/post";  // trang bài viết (tạo sau cũng được)
+import Posts from "../pages/user/post";
+import PostDetail from "../pages/user/postDetail";
 
-// === ADMIN PAGES ===  ← THÊM TỪ ĐÂY
-import ProductBulkCategory from "../pages/admin/productBulkCategory";  // trang gán danh mục
-import Dashboard from "../pages/admin/dashboard";                      // (tạo sau cũng được)
+// === ADMIN PAGES ===
+import ProductBulkCategory from "../pages/admin/productBulkCategory";
+import Dashboard from "../pages/admin/dashboard";
 import CategoryManager from "../pages/admin/categoryManager";
 import ProductManager from "../pages/admin/productManager";
-import PostManager from "../pages/admin/postManager"; // trang quản lý bài viết (tạo sau cũng được)
+import PostManager from "../pages/admin/postManager";
 
 const MainRouter = () => {
   return (
@@ -40,7 +40,8 @@ const MainRouter = () => {
         <Route path="/theo-doi-don-hang" element={<OrderTrackingPage />} />
         <Route path="/cap-nhat-thong-tin" element={<UpdateProfile />} />
         <Route path="/danh-muc/:slug" element={<CategoryProducts />} />
-        <Route path="/tin-tuc" element={<Posts />} />
+        <Route path="/posts" element={<Posts />} />
+        <Route path="/posts/:slug" element={<PostDetail />} />
       </Route>
 
       <Route path="/tai-khoan-ca-nhan" element={<AuthPage />} />
