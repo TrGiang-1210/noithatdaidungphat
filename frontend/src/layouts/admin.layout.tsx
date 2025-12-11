@@ -6,7 +6,8 @@ import {
   Package, 
   Tags, 
   Newspaper,
-  LogOut 
+  ShoppingCart,
+  LogOut
 } from "lucide-react";
 
 export default function AdminLayout() {
@@ -63,13 +64,22 @@ export default function AdminLayout() {
             <span>Tất cả sản phẩm</span>
           </Link>
 
-          {/* Đơn hàng */}
+          {/* Bài viết */}
           <Link 
             to="/admin/quan-ly-bai-viet" 
             className={`menu-item ${location.pathname.startsWith('/admin/quan-ly-bai-viet') ? 'active' : ''}`}
           >
             <Newspaper className="icon" />
             <span>Tất cả bài viết</span>
+          </Link>
+
+          {/* Dơn hàng */}
+          <Link 
+            to="/admin/quan-ly-don-hang"
+            className={`menu-item ${location.pathname.startsWith('/admin/quan-ly-don-hang') ? 'active' : ''}`}
+          >
+            <ShoppingCart className="icon" />
+            <span>Tất cả đơn hàng</span>
           </Link>
         </nav>
 

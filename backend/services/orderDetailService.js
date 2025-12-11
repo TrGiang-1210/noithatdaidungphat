@@ -1,3 +1,4 @@
+// services/OrderDetailService.js
 const OrderDetail = require('../models/OrderDetail');
 
 class OrderDetailService {
@@ -6,9 +7,9 @@ class OrderDetailService {
   }
 
   static async getByOrderId(orderId) {
+    // ✅ KHÔNG throw error nếu không có details
     const details = await OrderDetail.find({ order_id: orderId }).populate('product_id');
-    if (!details.length) throw new Error('Order details not found');
-    return details;
+    return details; // trả về array rỗng nếu không có
   }
 
   static async createMany(details) {

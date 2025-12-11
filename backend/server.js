@@ -7,9 +7,17 @@ const connectDB = require("./config/db");
 const path = require('path');
 const routes = require('./routes/index');
 const adminRoutes = require('./routes/admin');
+const { startOrderReserveCronjob } = require('./scripts/orderCronjob');
 
 dotenv.config();
-connectDB();
+
+// ✅ KẾT NỐI DB TRƯỚC, SAU ĐÓ KHỞI ĐỘNG CRONJOB
+connectDB().then(() => {
+  console.log('✅ MongoDB connected');
+  
+  // ✅ KHỞI ĐỘNG CRONJOB SAU KHI DB ĐÃ KẾT NỐI
+  startOrderReserveCronjob();
+});
 
 const app = express();
 

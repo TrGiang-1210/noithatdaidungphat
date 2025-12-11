@@ -153,17 +153,17 @@ const Header: React.FC = () => {
   }, []);
 
   // Trong useEffect của Header.tsx, thêm:
-useEffect(() => {
-  if (isHomePage) {
-    document.body.classList.add("homepage");
-  } else {
-    document.body.classList.remove("homepage");
-  }
+  useEffect(() => {
+    if (isHomePage) {
+      document.body.classList.add("homepage");
+    } else {
+      document.body.classList.remove("homepage");
+    }
 
-  return () => {
-    document.body.classList.remove("homepage");
-  };
-}, [isHomePage]);
+    return () => {
+      document.body.classList.remove("homepage");
+    };
+  }, [isHomePage]);
 
   // Hover handlers
   const handleMouseEnter = () => {
@@ -399,7 +399,11 @@ useEffect(() => {
               DANH MỤC SẢN PHẨM
             </div>
             {/* {isHomePage && ( */}
-            <div className={`tree-dropdown ${isHomePage && isAtTop ? "show-at-top" : ""}`}>
+            <div
+              className={`tree-dropdown ${
+                isHomePage && isAtTop ? "show-at-top" : ""
+              }`}
+            >
               <div className="tree-level">
                 {Array.isArray(categories) && categories.length > 0 ? (
                   categories.map((cat) => (
@@ -426,7 +430,10 @@ useEffect(() => {
                             <div className="mega-submenu-inner">
                               {cat.children.map((child) => (
                                 <div key={child._id} className="submenu-item">
-                                  <Link to={`/danh-muc/${child.slug}`} className="submenu-title">
+                                  <Link
+                                    to={`/danh-muc/${child.slug}`}
+                                    className="submenu-title"
+                                  >
                                     {child.name}
                                     {child.children &&
                                       child.children.length > 0 && (
@@ -443,7 +450,10 @@ useEffect(() => {
                                             key={grandchild._id}
                                             className="submenu-item"
                                           >
-                                            <Link to={`/danh-muc/${grandchild.slug}`} className="submenu-title">
+                                            <Link
+                                              to={`/danh-muc/${grandchild.slug}`}
+                                              className="submenu-title"
+                                            >
                                               {grandchild.name}
                                               {grandchild.children &&
                                                 grandchild.children.length >
@@ -461,7 +471,11 @@ useEffect(() => {
                                                 <div className="submenu-dropdown">
                                                   {grandchild.children.map(
                                                     (great) => (
-                                                      <Link key={great._id} to={`/danh-muc/${great.slug}`} className="submenu-leaf">
+                                                      <Link
+                                                        key={great._id}
+                                                        to={`/danh-muc/${great.slug}`}
+                                                        className="submenu-leaf"
+                                                      >
                                                         {great.name}
                                                       </Link>
                                                     )
@@ -488,17 +502,14 @@ useEffect(() => {
           </div>
 
           <div className="main-menu-items">
-            <Link to="/gioi-thieu" className="menu-item">
-              Giới thiệu
-            </Link>
-            <Link to="/khuyen-mai" className="menu-item">
-              Khuyến mãi
+            <Link to="/theo-doi-don-hang" className="menu-item">
+              Kiểm tra đơn hàng
             </Link>
             <Link to="/posts" className="menu-item">
               Tin tức
             </Link>
-            <Link to="/lien-he" className="menu-item">
-              Liên hệ
+            <Link to="/gioi-thieu" className="menu-item">
+              Giới thiệu
             </Link>
           </div>
         </div>
