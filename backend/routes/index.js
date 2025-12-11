@@ -48,20 +48,17 @@ router.put('/cart', auth, cartController.updateItem);
 router.delete('/cart', auth, cartController.removeItem);
 router.delete('/cart/clear', auth, cartController.clearCart);
 
-// ==================== ORDER ROUTES (PUBLIC) ====================
+// ==================== ORDER ROUTES ====================
 // Tạo đơn hàng (không cần login - COD)
 router.post('/orders', orderController.createOrder);
-
 // Tracking đơn hàng công khai (dùng order number)
 router.get('/orders/track/:orderNumber', orderController.trackPublicByOrderNumber);
 
-// ==================== ORDER ROUTES (USER - Protected) ====================
+// ==================== ORDER ROUTES ====================
 // Xem danh sách đơn hàng của mình
 router.get('/orders/my-orders', auth, orderController.getUserOrders);
-
 // Xem chi tiết 1 đơn hàng của mình
 router.get('/orders/my-orders/:id', auth, orderController.getUserOrderById);
-
 // Hủy đơn hàng của mình (chỉ khi còn Pending)
 router.patch('/orders/:id/cancel-user', auth, orderController.cancelUserOrder);
 

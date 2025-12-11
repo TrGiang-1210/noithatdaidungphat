@@ -3,22 +3,25 @@ const mongoose = require('mongoose');
 
 const customerSchema = new mongoose.Schema({
   name: { type: String, required: true },
-  phone: { type: String, required: true },        // <-- BẮT BUỘC có
+  phone: { type: String, required: true },
   email: String,
   address: { type: String, required: true },
 });
 
 const orderSchema = new mongoose.Schema({
-  user_id: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+  user_id: { 
+    type: mongoose.Schema.Types.ObjectId, 
+    ref: 'User',
+    default: null // Cho phép guest checkout
+  },
 
-  // Quan trọng: bạn cần 1 trường code để khách tra cứu!
   order_code: { 
     type: String, 
     required: true, 
     unique: true,
     uppercase: true,
     trim: true
-  }, // VD: DH251129048
+  },
 
   customer: customerSchema,
 
@@ -32,13 +35,24 @@ const orderSchema = new mongoose.Schema({
 
   status: { 
     type: String, 
-    enum: ['pending', 'confirmed', 'packaging', 'shipped', 'delivering', 'delivered', 'cancelled'],
-    default: 'pending'
+    enum: ['Pending', 'Confirmed', 'Shipping', 'Completed', 'Cancelled'],
+    default: 'Pending'
+  },
+
+  note: { type: String, default: '' },
+
+  // ✅ THÊM FIELD RESERVE STOCK
+  reservedUntil: { 
+    type: Date,
+    default: function() {
+      // Mặc định giữ hàng 24 giờ
+      return new Date(Date.now() + 24 * 60 * 60 * 1000);
+    }
   },
 
   // Nếu bạn dùng GHN, GHTK, ViettelPost...
-  tracking_number: { type: String },        // VD: 80221123456789
-  carrier: { type: String },                // "GHN", "GHTK", ...
+  tracking_number: { type: String },
+  carrier: { type: String },
 
 }, { 
   timestamps: { 
@@ -47,7 +61,7 @@ const orderSchema = new mongoose.Schema({
   } 
 });
 
-// Tạo order_code tự động nếu chưa có (khi tạo đơn hàng)
+// Tạo order_code tự động nếu chưa có
 orderSchema.pre('save', function(next) {
   if (!this.order_code) {
     const date = new Date().toISOString().slice(2,10).replace(/-/g,'');
@@ -56,5 +70,11 @@ orderSchema.pre('save', function(next) {
   }
   next();
 });
+
+// ✅ INDEX để tìm kiếm nhanh
+orderSchema.index({ order_code: 1 });
+orderSchema.index({ 'customer.phone': 1 });
+orderSchema.index({ status: 1 });
+orderSchema.index({ reservedUntil: 1 });
 
 module.exports = mongoose.model('Order', orderSchema);

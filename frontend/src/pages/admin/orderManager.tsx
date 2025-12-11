@@ -1,10 +1,10 @@
-// src/admin/pages/OrderManager.tsx
+// src/admin/pages/OrderManager.tsx - FIXED VERSION
 import { useState, useEffect } from "react";
-import { 
-  Package, 
-  Clock, 
-  CheckCircle, 
-  XCircle, 
+import {
+  Package,
+  Clock,
+  CheckCircle,
+  XCircle,
   Truck,
   Eye,
   Loader2,
@@ -12,7 +12,7 @@ import {
   Phone,
   MapPin,
   User,
-  Calendar
+  Calendar,
 } from "lucide-react";
 import axiosInstance from "../../axios";
 import { getFirstImageUrl } from "@/utils/imageUrl";
@@ -44,7 +44,7 @@ interface Order {
   note?: string;
   createdAt: string;
   updatedAt: string;
-  reservedUntil?: string; // Thời gian hết hạn reserve
+  reservedUntil?: string;
 }
 
 export default function OrderManager() {
@@ -53,13 +53,48 @@ export default function OrderManager() {
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [showDetailModal, setShowDetailModal] = useState(false);
   const [filterStatus, setFilterStatus] = useState<string>("all");
-  const [processingOrderId, setProcessingOrderId] = useState<string | null>(null);
+  const [processingOrderId, setProcessingOrderId] = useState<string | null>(
+    null
+  );
 
   const fetchOrders = async () => {
     try {
       setLoading(true);
       const res = await axiosInstance.get("/admin/orders");
-      setOrders(res.data || []);
+
+      console.log("📦 RAW ORDERS DATA:", res.data); // Debug
+
+      // ✅ LỌC VÀ VALIDATE DỮ LIỆU TRƯỚC KHI SET
+      const validOrders = (res.data || [])
+        .filter((order: any) => {
+          if (!order) {
+            console.warn("⚠️ Order is null/undefined:", order);
+            return false;
+          }
+          if (!order.items || !Array.isArray(order.items)) {
+            console.warn("⚠️ Order has invalid items:", order);
+            return false;
+          }
+          return true;
+        })
+        .map((order: any) => ({
+          ...order,
+          // ✅ ĐẢM BẢO items LUÔN HỢP LỆ
+          items: (order.items || [])
+            .filter((item: any) => item && item.product)
+            .map((item: any) => ({
+              ...item,
+              product: item.product || {
+                _id: "unknown",
+                name: "Sản phẩm đã xóa",
+                images: [],
+                sku: "N/A",
+              },
+            })),
+        }));
+
+      console.log("✅ VALID ORDERS:", validOrders); // Debug
+      setOrders(validOrders);
     } catch (err) {
       alert("Lỗi tải đơn hàng");
       console.error(err);
@@ -70,61 +105,77 @@ export default function OrderManager() {
 
   useEffect(() => {
     fetchOrders();
-    // Auto refresh mỗi 30s để cập nhật trạng thái reserve
     const interval = setInterval(fetchOrders, 30000);
     return () => clearInterval(interval);
   }, []);
 
   const getStatusInfo = (status: Order["status"]) => {
     const statusMap = {
-      Pending: { 
-        label: "Chờ xác nhận", 
-        color: "#f59e0b", 
+      Pending: {
+        label: "Chờ xác nhận",
+        color: "#f59e0b",
         icon: Clock,
-        bgColor: "#fef3c7"
+        bgColor: "#fef3c7",
       },
-      Confirmed: { 
-        label: "Đã xác nhận", 
-        color: "#3b82f6", 
+      Confirmed: {
+        label: "Đã xác nhận",
+        color: "#3b82f6",
         icon: CheckCircle,
-        bgColor: "#dbeafe"
+        bgColor: "#dbeafe",
       },
-      Shipping: { 
-        label: "Đang giao", 
-        color: "#8b5cf6", 
+      Shipping: {
+        label: "Đang giao",
+        color: "#8b5cf6",
         icon: Truck,
-        bgColor: "#ede9fe"
+        bgColor: "#ede9fe",
       },
-      Completed: { 
-        label: "Hoàn thành", 
-        color: "#10b981", 
+      Completed: {
+        label: "Hoàn thành",
+        color: "#10b981",
         icon: CheckCircle,
-        bgColor: "#d1fae5"
+        bgColor: "#d1fae5",
       },
-      Cancelled: { 
-        label: "Đã hủy", 
-        color: "#ef4444", 
+      Cancelled: {
+        label: "Đã hủy",
+        color: "#ef4444",
         icon: XCircle,
-        bgColor: "#fee2e2"
+        bgColor: "#fee2e2",
       },
     };
-    return statusMap[status];
+
+    // ✅ Thêm fallback nếu status không hợp lệ
+    return (
+      statusMap[status] || {
+        label: "Không xác định",
+        color: "#6b7280",
+        icon: AlertCircle,
+        bgColor: "#f3f4f6",
+      }
+    );
   };
 
-  const handleStatusChange = async (orderId: string, newStatus: Order["status"]) => {
-    if (!confirm(`Xác nhận chuyển trạng thái sang "${getStatusInfo(newStatus).label}"?`)) {
+  const handleStatusChange = async (
+    orderId: string,
+    newStatus: Order["status"]
+  ) => {
+    if (
+      !confirm(
+        `Xác nhận chuyển trạng thái sang "${getStatusInfo(newStatus).label}"?`
+      )
+    ) {
       return;
     }
 
     try {
       setProcessingOrderId(orderId);
-      await axiosInstance.patch(`/admin/orders/${orderId}/status`, { status: newStatus });
+      await axiosInstance.patch(`/admin/orders/${orderId}/status`, {
+        status: newStatus,
+      });
       await fetchOrders();
       alert("Cập nhật trạng thái thành công!");
-      
-      // Nếu đang xem chi tiết, cập nhật order đó
+
       if (selectedOrder?._id === orderId) {
-        const updated = orders.find(o => o._id === orderId);
+        const updated = orders.find((o) => o._id === orderId);
         if (updated) setSelectedOrder(updated);
       }
     } catch (err: any) {
@@ -144,7 +195,7 @@ export default function OrderManager() {
       await axiosInstance.patch(`/admin/orders/${orderId}/cancel`);
       await fetchOrders();
       alert("Đã hủy đơn hàng và hoàn tồn kho!");
-      
+
       if (selectedOrder?._id === orderId) {
         setShowDetailModal(false);
         setSelectedOrder(null);
@@ -163,32 +214,33 @@ export default function OrderManager() {
 
   const getReserveTimeLeft = (reservedUntil?: string) => {
     if (!reservedUntil) return null;
-    
+
     const now = new Date().getTime();
     const reserved = new Date(reservedUntil).getTime();
     const diff = reserved - now;
-    
+
     if (diff <= 0) return "Đã hết hạn";
-    
+
     const hours = Math.floor(diff / (1000 * 60 * 60));
     const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-    
+
     if (hours > 0) {
       return `${hours}h ${minutes}m`;
     }
     return `${minutes}m`;
   };
 
-  const filteredOrders = filterStatus === "all" 
-    ? orders 
-    : orders.filter(o => o.status === filterStatus);
+  const filteredOrders =
+    filterStatus === "all"
+      ? orders
+      : orders.filter((o) => o.status === filterStatus);
 
   const stats = {
-    pending: orders.filter(o => o.status === "Pending").length,
-    confirmed: orders.filter(o => o.status === "Confirmed").length,
-    shipping: orders.filter(o => o.status === "Shipping").length,
-    completed: orders.filter(o => o.status === "Completed").length,
-    cancelled: orders.filter(o => o.status === "Cancelled").length,
+    pending: orders.filter((o) => o.status === "Pending").length,
+    confirmed: orders.filter((o) => o.status === "Confirmed").length,
+    shipping: orders.filter((o) => o.status === "Shipping").length,
+    completed: orders.filter((o) => o.status === "Completed").length,
+    cancelled: orders.filter((o) => o.status === "Cancelled").length,
   };
 
   if (loading) {
@@ -239,37 +291,37 @@ export default function OrderManager() {
 
       {/* Filter */}
       <div className="filter-bar">
-        <button 
+        <button
           className={filterStatus === "all" ? "active" : ""}
           onClick={() => setFilterStatus("all")}
         >
           Tất cả ({orders.length})
         </button>
-        <button 
+        <button
           className={filterStatus === "Pending" ? "active" : ""}
           onClick={() => setFilterStatus("Pending")}
         >
           Chờ xác nhận ({stats.pending})
         </button>
-        <button 
+        <button
           className={filterStatus === "Confirmed" ? "active" : ""}
           onClick={() => setFilterStatus("Confirmed")}
         >
           Đã xác nhận ({stats.confirmed})
         </button>
-        <button 
+        <button
           className={filterStatus === "Shipping" ? "active" : ""}
           onClick={() => setFilterStatus("Shipping")}
         >
           Đang giao ({stats.shipping})
         </button>
-        <button 
+        <button
           className={filterStatus === "Completed" ? "active" : ""}
           onClick={() => setFilterStatus("Completed")}
         >
           Hoàn thành ({stats.completed})
         </button>
-        <button 
+        <button
           className={filterStatus === "Cancelled" ? "active" : ""}
           onClick={() => setFilterStatus("Cancelled")}
         >
@@ -300,7 +352,7 @@ export default function OrderManager() {
                 const statusInfo = getStatusInfo(order.status);
                 const StatusIcon = statusInfo.icon;
                 const timeLeft = getReserveTimeLeft(order.reservedUntil);
-                
+
                 return (
                   <tr key={order._id}>
                     <td>
@@ -314,20 +366,43 @@ export default function OrderManager() {
                     </td>
                     <td>
                       <div className="items-preview">
-                        {order.items.slice(0, 2).map((item, idx) => (
-                          <div key={idx} className="item-mini">
-                            <img 
-                              src={getFirstImageUrl(item.product.images)} 
-                              alt={item.product.name}
-                              onError={(e) => {
-                                e.currentTarget.src = "https://via.placeholder.com/40?text=?";
-                              }}
-                            />
-                            <span>x{item.quantity}</span>
-                          </div>
-                        ))}
+                        {/* ✅ FIX: KIỂM TRA item.product TỒN TẠI */}
+                        {order.items
+                          .filter((item) => {
+                            // ✅ Kiểm tra kỹ hơn
+                            return (
+                              item &&
+                              item.product &&
+                              typeof item.product === "object" &&
+                              item.quantity > 0
+                            );
+                          })
+                          .slice(0, 2)
+                          .map((item, idx) => {
+                            // ✅ Thêm fallback an toàn
+                            const product = item.product || {};
+                            const images = Array.isArray(product.images)
+                              ? product.images
+                              : [];
+
+                            return (
+                              <div key={idx} className="item-mini">
+                                <img
+                                  src={getFirstImageUrl(images)}
+                                  alt={product.name || "Sản phẩm"}
+                                  onError={(e) => {
+                                    e.currentTarget.src =
+                                      "https://via.placeholder.com/40?text=?";
+                                  }}
+                                />
+                                <span>x{item.quantity}</span>
+                              </div>
+                            );
+                          })}
                         {order.items.length > 2 && (
-                          <span className="more">+{order.items.length - 2}</span>
+                          <span className="more">
+                            +{order.items.length - 2}
+                          </span>
                         )}
                       </div>
                     </td>
@@ -335,11 +410,11 @@ export default function OrderManager() {
                       <strong>{order.totalAmount.toLocaleString()} ₫</strong>
                     </td>
                     <td>
-                      <div 
+                      <div
                         className="status-badge"
-                        style={{ 
+                        style={{
                           backgroundColor: statusInfo.bgColor,
-                          color: statusInfo.color 
+                          color: statusInfo.color,
                         }}
                       >
                         <StatusIcon size={14} />
@@ -366,7 +441,7 @@ export default function OrderManager() {
                         month: "2-digit",
                         year: "numeric",
                         hour: "2-digit",
-                        minute: "2-digit"
+                        minute: "2-digit",
                       })}
                     </td>
                     <td className="actions">
@@ -377,11 +452,13 @@ export default function OrderManager() {
                       >
                         <Eye size={16} />
                       </button>
-                      
+
                       {order.status === "Pending" && (
                         <>
                           <button
-                            onClick={() => handleStatusChange(order._id, "Confirmed")}
+                            onClick={() =>
+                              handleStatusChange(order._id, "Confirmed")
+                            }
                             className="btn-small btn-confirm"
                             disabled={processingOrderId === order._id}
                             title="Xác nhận đơn"
@@ -402,10 +479,12 @@ export default function OrderManager() {
                           </button>
                         </>
                       )}
-                      
+
                       {order.status === "Confirmed" && (
                         <button
-                          onClick={() => handleStatusChange(order._id, "Shipping")}
+                          onClick={() =>
+                            handleStatusChange(order._id, "Shipping")
+                          }
                           className="btn-small btn-ship"
                           disabled={processingOrderId === order._id}
                           title="Chuyển sang đang giao"
@@ -417,10 +496,12 @@ export default function OrderManager() {
                           )}
                         </button>
                       )}
-                      
+
                       {order.status === "Shipping" && (
                         <button
-                          onClick={() => handleStatusChange(order._id, "Completed")}
+                          onClick={() =>
+                            handleStatusChange(order._id, "Completed")
+                          }
                           className="btn-small btn-complete"
                           disabled={processingOrderId === order._id}
                           title="Hoàn thành"
@@ -443,18 +524,27 @@ export default function OrderManager() {
 
       {/* Modal chi tiết */}
       {showDetailModal && selectedOrder && (
-        <div className="modal-overlay" onClick={() => setShowDetailModal(false)}>
-          <div className="modal detail-modal" onClick={(e) => e.stopPropagation()}>
+        <div
+          className="modal-overlay"
+          onClick={() => setShowDetailModal(false)}
+        >
+          <div
+            className="modal detail-modal"
+            onClick={(e) => e.stopPropagation()}
+          >
             <div className="modal-header">
               <h3>Chi tiết đơn hàng {selectedOrder.orderNumber}</h3>
-              <div 
+              <div
                 className="status-badge"
-                style={{ 
+                style={{
                   backgroundColor: getStatusInfo(selectedOrder.status).bgColor,
-                  color: getStatusInfo(selectedOrder.status).color 
+                  color: getStatusInfo(selectedOrder.status).color,
                 }}
               >
-                {React.createElement(getStatusInfo(selectedOrder.status).icon, { size: 14 })}
+                {(() => {
+                  const StatusIcon = getStatusInfo(selectedOrder.status).icon;
+                  return <StatusIcon size={14} />;
+                })()}
                 {getStatusInfo(selectedOrder.status).label}
               </div>
             </div>
@@ -462,7 +552,9 @@ export default function OrderManager() {
             <div className="modal-content">
               {/* Thông tin khách hàng */}
               <div className="info-section">
-                <h4><User size={18} /> Thông tin khách hàng</h4>
+                <h4>
+                  <User size={18} /> Thông tin khách hàng
+                </h4>
                 <div className="info-grid">
                   <div className="info-item">
                     <strong>Họ tên:</strong>
@@ -482,7 +574,9 @@ export default function OrderManager() {
                     <Calendar size={14} />
                     <strong>Ngày đặt:</strong>
                     <span>
-                      {new Date(selectedOrder.createdAt).toLocaleString("vi-VN")}
+                      {new Date(selectedOrder.createdAt).toLocaleString(
+                        "vi-VN"
+                      )}
                     </span>
                   </div>
                   <div className="info-item">
@@ -490,7 +584,7 @@ export default function OrderManager() {
                     <span>{selectedOrder.paymentMethod}</span>
                   </div>
                 </div>
-                
+
                 {selectedOrder.note && (
                   <div className="note-box">
                     <strong>Ghi chú:</strong>
@@ -498,43 +592,57 @@ export default function OrderManager() {
                   </div>
                 )}
 
-                {selectedOrder.status === "Pending" && selectedOrder.reservedUntil && (
-                  <div className="reserve-info">
-                    <AlertCircle size={16} />
-                    <div>
-                      <strong>Thời gian giữ hàng:</strong>
-                      <span>Còn {getReserveTimeLeft(selectedOrder.reservedUntil)} để xác nhận</span>
+                {selectedOrder.status === "Pending" &&
+                  selectedOrder.reservedUntil && (
+                    <div className="reserve-info">
+                      <AlertCircle size={16} />
+                      <div>
+                        <strong>Thời gian giữ hàng:</strong>
+                        <span>
+                          Còn {getReserveTimeLeft(selectedOrder.reservedUntil)}{" "}
+                          để xác nhận
+                        </span>
+                      </div>
                     </div>
-                  </div>
-                )}
+                  )}
               </div>
 
               {/* Danh sách sản phẩm */}
               <div className="info-section">
-                <h4><Package size={18} /> Sản phẩm đã đặt</h4>
+                <h4>
+                  <Package size={18} /> Sản phẩm đã đặt
+                </h4>
                 <div className="items-list">
-                  {selectedOrder.items.map((item, idx) => (
-                    <div key={idx} className="item-row">
-                      <img 
-                        src={getFirstImageUrl(item.product.images)} 
-                        alt={item.product.name}
-                        onError={(e) => {
-                          e.currentTarget.src = "https://via.placeholder.com/80?text=Error";
-                        }}
-                      />
-                      <div className="item-details">
-                        <div className="item-name">{item.product.name}</div>
-                        <div className="item-sku">SKU: {item.product.sku}</div>
+                  {/* ✅ FIX: KIỂM TRA item.product TỒN TẠI */}
+                  {selectedOrder.items
+                    .filter((item) => item && item.product) // Lọc bỏ item null
+                    .map((item, idx) => (
+                      <div key={idx} className="item-row">
+                        <img
+                          src={getFirstImageUrl(item.product?.images || [])}
+                          alt={item.product?.name || "Sản phẩm"}
+                          onError={(e) => {
+                            e.currentTarget.src =
+                              "https://via.placeholder.com/80?text=Error";
+                          }}
+                        />
+                        <div className="item-details">
+                          <div className="item-name">
+                            {item.product?.name || "N/A"}
+                          </div>
+                          <div className="item-sku">
+                            SKU: {item.product?.sku || "N/A"}
+                          </div>
+                        </div>
+                        <div className="item-quantity">x{item.quantity}</div>
+                        <div className="item-price">
+                          {item.price.toLocaleString()} ₫
+                        </div>
+                        <div className="item-total">
+                          {(item.price * item.quantity).toLocaleString()} ₫
+                        </div>
                       </div>
-                      <div className="item-quantity">x{item.quantity}</div>
-                      <div className="item-price">
-                        {item.price.toLocaleString()} ₫
-                      </div>
-                      <div className="item-total">
-                        {(item.price * item.quantity).toLocaleString()} ₫
-                      </div>
-                    </div>
-                  ))}
+                    ))}
                 </div>
 
                 <div className="total-row">
@@ -547,10 +655,8 @@ export default function OrderManager() {
             </div>
 
             <div className="modal-actions">
-              <button onClick={() => setShowDetailModal(false)}>
-                Đóng
-              </button>
-              
+              <button onClick={() => setShowDetailModal(false)}>Đóng</button>
+
               {selectedOrder.status === "Pending" && (
                 <>
                   <button
@@ -577,10 +683,12 @@ export default function OrderManager() {
                   </button>
                 </>
               )}
-              
+
               {selectedOrder.status === "Confirmed" && (
                 <button
-                  onClick={() => handleStatusChange(selectedOrder._id, "Shipping")}
+                  onClick={() =>
+                    handleStatusChange(selectedOrder._id, "Shipping")
+                  }
                   className="btn-ship"
                   disabled={processingOrderId === selectedOrder._id}
                 >
@@ -592,10 +700,12 @@ export default function OrderManager() {
                   Chuyển sang đang giao
                 </button>
               )}
-              
+
               {selectedOrder.status === "Shipping" && (
                 <button
-                  onClick={() => handleStatusChange(selectedOrder._id, "Completed")}
+                  onClick={() =>
+                    handleStatusChange(selectedOrder._id, "Completed")
+                  }
                   className="btn-complete"
                   disabled={processingOrderId === selectedOrder._id}
                 >

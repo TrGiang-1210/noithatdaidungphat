@@ -1,3 +1,4 @@
+// services/orderService.js
 const Order = require('../models/Order');
 const axios = require('axios');
 const crypto = require('crypto');
@@ -7,6 +8,7 @@ class OrderService {
     return await Order.find(filters).sort(sort).populate('user_id');
   }
 
+  // ✅ THÊM METHOD COUNT
   static async count(filters = {}) {
     return await Order.countDocuments(filters);
   }
@@ -74,5 +76,6 @@ module.exports = {
   getById: OrderService.getById,
   update: OrderService.update,
   delete: OrderService.delete,
+  count: OrderService.count, // ✅ EXPORT METHOD COUNT
   createMomoPayment
 };

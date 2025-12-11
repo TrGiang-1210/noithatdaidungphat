@@ -1,5 +1,5 @@
-// src/contexts/CartContext.tsx
-import React, { createContext, useCallback, useContext, useEffect, useState } from "react";
+// src/contexts/CartContext.tsx - FIXED VERSION
+import React, { createContext, useCallback, useContext, useEffect, useState, useRef } from "react";
 import {
   fetchCart,
   addToCartAPI,
@@ -51,7 +51,7 @@ const CartContext = createContext<CartContextType>({
   totalQuantity: 0,
   loadCart: async () => {},
   reloadCart: async () => {},
-  addToCart: async () => {},
+  addToCart: async () => false,
   updateItem: async () => {},
   removeItem: async () => {},
   clearCart: async () => {},
@@ -61,6 +61,7 @@ export const useCart = () => useContext(CartContext);
 
 export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [cart, setCart] = useState<CartShape>(defaultCart);
+  const lastToastTime = useRef<number>(0); // ← THÊM REF ĐỂ DEBOUNCE TOAST
 
   // Helper: chuẩn hóa product object
   const normalizeProduct = (prod: any): Product => ({
@@ -77,56 +78,66 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
     size: prod.size,
   });
 
+  // ← THÊM FUNCTION SHOW TOAST VỚI DEBOUNCE
+  const showSuccessToast = (message: string) => {
+    const now = Date.now();
+    // Chỉ show toast nếu đã qua 1 giây kể từ toast trước
+    if (now - lastToastTime.current > 1000) {
+      toast.success(message);
+      lastToastTime.current = now;
+    }
+  };
+
   // Load cart từ server hoặc localStorage
   const loadCart = useCallback(async () => {
-  const token = localStorage.getItem("token");
+    const token = localStorage.getItem("token");
 
-  let serverCart = null;
-  if (token) {
-    try {
-      serverCart = await fetchCart();
-    } catch (err) {
-      console.warn("Không lấy được giỏ hàng từ server", err);
-    }
-  }
-
-  // ƯU TIÊN: Nếu server có dữ liệu → dùng server
-  if (serverCart && serverCart.items && serverCart.items.length > 0) {
-    const normalized = {
-      items: serverCart.items.map((item: any) => ({
-        product: normalizeProduct(item.product || item),
-        quantity: item.quantity || 1,
-      })),
-      totalQuantity: serverCart.totalQuantity || serverCart.items.reduce((s: number, i: any) => s + (i.quantity || 1), 0),
-    };
-    setCart(normalized);
-    // XÓA local để tránh xung đột
-    localStorage.removeItem("cart_local");
-    return;
-  }
-
-  // Nếu server rỗng hoặc không có token → dùng local
-  try {
-    const raw = localStorage.getItem("cart_local");
-    if (raw) {
-      const parsed = JSON.parse(raw);
-      if (parsed && parsed.items && parsed.items.length > 0) {
-        const normalizedItems = parsed.items.map((item: any) => ({
-          product: normalizeProduct(item.product || item),
-          quantity: item.quantity || 1,
-        }));
-        const totalQty = normalizedItems.reduce((s: number, i: any) => s + i.quantity, 0);
-        setCart({ items: normalizedItems, totalQuantity: totalQty });
-        return;
+    let serverCart = null;
+    if (token) {
+      try {
+        serverCart = await fetchCart();
+      } catch (err) {
+        console.warn("Không lấy được giỏ hàng từ server", err);
       }
     }
-  } catch (e) {
-    console.error("Lỗi parse local cart", e);
-  }
 
-  // Cuối cùng nếu cả 2 đều rỗng
-  setCart(defaultCart);
-}, []);
+    // ƯU TIÊN: Nếu server có dữ liệu → dùng server
+    if (serverCart && serverCart.items && serverCart.items.length > 0) {
+      const normalized = {
+        items: serverCart.items.map((item: any) => ({
+          product: normalizeProduct(item.product || item),
+          quantity: item.quantity || 1,
+        })),
+        totalQuantity: serverCart.totalQuantity || serverCart.items.reduce((s: number, i: any) => s + (i.quantity || 1), 0),
+      };
+      setCart(normalized);
+      // XÓA local để tránh xung đột
+      localStorage.removeItem("cart_local");
+      return;
+    }
+
+    // Nếu server rỗng hoặc không có token → dùng local
+    try {
+      const raw = localStorage.getItem("cart_local");
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (parsed && parsed.items && parsed.items.length > 0) {
+          const normalizedItems = parsed.items.map((item: any) => ({
+            product: normalizeProduct(item.product || item),
+            quantity: item.quantity || 1,
+          }));
+          const totalQty = normalizedItems.reduce((s: number, i: any) => s + i.quantity, 0);
+          setCart({ items: normalizedItems, totalQuantity: totalQty });
+          return;
+        }
+      }
+    } catch (e) {
+      console.error("Lỗi parse local cart", e);
+    }
+
+    // Cuối cùng nếu cả 2 đều rỗng
+    setCart(defaultCart);
+  }, []);
 
   const reloadCart = useCallback(async () => {
     await loadCart();
@@ -141,16 +152,16 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-const addToCart = useCallback(async (product: Product, quantity = 1): Promise<boolean> => {
-  const normalizedProduct = normalizeProduct(product);
-  const token = localStorage.getItem("token");
+  const addToCart = useCallback(async (product: Product, quantity = 1): Promise<boolean> => {
+    const normalizedProduct = normalizeProduct(product);
+    const token = localStorage.getItem("token");
 
-  if (token) {
+    if (token) {
       try {
         const res = await addToCartAPI(normalizedProduct._id, quantity);
         // API thành công → reload từ server
         await loadCart();
-        toast.success("Đã thêm vào giỏ hàng!");
+        showSuccessToast("Đã thêm vào giỏ hàng!"); // ← DÙNG DEBOUNCED TOAST
         return true;
       } catch (err: any) {
         console.error("Lỗi thêm giỏ hàng server:", err);
@@ -173,32 +184,35 @@ const addToCart = useCallback(async (product: Product, quantity = 1): Promise<bo
           persistLocalCart(newCart);
           return newCart;
         });
+        
+        // KHÔNG TOAST Ở ĐÂY vì đã toast ở catch block phía trên
+        showSuccessToast("Đã thêm vào giỏ hàng (chế độ offline)"); // ← DÙNG DEBOUNCED TOAST
         return false;
       }
-  }
-
-  // Guest flow (giữ nguyên)
-  setCart(prev => {
-    const existing = prev.items.find(i => i.product._id === normalizedProduct._id);
-    let newItems;
-    if (existing) {
-      newItems = prev.items.map(i =>
-        i.product._id === normalizedProduct._id
-          ? { ...i, quantity: i.quantity + quantity }
-          : i
-      );
-    } else {
-      newItems = [...prev.items, { product: normalizedProduct, quantity }];
     }
-    const newTotal = newItems.reduce((s, i) => s + i.quantity, 0);
-    const newCart = { items: newItems, totalQuantity: newTotal };
-    persistLocalCart(newCart);
-    toast.success("Đã thêm vào giỏ hàng!");
-    return newCart;
-  });
 
-  return false;
-}, [loadCart]);
+    // Guest flow (giữ nguyên nhưng dùng debounced toast)
+    setCart(prev => {
+      const existing = prev.items.find(i => i.product._id === normalizedProduct._id);
+      let newItems;
+      if (existing) {
+        newItems = prev.items.map(i =>
+          i.product._id === normalizedProduct._id
+            ? { ...i, quantity: i.quantity + quantity }
+            : i
+        );
+      } else {
+        newItems = [...prev.items, { product: normalizedProduct, quantity }];
+      }
+      const newTotal = newItems.reduce((s, i) => s + i.quantity, 0);
+      const newCart = { items: newItems, totalQuantity: newTotal };
+      persistLocalCart(newCart);
+      return newCart;
+    });
+
+    showSuccessToast("Đã thêm vào giỏ hàng!"); // ← DÙNG DEBOUNCED TOAST
+    return false;
+  }, [loadCart]);
 
   const updateItem = useCallback(async (productId: string, quantity: number) => {
     if (quantity <= 0) {
