@@ -10,6 +10,7 @@ const categoryController = require('../controllers/categoryController');
 const productController = require('../controllers/productController');
 const postController = require('../controllers/postController');
 const postCategoryController = require('../controllers/postCategoryController');
+const orderController = require('../controllers/orderController');
 
 const { protect: auth, admin } = require('../middlewares/auth');
 
@@ -145,5 +146,24 @@ router.delete("/posts/:id", auth, admin, postController.deletePost);
 // ==================== POST CATEGORY ROUTES ====================
 router.post('/post-categories', auth, admin, postCategoryController.createCategory);
 router.delete('/post-categories/:id', auth, admin, postCategoryController.deleteCategory);
+
+// ==================== ORDER ROUTES (ADMIN) ====================
+// Lấy tất cả đơn hàng với filter
+router.get('/orders', auth, admin, orderController.getAllOrdersAdmin);
+
+// Xem chi tiết đơn hàng
+router.get('/orders/:id', auth, admin, orderController.getOrderByIdAdmin);
+
+// Cập nhật trạng thái đơn hàng
+router.patch('/orders/:id/status', auth, admin, orderController.updateOrderStatus);
+
+// Hủy đơn hàng (hoàn tồn kho)
+router.patch('/orders/:id/cancel', auth, admin, orderController.cancelOrderAdmin);
+
+// Xóa đơn hàng (nếu cần)
+router.delete('/orders/:id', auth, admin, orderController.deleteOrder);
+
+// Thống kê đơn hàng
+router.get('/orders/stats/overview', auth, admin, orderController.getOrderStats);
 
 module.exports = router;

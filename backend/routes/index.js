@@ -1,4 +1,4 @@
-// routes/index.js — FIX 100%
+// routes/index.js – PUBLIC ROUTES
 
 const express = require('express');
 const router = express.Router();
@@ -15,8 +15,6 @@ const postCategoryController = require('../controllers/postCategoryController');
 
 // Middleware
 const { protect: auth } = require('../middlewares/auth');
-const multer = require('multer');
-const upload = multer({ dest: 'uploads/' });
 
 // ==================== PUBLIC ROUTES ====================
 router.get('/', homeController.getHomeData);
@@ -33,26 +31,39 @@ router.get('/products', productController.getProducts);
 router.get('/products/:id', productController.getProductById);
 router.get('/products/slug/:slug', productController.getProductBySlug);
 
+// Tăng lượt xem
+router.post('/products/slug/:slug/increment-view', productController.incrementView);
+router.post('/products/:id/increment-view', productController.incrementView);
+
 // Auth công khai
 router.post('/auth/register', userController.register);
 router.post('/auth/login', userController.login);
 router.post('/auth/forgot-password', userController.forgotPassword);
 router.post('/auth/reset-password', userController.resetPassword);
 
-// Cart — FIX: dùng cartController.method trực tiếp (không destructure)
+// Cart
 router.post('/cart', auth, cartController.addItem);
 router.get('/cart', auth, cartController.getCart);
 router.put('/cart', auth, cartController.updateItem);
 router.delete('/cart', auth, cartController.removeItem);
 router.delete('/cart/clear', auth, cartController.clearCart);
 
-// Orders
-router.get('/orders', auth, orderController.getOrders);
-router.get('/orders/:id', auth, orderController.getOrderById);
-router.post('/orders', auth, orderController.createOrder);
-router.post('/track', orderController.trackPublic);
-router.put('/orders/:id', auth, orderController.updateOrder);
-router.delete('/orders/:id', auth, orderController.deleteOrder);
+// ==================== ORDER ROUTES (PUBLIC) ====================
+// Tạo đơn hàng (không cần login - COD)
+router.post('/orders', orderController.createOrder);
+
+// Tracking đơn hàng công khai (dùng order number)
+router.get('/orders/track/:orderNumber', orderController.trackPublicByOrderNumber);
+
+// ==================== ORDER ROUTES (USER - Protected) ====================
+// Xem danh sách đơn hàng của mình
+router.get('/orders/my-orders', auth, orderController.getUserOrders);
+
+// Xem chi tiết 1 đơn hàng của mình
+router.get('/orders/my-orders/:id', auth, orderController.getUserOrderById);
+
+// Hủy đơn hàng của mình (chỉ khi còn Pending)
+router.patch('/orders/:id/cancel-user', auth, orderController.cancelUserOrder);
 
 // Posts
 router.get('/posts', postController.getAllPostsPublic);
@@ -62,17 +73,8 @@ router.get('/posts/:slug', postController.getPostBySlug);
 router.get('/post-categories', postCategoryController.getAllCategories);
 router.get('/post-categories/:slug', postCategoryController.getPostsByCategory);
 
-// ==================== PROTECTED ROUTES ====================
+// ==================== PROTECTED ROUTES (User Profile) ====================
 router.get('/auth/me', auth, userController.getCurrentUser);
 router.put('/auth/profile', auth, userController.updateProfile);
-
-// ==================== ADMIN ROUTES ====================
-router.post('/categories', auth, categoryController.createCategory);
-router.put('/categories/:id', auth, categoryController.updateCategory);
-router.delete('/categories/:id', auth, categoryController.deleteCategory);
-
-router.post('/products', auth, upload.array('images', 10), productController.createProduct);
-router.put('/products/:id', auth, upload.array('images', 10), productController.updateProduct);
-router.delete('/products/:id', auth, productController.deleteProduct);
 
 module.exports = router;

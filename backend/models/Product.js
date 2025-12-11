@@ -30,6 +30,9 @@ const productSchema = new mongoose.Schema({
   onSale: { type: Boolean, default: false },
   sold: { type: Number, default: 0 },
 
+  // ✅ THÊM FIELD VIEW
+  view: { type: Number, default: 0 },
+
   created_at: { type: Date, default: Date.now },
   updated_at: { type: Date, default: Date.now }
 });

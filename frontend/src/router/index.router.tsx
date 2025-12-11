@@ -23,6 +23,7 @@ import Dashboard from "../pages/admin/dashboard";
 import CategoryManager from "../pages/admin/categoryManager";
 import ProductManager from "../pages/admin/productManager";
 import PostManager from "../pages/admin/postManager";
+import OrderManager from "../pages/admin/orderManager";
 
 const MainRouter = () => {
   return (
@@ -54,6 +55,7 @@ const MainRouter = () => {
         <Route path="quan-ly-danh-muc" element={<CategoryManager />} />
         <Route path="quan-ly-san-pham" element={<ProductManager />} />
         <Route path="quan-ly-bai-viet" element={<PostManager />} />
+        <Route path="quan-ly-don-hang" element={<OrderManager />} />
       </Route>
       {/* HẾT ĐOẠN THÊM */}
 
