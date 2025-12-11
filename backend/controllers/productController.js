@@ -18,7 +18,7 @@ const normalizeString = (s) => {
     .toLowerCase();
 };
 
-// GET /api/products – ĐÃ FIX: THÊM POPULATE CATEGORIES
+// GET /api/products — ĐÃ FIX: THÊM POPULATE CATEGORIES
 exports.getProducts = async (req, res) => {
   try {
     let filters = {};
@@ -168,16 +168,45 @@ exports.getProductBySlug = async (req, res) => {
   }
 };
 
-// // Admin stubs (so router mounting won't crash). Implement properly later.
-// exports.createProduct = async (req, res) => {
-//   return res.status(501).json({ message: "createProduct not implemented" });
-// };
-// exports.updateProduct = async (req, res) => {
-//   return res.status(501).json({ message: "updateProduct not implemented" });
-// };
-// exports.deleteProduct = async (req, res) => {
-//   return res.status(501).json({ message: "deleteProduct not implemented" });
-// };
+// ✅ THÊM API TĂNG LƯỢT XEM
+exports.incrementView = async (req, res) => {
+  try {
+    const { id, slug } = req.params;
+    
+    let product;
+    
+    // Tìm theo ID hoặc slug
+    if (id) {
+      product = await Product.findByIdAndUpdate(
+        id,
+        { $inc: { view: 1 } }, // Tăng view lên 1
+        { new: true } // Trả về document sau khi update
+      );
+    } else if (slug) {
+      product = await Product.findOneAndUpdate(
+        { slug: slug },
+        { $inc: { view: 1 } },
+        { new: true }
+      );
+    }
+
+    if (!product) {
+      return res.status(404).json({ message: "Product not found" });
+    }
+
+    // Chỉ trả về view count, không cần trả toàn bộ product
+    return res.json({ 
+      success: true, 
+      view: product.view 
+    });
+  } catch (err) {
+    console.error("incrementView error:", err);
+    return res.status(500).json({ 
+      success: false,
+      message: err.message || "Server error" 
+    });
+  }
+};
 
 // GET /api/products/search-suggestions?q=xxx → SIÊU THÔNG MINH (ĐÃ SỬA LỖI)
 exports.searchSuggestions = async (req, res) => {
@@ -212,7 +241,7 @@ exports.searchSuggestions = async (req, res) => {
       $or: [
         { name: { $in: searchPatterns } },
         { description: { $in: searchPatterns } },
-        { sku: { $in: searchPatterns } }, // THÊM DÒNG NÀY: TÌM THEO SKU
+        { sku: { $in: searchPatterns } }, // THÊM DÒNG NÀY: TÌMI THEO SKU
         { sku: { $regex: escapedQ, $options: "i" } }, // Bonus: tìm chính xác SKU
       ],
     })

@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useContext } from "react";
+import React, { useEffect, useState, useContext, useRef } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { useCart } from "@/context/CartContext";
 import "@/styles/pages/user/productDetail.scss";
@@ -28,6 +28,37 @@ const ProductDetail: React.FC = () => {
   const navigate = useNavigate();
   const [quantity, setQuantity] = useState(1);
   const [categorySlug, setCategorySlug] = useState<string>("");
+  const viewIncrementedRef = useRef(false);
+  const [showLightbox, setShowLightbox] = useState(false);
+  const [lightboxIndex, setLightboxIndex] = useState(0);
+
+  // ✅ Hàm tăng lượt xem - CHỈ GỌI 1 LẦN DUY NHẤT
+  const incrementProductView = async (productId: string, productSlug: string) => {
+    if (viewIncrementedRef.current) {
+      console.log('View already incremented (ref check), skipping...');
+      return;
+    }
+
+    viewIncrementedRef.current = true;
+
+    try {
+      const viewUrl = productSlug 
+        ? `http://localhost:5000/api/products/slug/${productSlug}/increment-view`
+        : `http://localhost:5000/api/products/${productId}/increment-view`;
+      
+      await fetch(viewUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+      
+      console.log('View incremented successfully - only once!');
+    } catch (error) {
+      viewIncrementedRef.current = false;
+      console.error('Error incrementing view:', error);
+    }
+  };
 
   useEffect(() => {
     if (!param) {
@@ -63,6 +94,9 @@ const ProductDetail: React.FC = () => {
           const data = await res.json();
           setProduct(data);
           setLoading(false);
+          
+          incrementProductView(data._id, data.slug);
+          
           return;
         } catch (e) {
           console.warn(`[ProductDetail] fetch failed ${url}`, e);
@@ -74,6 +108,10 @@ const ProductDetail: React.FC = () => {
 
     fetchProduct();
     setSelectedImageIndex(0);
+    
+    return () => {
+      viewIncrementedRef.current = false;
+    };
   }, [param]);
 
   // Load sản phẩm liên quan
@@ -85,7 +123,6 @@ const ProductDetail: React.FC = () => {
         console.log("Product data:", product);
         console.log("Product categories:", product.categories);
 
-        // Lấy category IDs từ product - XỬ LÝ CẢ OBJECT VÀ STRING
         let productCategoryIds: string[] = [];
 
         if (
@@ -94,7 +131,6 @@ const ProductDetail: React.FC = () => {
           product.categories.length === 0
         ) {
           console.log("No categories found, loading random products");
-          // Fallback: load sản phẩm random
           const res = await fetch("http://localhost:5000/api/products");
           const allProducts = await res.json();
           const filtered = allProducts
@@ -104,7 +140,6 @@ const ProductDetail: React.FC = () => {
           return;
         }
 
-        // Chuyển categories thành array of IDs (xử lý cả object và string)
         productCategoryIds = product.categories
           .map((cat: any) => {
             if (typeof cat === "string") return cat;
@@ -113,7 +148,6 @@ const ProductDetail: React.FC = () => {
           })
           .filter(Boolean);
 
-        // Lưu slug của category đầu tiên để dùng cho nút "Xem tất cả"
         const firstCategory = product.categories[0];
         if (
           firstCategory &&
@@ -125,18 +159,14 @@ const ProductDetail: React.FC = () => {
 
         console.log("Product category IDs:", productCategoryIds);
 
-        // Load tất cả sản phẩm
         const res = await fetch("http://localhost:5000/api/products");
         const allProducts = await res.json();
 
         console.log("Total products:", allProducts.length);
 
-        // Lọc sản phẩm có CHUNG ÍT NHẤT 1 CATEGORY với sản phẩm hiện tại
         const sameCategory = allProducts.filter((p: Product) => {
-          // Loại bỏ sản phẩm hiện tại
           if (p._id === product._id) return false;
 
-          // Kiểm tra xem p có categories không
           if (
             !p.categories ||
             !Array.isArray(p.categories) ||
@@ -145,7 +175,6 @@ const ProductDetail: React.FC = () => {
             return false;
           }
 
-          // Chuyển categories của p thành array of IDs
           const pCategoryIds = p.categories
             .map((cat: any) => {
               if (typeof cat === "string") return cat;
@@ -154,7 +183,6 @@ const ProductDetail: React.FC = () => {
             })
             .filter(Boolean);
 
-          // Kiểm tra xem có category nào trùng không
           const hasCommonCategory = pCategoryIds.some((catId: string) =>
             productCategoryIds.includes(catId)
           );
@@ -170,18 +198,37 @@ const ProductDetail: React.FC = () => {
 
         console.log("Products in same category:", sameCategory.length);
 
-        // Lấy tối đa 8 sản phẩm cùng danh mục
         const filtered = sameCategory.slice(0, 8);
         setRelatedProducts(filtered);
       } catch (error) {
         console.error("Error loading related products:", error);
-        // Nếu có lỗi, không hiển thị sản phẩm nào
         setRelatedProducts([]);
       }
     };
 
     fetchRelatedProducts();
   }, [product]);
+
+  // ✅ Xử lý phím ESC và mũi tên - ĐẶT TRƯỚC CÁC RETURN
+  useEffect(() => {
+    if (!showLightbox || !product) return;
+
+    const productImages = getImageUrls(product.images);
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setShowLightbox(false);
+        document.body.style.overflow = 'auto';
+      } else if (e.key === 'ArrowRight') {
+        setLightboxIndex((prev) => (prev + 1) % productImages.length);
+      } else if (e.key === 'ArrowLeft') {
+        setLightboxIndex((prev) => (prev - 1 + productImages.length) % productImages.length);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [showLightbox, product]);
 
   if (loading) return <div>Đang tải sản phẩm...</div>;
   if (error) return <div style={{ color: "red" }}>Lỗi: {error}</div>;
@@ -197,6 +244,28 @@ const ProductDetail: React.FC = () => {
             100
         )
       : 0;
+
+  // ✅ Hàm mở lightbox
+  const openLightbox = (index: number) => {
+    setLightboxIndex(index);
+    setShowLightbox(true);
+    document.body.style.overflow = 'hidden';
+  };
+
+  // ✅ Hàm đóng lightbox
+  const closeLightbox = () => {
+    setShowLightbox(false);
+    document.body.style.overflow = 'auto';
+  };
+
+  // ✅ Chuyển ảnh trong lightbox
+  const nextImage = () => {
+    setLightboxIndex((prev) => (prev + 1) % productImages.length);
+  };
+
+  const prevImage = () => {
+    setLightboxIndex((prev) => (prev - 1 + productImages.length) % productImages.length);
+  };
 
   const handleAdd = async (qty: number = 1, buyNow: boolean = false) => {
     if (!product) return;
@@ -296,6 +365,8 @@ const ProductDetail: React.FC = () => {
                 <img
                   src={currentImage}
                   alt={product.name}
+                  onClick={() => openLightbox(selectedImageIndex)}
+                  style={{ cursor: 'pointer' }}
                   onError={(e) => {
                     e.currentTarget.src =
                       "https://via.placeholder.com/600x600?text=No+Image";
@@ -346,8 +417,7 @@ const ProductDetail: React.FC = () => {
               Mã hàng:{" "}
               <strong>
                 {product.sku || product._id?.slice(-8).toUpperCase()}
-              </strong>{" "}
-              | {(product.view || 0) + 1289} lượt xem
+              </strong>
             </div>
 
             <div className="price-area">
@@ -481,6 +551,58 @@ const ProductDetail: React.FC = () => {
             </div>
           </div>
         </section>
+      )}
+
+      {/* ==================== LIGHTBOX ==================== */}
+      {showLightbox && (
+        <div className="lightbox-overlay" onClick={closeLightbox}>
+          <button className="lightbox-close" onClick={closeLightbox}>
+            ✕
+          </button>
+
+          {/* Nút Previous */}
+          {productImages.length > 1 && (
+            <button className="lightbox-nav lightbox-prev" onClick={(e) => { e.stopPropagation(); prevImage(); }}>
+              ‹
+            </button>
+          )}
+
+          {/* Ảnh chính */}
+          <div className="lightbox-content" onClick={(e) => e.stopPropagation()}>
+            <img
+              src={productImages[lightboxIndex]}
+              alt={`${product.name} - ${lightboxIndex + 1}`}
+              className="lightbox-main-image"
+            />
+
+            {/* Số thứ tự ảnh */}
+            <div className="lightbox-counter">
+              {lightboxIndex + 1} / {productImages.length}
+            </div>
+          </div>
+
+          {/* Nút Next */}
+          {productImages.length > 1 && (
+            <button className="lightbox-nav lightbox-next" onClick={(e) => { e.stopPropagation(); nextImage(); }}>
+              ›
+            </button>
+          )}
+
+          {/* Thumbnail sidebar bên phải */}
+          {productImages.length > 1 && (
+            <div className="lightbox-thumbnails" onClick={(e) => e.stopPropagation()}>
+              {productImages.map((img: string, i: number) => (
+                <div
+                  key={i}
+                  className={`lightbox-thumb ${lightboxIndex === i ? 'active' : ''}`}
+                  onClick={() => setLightboxIndex(i)}
+                >
+                  <img src={img} alt={`Thumbnail ${i + 1}`} />
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
       )}
     </div>
   );
