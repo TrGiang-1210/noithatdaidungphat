@@ -420,3 +420,163 @@
     }
   }
 }
+
+// CSS cho badge hết hàng
+.badge.out-of-stock-badge {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background: rgb(57, 57, 57);
+  color: white;
+  padding: 6px 12px;
+  border-radius: 4px;
+  font-weight: bold;
+  font-size: 13px;
+  z-index: 10;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+// CSS cho card hết hàng
+.product-card.out-of-stock {
+  opacity: 0.7;
+  position: relative;
+}
+
+.product-card.out-of-stock::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(255, 255, 255, 0.5);
+  pointer-events: none;
+}
+
+// Disable button khi hết hàng
+button:disabled,
+button.disabled {
+  background: #bdc3c7 !important;
+  cursor: not-allowed !important;
+  opacity: 0.6;
+}
+
+// Overlay cho product detail
+.out-of-stock-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 5;
+}
+
+.out-of-stock-text {
+  background: #e74c3c;
+  color: white;
+  padding: 15px 30px;
+  font-size: 24px;
+  font-weight: bold;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+// ==================== PRODUCT CAROUSEL ====================
+.product-carousel-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  
+  .carousel-nav {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 10;
+    background: rgba(0, 0, 0, 0.5);
+    border: none;
+    color: white;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    
+    &:hover {
+      background: rgba(0, 0, 0, 0.8);
+      transform: translateY(-50%) scale(1.1);
+    }
+    
+    &.prev {
+      left: -20px;
+    }
+    
+    &.next {
+      right: -20px;
+    }
+  }
+}
+
+.product-carousel {
+  flex: 1;
+  overflow: hidden;
+  
+  .product-carousel-inner {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 20px;
+    
+    .carousel-item {
+      min-width: 0; // Fix overflow issue
+    }
+  }
+}
+
+// Responsive
+@media (max-width: 1200px) {
+  .product-carousel {
+    .product-carousel-inner {
+      grid-template-columns: repeat(3, 1fr);
+    }
+  }
+}
+
+@media (max-width: 768px) {
+  .product-carousel-wrapper {
+    .carousel-nav {
+      width: 35px;
+      height: 35px;
+      
+      &.prev {
+        left: -10px;
+      }
+      
+      &.next {
+        right: -10px;
+      }
+    }
+  }
+  
+  .product-carousel {
+    .product-carousel-inner {
+      grid-template-columns: repeat(2, 1fr);
+      gap: 15px;
+    }
+  }
+}
+
+@media (max-width: 480px) {
+  .product-carousel {
+    .product-carousel-inner {
+      grid-template-columns: 1fr;
+      gap: 10px;
+    }
+  }
+}

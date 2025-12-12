@@ -1,4 +1,4 @@
-// src/admin/pages/ProductManager.tsx - FULL CODE WITH ATTRIBUTES
+// src/admin/pages/ProductManager.tsx - FULL CODE WITH ATTRIBUTES - FIXED
 import { useState, useEffect } from "react";
 import { Plus, Edit2, Trash2, Loader2, X } from "lucide-react";
 import axiosInstance from "../../axios";
@@ -63,7 +63,9 @@ export default function ProductManager() {
     attributes: [] as Attribute[],
   });
   const [imagePreviews, setImagePreviews] = useState<string[]>([]);
-  const [attributeImages, setAttributeImages] = useState<Map<string, File>>(new Map());
+  const [attributeImages, setAttributeImages] = useState<Map<string, File>>(
+    new Map()
+  );
 
   const fetchProducts = async () => {
     try {
@@ -141,10 +143,10 @@ export default function ProductManager() {
       priceOriginal: prod.priceOriginal.toString(),
       priceSale: prod.priceSale.toString(),
       quantity: prod.quantity.toString(),
-      description: prod.description,
+      description: prod.description || "",
       categories: prod.categories.map((c) => c._id),
-      hot: prod.hot,
-      onSale: prod.onSale,
+      hot: prod.hot || false,
+      onSale: prod.onSale || false,
       images: [],
       attributes: prod.attributes || [],
     });
@@ -169,8 +171,8 @@ export default function ProductManager() {
       ...formData,
       attributes: [
         ...formData.attributes,
-        { name: "", options: [{ label: "", value: "", isDefault: false }] }
-      ]
+        { name: "", options: [{ label: "", value: "", isDefault: false }] },
+      ],
     });
   };
 
@@ -193,15 +195,22 @@ export default function ProductManager() {
 
   const removeOption = (attrIdx: number, optIdx: number) => {
     const newAttrs = [...formData.attributes];
-    newAttrs[attrIdx].options = newAttrs[attrIdx].options.filter((_, i) => i !== optIdx);
+    newAttrs[attrIdx].options = newAttrs[attrIdx].options.filter(
+      (_, i) => i !== optIdx
+    );
     setFormData({ ...formData, attributes: newAttrs });
   };
 
-  const updateOption = (attrIdx: number, optIdx: number, field: keyof AttributeOption, value: any) => {
+  const updateOption = (
+    attrIdx: number,
+    optIdx: number,
+    field: keyof AttributeOption,
+    value: any
+  ) => {
     const newAttrs = [...formData.attributes];
     (newAttrs[attrIdx].options[optIdx] as any)[field] = value;
-    
-    if (field === 'label') {
+
+    if (field === "label") {
       newAttrs[attrIdx].options[optIdx].value = value
         .toLowerCase()
         .normalize("NFD")
@@ -210,11 +219,15 @@ export default function ProductManager() {
         .replace(/[^a-z0-9\s-]/g, "")
         .replace(/\s+/g, "-");
     }
-    
+
     setFormData({ ...formData, attributes: newAttrs });
   };
 
-  const handleAttributeImageChange = (attrIdx: number, optIdx: number, file: File | null) => {
+  const handleAttributeImageChange = (
+    attrIdx: number,
+    optIdx: number,
+    file: File | null
+  ) => {
     if (file) {
       const key = `${attrIdx}_${optIdx}`;
       const newMap = new Map(attributeImages);
@@ -225,35 +238,60 @@ export default function ProductManager() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     const data = new FormData();
     data.append("name", formData.name);
     data.append("sku", formData.sku);
-    data.append("priceOriginal", formData.priceOriginal);
-    data.append("priceSale", formData.priceSale);
-    data.append("quantity", formData.quantity);
-    data.append("description", formData.description);
-    formData.categories.forEach((cat) => data.append("categories[]", cat));
+    data.append("priceOriginal", (formData.priceOriginal || "0").toString());
+    data.append("priceSale", (formData.priceSale || "0").toString());
+    data.append("quantity", (formData.quantity || "0").toString());
+    data.append("description", formData.description || "");
+
+    // ✅ SỬA: Xử lý categories an toàn hơn
+    if (formData.categories && formData.categories.length > 0) {
+      formData.categories.forEach((cat) => {
+        if (cat) {
+          data.append("categories[]", cat);
+        }
+      });
+    }
+
     data.append("hot", formData.hot.toString());
     data.append("onSale", formData.onSale.toString());
-    
-    formData.images.forEach((file) => data.append("images", file));
-    
+
+    // ✅ Chỉ append images nếu có file mới
+    if (formData.images && formData.images.length > 0) {
+      formData.images.forEach((file) => data.append("images", file));
+    }
+
+    // ✅ Xử lý attribute images
     attributeImages.forEach((file, key) => {
       data.append(`attribute_${key}`, file);
     });
-    
-    data.append("attributes", JSON.stringify(formData.attributes));
+
+    // ✅ Xử lý attributes
+    if (formData.attributes && formData.attributes.length > 0) {
+      data.append("attributes", JSON.stringify(formData.attributes));
+    }
 
     try {
       if (editingProd) {
-        await axiosInstance.put(`/admin/products/${editingProd._id}`, data);
+        await axiosInstance.put(`/admin/products/${editingProd._id}`, data, {
+          headers: {
+            "Content-Type": "multipart/form-data",
+          },
+        });
       } else {
-        await axiosInstance.post("/admin/products", data);
+        await axiosInstance.post("/admin/products", data, {
+          headers: {
+            "Content-Type": "multipart/form-data",
+          },
+        });
       }
       setShowModal(false);
       fetchProducts();
     } catch (err: any) {
+      console.error("Lỗi submit:", err);
       alert(err.response?.data?.message || "Lỗi lưu sản phẩm");
     }
   };
@@ -290,7 +328,9 @@ export default function ProductManager() {
 
       <div className="product-table">
         {products.length === 0 ? (
-          <p className="empty">Chưa có sản phẩm nào. Hãy thêm sản phẩm đầu tiên!</p>
+          <p className="empty">
+            Chưa có sản phẩm nào. Hãy thêm sản phẩm đầu tiên!
+          </p>
         ) : (
           <table>
             <thead>
@@ -314,7 +354,8 @@ export default function ProductManager() {
                       alt={prod.name}
                       className="thumbnail"
                       onError={(e) => {
-                        e.currentTarget.src = "https://via.placeholder.com/150?text=Error";
+                        e.currentTarget.src =
+                          "https://via.placeholder.com/150?text=Error";
                       }}
                     />
                   </td>
@@ -325,10 +366,16 @@ export default function ProductManager() {
                   <td>{prod.quantity}</td>
                   <td>{prod.categories.map((c) => c.name).join(", ")}</td>
                   <td className="actions">
-                    <button onClick={() => openEditModal(prod)} className="btn-small">
+                    <button
+                      onClick={() => openEditModal(prod)}
+                      className="btn-small"
+                    >
                       <Edit2 size={16} />
                     </button>
-                    <button onClick={() => setDeletingProd(prod)} className="btn-small btn-danger">
+                    <button
+                      onClick={() => setDeletingProd(prod)}
+                      className="btn-small btn-danger"
+                    >
                       <Trash2 size={16} />
                     </button>
                   </td>
@@ -341,14 +388,19 @@ export default function ProductManager() {
 
       {showModal && (
         <div className="modal-overlay" onClick={() => setShowModal(false)}>
-          <div className="modal modal-large" onClick={(e) => e.stopPropagation()}>
+          <div
+            className="modal modal-large"
+            onClick={(e) => e.stopPropagation()}
+          >
             <h3>{editingProd ? "Sửa" : "Thêm"} sản phẩm</h3>
             <form onSubmit={handleSubmit}>
               <input
                 type="text"
                 placeholder="Tên sản phẩm"
                 value={formData.name}
-                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                onChange={(e) =>
+                  setFormData({ ...formData, name: e.target.value })
+                }
                 required
               />
 
@@ -356,7 +408,9 @@ export default function ProductManager() {
                 type="text"
                 placeholder="SKU"
                 value={formData.sku}
-                onChange={(e) => setFormData({ ...formData, sku: e.target.value })}
+                onChange={(e) =>
+                  setFormData({ ...formData, sku: e.target.value })
+                }
                 required
               />
 
@@ -364,7 +418,9 @@ export default function ProductManager() {
                 type="number"
                 placeholder="Giá gốc (₫)"
                 value={formData.priceOriginal}
-                onChange={(e) => setFormData({ ...formData, priceOriginal: e.target.value })}
+                onChange={(e) =>
+                  setFormData({ ...formData, priceOriginal: e.target.value })
+                }
                 required
               />
 
@@ -372,7 +428,9 @@ export default function ProductManager() {
                 type="number"
                 placeholder="Giá bán (₫)"
                 value={formData.priceSale}
-                onChange={(e) => setFormData({ ...formData, priceSale: e.target.value })}
+                onChange={(e) =>
+                  setFormData({ ...formData, priceSale: e.target.value })
+                }
                 required
               />
 
@@ -380,14 +438,18 @@ export default function ProductManager() {
                 type="number"
                 placeholder="Số lượng"
                 value={formData.quantity}
-                onChange={(e) => setFormData({ ...formData, quantity: e.target.value })}
+                onChange={(e) =>
+                  setFormData({ ...formData, quantity: e.target.value })
+                }
                 required
               />
 
               <textarea
                 placeholder="Mô tả sản phẩm"
                 value={formData.description}
-                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                onChange={(e) =>
+                  setFormData({ ...formData, description: e.target.value })
+                }
               />
 
               <div className="category-select-wrapper">
@@ -398,7 +460,10 @@ export default function ProductManager() {
                   onChange={(e) =>
                     setFormData({
                       ...formData,
-                      categories: Array.from(e.target.selectedOptions, (option) => option.value),
+                      categories: Array.from(
+                        e.target.selectedOptions,
+                        (option) => option.value
+                      ),
                     })
                   }
                 >
@@ -410,7 +475,9 @@ export default function ProductManager() {
                     </option>
                   ))}
                 </select>
-                <span className="select-hint">Đã chọn: {formData.categories.length} danh mục</span>
+                <span className="select-hint">
+                  Đã chọn: {formData.categories.length} danh mục
+                </span>
               </div>
 
               <div className="checkbox-group">
@@ -418,7 +485,9 @@ export default function ProductManager() {
                   <input
                     type="checkbox"
                     checked={formData.hot}
-                    onChange={(e) => setFormData({ ...formData, hot: e.target.checked })}
+                    onChange={(e) =>
+                      setFormData({ ...formData, hot: e.target.checked })
+                    }
                   />
                   🔥 Hot
                 </label>
@@ -426,7 +495,9 @@ export default function ProductManager() {
                   <input
                     type="checkbox"
                     checked={formData.onSale}
-                    onChange={(e) => setFormData({ ...formData, onSale: e.target.checked })}
+                    onChange={(e) =>
+                      setFormData({ ...formData, onSale: e.target.checked })
+                    }
                   />
                   💰 On Sale
                 </label>
@@ -434,8 +505,15 @@ export default function ProductManager() {
 
               <div className="file-input-wrapper">
                 <label className="file-label">Hình ảnh sản phẩm</label>
-                <input type="file" multiple accept="image/*" onChange={handleImageChange} />
-                <span className="file-hint">Tối đa 3 ảnh, mỗi ảnh dưới 5MB</span>
+                <input
+                  type="file"
+                  multiple
+                  accept="image/*"
+                  onChange={handleImageChange}
+                />
+                <span className="file-hint">
+                  Tối đa 3 ảnh, mỗi ảnh dưới 5MB
+                </span>
               </div>
 
               {imagePreviews.length > 0 && (
@@ -443,10 +521,13 @@ export default function ProductManager() {
                   {imagePreviews.map((prev, idx) => (
                     <img
                       key={idx}
-                      src={prev.startsWith("/uploads") ? getImageUrl(prev) : prev}
+                      src={
+                        prev.startsWith("/uploads") ? getImageUrl(prev) : prev
+                      }
                       alt={`preview-${idx}`}
                       onError={(e) => {
-                        e.currentTarget.src = "https://via.placeholder.com/150?text=Error";
+                        e.currentTarget.src =
+                          "https://via.placeholder.com/150?text=Error";
                       }}
                     />
                   ))}
@@ -457,7 +538,11 @@ export default function ProductManager() {
               <div className="attributes-section">
                 <div className="attributes-header">
                   <label className="section-label">Thuộc tính sản phẩm</label>
-                  <button type="button" onClick={addAttribute} className="btn-add-attribute">
+                  <button
+                    type="button"
+                    onClick={addAttribute}
+                    className="btn-add-attribute"
+                  >
                     <Plus size={16} /> Thêm thuộc tính
                   </button>
                 </div>
@@ -469,7 +554,9 @@ export default function ProductManager() {
                         type="text"
                         placeholder="Tên thuộc tính (VD: Chất liệu, Màu sắc, Kích thước)"
                         value={attr.name}
-                        onChange={(e) => updateAttributeName(attrIdx, e.target.value)}
+                        onChange={(e) =>
+                          updateAttributeName(attrIdx, e.target.value)
+                        }
                         className="attribute-name-input"
                       />
                       <button
@@ -488,17 +575,33 @@ export default function ProductManager() {
                             type="text"
                             placeholder="Nhãn option (VD: MDF EC | Duy chuẩn / Không LED)"
                             value={opt.label}
-                            onChange={(e) => updateOption(attrIdx, optIdx, 'label', e.target.value)}
+                            onChange={(e) =>
+                              updateOption(
+                                attrIdx,
+                                optIdx,
+                                "label",
+                                e.target.value
+                              )
+                            }
                           />
-                          
+
                           <div className="option-image-upload">
                             <input
                               type="file"
                               accept="image/*"
-                              onChange={(e) => handleAttributeImageChange(attrIdx, optIdx, e.target.files?.[0] || null)}
+                              onChange={(e) =>
+                                handleAttributeImageChange(
+                                  attrIdx,
+                                  optIdx,
+                                  e.target.files?.[0] || null
+                                )
+                              }
                               id={`attr-img-${attrIdx}-${optIdx}`}
                             />
-                            <label htmlFor={`attr-img-${attrIdx}-${optIdx}`} className="file-label-small">
+                            <label
+                              htmlFor={`attr-img-${attrIdx}-${optIdx}`}
+                              className="file-label-small"
+                            >
                               Chọn ảnh
                             </label>
                             {attributeImages.has(`${attrIdx}_${optIdx}`) && (
@@ -510,7 +613,14 @@ export default function ProductManager() {
                             <input
                               type="checkbox"
                               checked={opt.isDefault || false}
-                              onChange={(e) => updateOption(attrIdx, optIdx, 'isDefault', e.target.checked)}
+                              onChange={(e) =>
+                                updateOption(
+                                  attrIdx,
+                                  optIdx,
+                                  "isDefault",
+                                  e.target.checked
+                                )
+                              }
                             />
                             Mặc định
                           </label>
@@ -524,7 +634,7 @@ export default function ProductManager() {
                           </button>
                         </div>
                       ))}
-                      
+
                       <button
                         type="button"
                         onClick={() => addOption(attrIdx)}
@@ -542,7 +652,11 @@ export default function ProductManager() {
               <button type="button" onClick={() => setShowModal(false)}>
                 Hủy
               </button>
-              <button type="submit" className="btn-primary" onClick={handleSubmit}>
+              <button
+                type="submit"
+                className="btn-primary"
+                onClick={handleSubmit}
+              >
                 {editingProd ? "Cập nhật" : "Thêm mới"}
               </button>
             </div>
@@ -561,7 +675,11 @@ export default function ProductManager() {
               <button type="button" onClick={() => setDeletingProd(null)}>
                 Hủy
               </button>
-              <button type="button" onClick={handleDelete} className="btn-danger">
+              <button
+                type="button"
+                onClick={handleDelete}
+                className="btn-danger"
+              >
                 Xóa vĩnh viễn
               </button>
             </div>
