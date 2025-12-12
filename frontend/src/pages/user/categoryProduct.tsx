@@ -19,6 +19,7 @@ interface Product {
   priceOriginal: number;
   onSale?: boolean;
   hot?: boolean;
+  quantity: number;
 }
 
 interface Category {
@@ -41,7 +42,10 @@ const CategoryProducts: React.FC = () => {
 
   // Filters
   const [sortBy, setSortBy] = useState<string>("");
-  const [priceRange, setPriceRange] = useState<[number, number]>([0, MAX_PRICE]);
+  const [priceRange, setPriceRange] = useState<[number, number]>([
+    0,
+    MAX_PRICE,
+  ]);
   const [minInput, setMinInput] = useState<string>("");
   const [maxInput, setMaxInput] = useState<string>("");
 
@@ -68,7 +72,8 @@ const CategoryProducts: React.FC = () => {
     params.append("category", slug);
     if (sortBy) params.append("sort", sortBy);
     if (priceRange[0] > 0) params.append("minPrice", priceRange[0].toString());
-    if (priceRange[1] < MAX_PRICE) params.append("maxPrice", priceRange[1].toString());
+    if (priceRange[1] < MAX_PRICE)
+      params.append("maxPrice", priceRange[1].toString());
 
     axiosInstance
       .get<Product[]>(`/products?${params.toString()}`)
@@ -113,9 +118,9 @@ const CategoryProducts: React.FC = () => {
 
   // Subcategories
   const subCategories = useMemo(() => {
-  if (!category || !category.children) return [];
-  return category.children; // Lấy trực tiếp từ children
-}, [category]);
+    if (!category || !category.children) return [];
+    return category.children; // Lấy trực tiếp từ children
+  }, [category]);
 
   // Handle range slider change
   const handleRangeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -129,7 +134,7 @@ const CategoryProducts: React.FC = () => {
     const formatted = formatCurrencyInput(e.target.value);
     setMinInput(formatted);
     const value = parseCurrencyInput(formatted) * 1000;
-    
+
     // Giới hạn tối đa 50 triệu
     if (value <= MAX_PRICE && value <= priceRange[1]) {
       setPriceRange([value, priceRange[1]]);
@@ -140,7 +145,7 @@ const CategoryProducts: React.FC = () => {
     const formatted = formatCurrencyInput(e.target.value);
     setMaxInput(formatted);
     const value = parseCurrencyInput(formatted) * 1000;
-    
+
     // Giới hạn tối đa 50 triệu
     if (value >= priceRange[0] && value <= MAX_PRICE) {
       setPriceRange([priceRange[0], value]);
@@ -309,54 +314,69 @@ const CategoryProducts: React.FC = () => {
               </div>
             ) : (
               <div className="products-grid">
-                {products.map((product) => (
-                  <Link
-                    key={product._id}
-                    to={`/san-pham/${product.slug}`}
-                    className="product-card"
-                  >
-                    <div className="image">
-                      <img
-                        src={getFirstImageUrl(product.images)}
-                        alt={product.name}
-                        onError={(e) => {
-                          e.currentTarget.src =
-                            "https://via.placeholder.com/300x300?text=No+Image";
-                        }}
-                      />
-                      {product.onSale && (
-                        <span className="badge sale">Sale</span>
-                      )}
-                      {product.hot && <span className="badge hot">Hot</span>}
-                    </div>
-                    <div className="info">
-                      <h3 className="name">{product.name}</h3>
-                      <div className="price-info">
-                        <div>
-                          <div className="price-sale">
-                            {formatPrice(product.priceSale)}
-                          </div>
-                          {product.priceSale < product.priceOriginal && (
-                            <div className="price-original">
-                              {formatPrice(product.priceOriginal)}
-                            </div>
-                          )}
-                        </div>
-                        {product.priceSale < product.priceOriginal && (
-                          <span className="discount">
-                            -
-                            {Math.round(
-                              ((product.priceOriginal - product.priceSale) /
-                                product.priceOriginal) *
-                                100
-                            )}
-                            %
+                {products.map((product) => {
+                  const isOutOfStock = product.quantity <= 0; // ✅ THÊM DÒNG NÀY
+
+                  return (
+                    <Link
+                      key={product._id}
+                      to={`/san-pham/${product.slug}`}
+                      className={`product-card ${
+                        isOutOfStock ? "out-of-stock" : ""
+                      }`} // ✅ SỬA CLASS
+                    >
+                      <div className="image">
+                        {/* ✅ THÊM BADGE HẾT HÀNG */}
+                        {isOutOfStock && (
+                          <span className="badge out-of-stock-badge">
+                            Hết hàng
                           </span>
                         )}
+
+                        <img
+                          src={getFirstImageUrl(product.images)}
+                          alt={product.name}
+                          onError={(e) => {
+                            e.currentTarget.src =
+                              "https://via.placeholder.com/300x300?text=No+Image";
+                          }}
+                        />
+                        {product.onSale && !isOutOfStock && (
+                          <span className="badge sale">Sale</span>
+                        )}
+                        {product.hot && !isOutOfStock && (
+                          <span className="badge hot">Hot</span>
+                        )}
                       </div>
-                    </div>
-                  </Link>
-                ))}
+                      <div className="info">
+                        <h3 className="name">{product.name}</h3>
+                        <div className="price-info">
+                          <div>
+                            <div className="price-sale">
+                              {formatPrice(product.priceSale)}
+                            </div>
+                            {product.priceSale < product.priceOriginal && (
+                              <div className="price-original">
+                                {formatPrice(product.priceOriginal)}
+                              </div>
+                            )}
+                          </div>
+                          {product.priceSale < product.priceOriginal && (
+                            <span className="discount">
+                              -
+                              {Math.round(
+                                ((product.priceOriginal - product.priceSale) /
+                                  product.priceOriginal) *
+                                  100
+                              )}
+                              %
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    </Link>
+                  );
+                })}
               </div>
             )}
           </section>

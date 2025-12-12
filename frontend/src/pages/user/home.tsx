@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { getFirstImageUrl } from "@/utils/imageUrl";
 import "@/styles/pages/user/home.scss";
-import { ChevronRight } from "lucide-react";
+import { ChevronRight, ChevronLeft } from "lucide-react";
 
 // Banner images
 import banner1 from "@/assets/banner/banner1.jpg";
@@ -18,6 +18,9 @@ interface Product {
   priceSale: number;
   sold?: number;
   created_at?: string;
+  quantity: number;
+  hot?: boolean;
+  onSale?: boolean;
 }
 
 interface Category {
@@ -36,21 +39,44 @@ const Home: React.FC = () => {
   ];
 
   const [currentSlide, setCurrentSlide] = useState(0);
-  const [bestSellers, setBestSellers] = useState<Product[]>([]);
+  const [hotProducts, setHotProducts] = useState<Product[]>([]);
+  const [saleProducts, setSaleProducts] = useState<Product[]>([]);
   const [newProducts, setNewProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [categoryProducts, setCategoryProducts] = useState<
     Record<string, Product[]>
   >({});
   const [loading, setLoading] = useState(true);
+  
+  // Carousel states
+  const [hotCarouselIndex, setHotCarouselIndex] = useState(0);
+  const [saleCarouselIndex, setSaleCarouselIndex] = useState(0);
 
-  // Auto slide
+  // Auto slide banner
   useEffect(() => {
     const interval = setInterval(() => {
       setCurrentSlide((prev) => (prev + 1) % banners.length);
     }, 5000);
     return () => clearInterval(interval);
   }, [banners.length]);
+
+  // Auto slide HOT carousel
+  useEffect(() => {
+    if (hotProducts.length <= 4) return;
+    const interval = setInterval(() => {
+      setHotCarouselIndex((prev) => (prev + 1) % hotProducts.length);
+    }, 3000);
+    return () => clearInterval(interval);
+  }, [hotProducts.length]);
+
+  // Auto slide SALE carousel
+  useEffect(() => {
+    if (saleProducts.length <= 4) return;
+    const interval = setInterval(() => {
+      setSaleCarouselIndex((prev) => (prev + 1) % saleProducts.length);
+    }, 3000);
+    return () => clearInterval(interval);
+  }, [saleProducts.length]);
 
   const prevSlide = () => {
     setCurrentSlide((prev) => (prev - 1 + banners.length) % banners.length);
@@ -60,23 +86,37 @@ const Home: React.FC = () => {
     setCurrentSlide((prev) => (prev + 1) % banners.length);
   };
 
+  const prevHotCarousel = () => {
+    setHotCarouselIndex((prev) => (prev - 1 + hotProducts.length) % hotProducts.length);
+  };
+
+  const nextHotCarousel = () => {
+    setHotCarouselIndex((prev) => (prev + 1) % hotProducts.length);
+  };
+
+  const prevSaleCarousel = () => {
+    setSaleCarouselIndex((prev) => (prev - 1 + saleProducts.length) % saleProducts.length);
+  };
+
+  const nextSaleCarousel = () => {
+    setSaleCarouselIndex((prev) => (prev + 1) % saleProducts.length);
+  };
+
   // Load dữ liệu
   useEffect(() => {
     const loadData = async () => {
       try {
         setLoading(true);
 
-        // 1. Load tất cả sản phẩm
         const productsRes = await fetch("http://localhost:5000/api/products");
         const allProducts: Product[] = await productsRes.json();
 
-        // 2. Sản phẩm bán chạy (sort theo sold, giảm dần)
-        const sortedBySold = [...allProducts].sort(
-          (a, b) => (b.sold || 0) - (a.sold || 0)
-        );
-        setBestSellers(sortedBySold.slice(0, 8));
+        const hotProds = allProducts.filter(p => p.hot === true);
+        setHotProducts(hotProds);
 
-        // 3. Sản phẩm mới (sort theo created_at, mới nhất trước)
+        const saleProds = allProducts.filter(p => p.onSale === true);
+        setSaleProducts(saleProds);
+
         const sortedByDate = [...allProducts].sort((a, b) => {
           const dateA = new Date(a.created_at || 0).getTime();
           const dateB = new Date(b.created_at || 0).getTime();
@@ -84,44 +124,31 @@ const Home: React.FC = () => {
         });
         setNewProducts(sortedByDate.slice(0, 8));
 
-        // 4. Load danh mục
         const categoriesRes = await fetch(
           "http://localhost:5000/api/categories"
         );
         const allCategories: Category[] = await categoriesRes.json();
 
-        // LẤY CHỈ DANH MỤC CHA (cấp 1) - KHÔNG flatten
-        // Nếu API trả về dạng flat array, filter theo parent = null
-        // Nếu API trả về dạng tree, lấy trực tiếp từ root
         const parentCategories = allCategories.filter((cat) => !cat.parent);
-        
-        console.log("Parent Categories (level 1 only):", parentCategories);
         setCategories(parentCategories);
 
-        // 5. Load sản phẩm cho từng danh mục cha (tối đa 4 danh mục)
         const categoryProds: Record<string, Product[]> = {};
-        
+
         for (const cat of parentCategories.slice(0, 4)) {
           try {
-            // Thử cả 2 cách: với "danh-muc/" và không có
             let url = `http://localhost:5000/api/products?category=${cat.slug}`;
-            console.log(`Loading products for category: ${cat.name} (${cat.slug})`);
-            console.log(`URL: ${url}`);
-            
             const res = await fetch(url);
             const prods = await res.json();
-            
-            console.log(`Products found for ${cat.name}:`, prods.length);
-            categoryProds[cat._id] = Array.isArray(prods) ? prods.slice(0, 8) : [];
+            categoryProds[cat._id] = Array.isArray(prods)
+              ? prods.slice(0, 8)
+              : [];
           } catch (err) {
             console.error(`Error loading products for ${cat.name}:`, err);
             categoryProds[cat._id] = [];
           }
         }
-        
-        console.log("Category Products:", categoryProds);
+
         setCategoryProducts(categoryProds);
-        
       } catch (error) {
         console.error("Lỗi load dữ liệu:", error);
       } finally {
@@ -134,6 +161,8 @@ const Home: React.FC = () => {
 
   // Component ProductCard
   const ProductCard: React.FC<{ product: Product }> = ({ product }) => {
+    const isOutOfStock = product.quantity <= 0;
+
     const discount =
       product.priceOriginal > product.priceSale
         ? Math.round(
@@ -144,8 +173,15 @@ const Home: React.FC = () => {
         : 0;
 
     return (
-      <Link to={`/san-pham/${product.slug}`} className="product-card">
+      <Link
+        to={`/san-pham/${product.slug}`}
+        className={`product-card ${isOutOfStock ? "out-of-stock" : ""}`}
+      >
         <div className="product-image">
+          {isOutOfStock && (
+            <span className="badge out-of-stock-badge">Hết hàng</span>
+          )}
+
           <img
             src={getFirstImageUrl(product.images)}
             alt={product.name}
@@ -175,6 +211,60 @@ const Home: React.FC = () => {
           </div>
         </div>
       </Link>
+    );
+  };
+
+  // Component ProductCarousel
+  const ProductCarousel: React.FC<{
+    products: Product[];
+    currentIndex: number;
+    onPrev: () => void;
+    onNext: () => void;
+  }> = ({ products, currentIndex, onPrev, onNext }) => {
+    if (products.length === 0) return null;
+
+    // Nếu <= 4 sản phẩm, hiển thị bình thường không cần carousel
+    if (products.length <= 4) {
+      return (
+        <div className="product-grid">
+          {products.map((product) => (
+            <ProductCard key={product._id} product={product} />
+          ))}
+        </div>
+      );
+    }
+
+    // Lấy 4 sản phẩm liên tiếp từ currentIndex
+    const getVisibleProducts = () => {
+      const visible = [];
+      for (let i = 0; i < 4; i++) {
+        visible.push(products[(currentIndex + i) % products.length]);
+      }
+      return visible;
+    };
+
+    const visibleProducts = getVisibleProducts();
+
+    return (
+      <div className="product-carousel-wrapper">
+        <button className="carousel-nav prev" onClick={onPrev}>
+          <ChevronLeft size={24} />
+        </button>
+        
+        <div className="product-carousel">
+          <div className="product-carousel-inner">
+            {visibleProducts.map((product) => (
+              <div key={product._id} className="carousel-item">
+                <ProductCard product={product} />
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <button className="carousel-nav next" onClick={onNext}>
+          <ChevronRight size={24} />
+        </button>
+      </div>
     );
   };
 
@@ -245,17 +335,35 @@ const Home: React.FC = () => {
         </div>
       </section>
 
-      {/* ==================== SẢN PHẨM BÁN CHẠY ==================== */}
-      <section className="product-section">
-        <div className="container">
-          <SectionHeader title="Sản phẩm bán chạy" />
-          <div className="product-grid">
-            {bestSellers.map((product) => (
-              <ProductCard key={product._id} product={product} />
-            ))}
+      {/* ==================== SẢN PHẨM HOT ==================== */}
+      {hotProducts.length > 0 && (
+        <section className="product-section">
+          <div className="container">
+            <SectionHeader title="🔥 Sản phẩm HOT" />
+            <ProductCarousel
+              products={hotProducts}
+              currentIndex={hotCarouselIndex}
+              onPrev={prevHotCarousel}
+              onNext={nextHotCarousel}
+            />
           </div>
-        </div>
-      </section>
+        </section>
+      )}
+
+      {/* ==================== SẢN PHẨM SIÊU GIẢM GIÁ ==================== */}
+      {saleProducts.length > 0 && (
+        <section className="product-section">
+          <div className="container">
+            <SectionHeader title="💰 Sản phẩm siêu giảm giá" />
+            <ProductCarousel
+              products={saleProducts}
+              currentIndex={saleCarouselIndex}
+              onPrev={prevSaleCarousel}
+              onNext={nextSaleCarousel}
+            />
+          </div>
+        </section>
+      )}
 
       {/* ==================== SẢN PHẨM MỚI ==================== */}
       <section className="product-section">
@@ -272,10 +380,9 @@ const Home: React.FC = () => {
       {/* ==================== DANH MỤC CHA VÀ SẢN PHẨM ==================== */}
       {categories.slice(0, 4).map((category) => {
         const products = categoryProducts[category._id] || [];
-        
-        // Chỉ hiển thị section nếu có sản phẩm
+
         if (products.length === 0) return null;
-        
+
         return (
           <section key={category._id} className="product-section">
             <div className="container">

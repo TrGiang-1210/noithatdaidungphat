@@ -48,11 +48,11 @@ const SearchResult: React.FC = () => {
   const handleAddToCart = async (product: Product) => {
     // Thêm vào giỏ hàng trước
     const success = await addToCart(product, 1);
-    
+
     if (success) {
       // Sau đó chuyển đến trang thanh toán
       setTimeout(() => {
-        navigate('/thanh-toan');
+        navigate("/thanh-toan");
       }, 300);
     }
   };
@@ -92,65 +92,88 @@ const SearchResult: React.FC = () => {
 
           <div className="product-grid">
             {products.length > 0 ? (
-              products.map((product) => (
-                <div className="product-card" key={product._id}>
-                  <img
-                    src={getFirstImageUrl(product.images)}
-                    alt={product.name}
-                    style={{
-                      cursor: "pointer",
-                      objectFit: "cover",
-                      height: "220px",
-                    }}
-                    onClick={() =>
-                      navigate(`/san-pham/${product.slug || product._id}`)
-                    }
-                    onError={(e) => {
-                      e.currentTarget.src =
-                        "https://via.placeholder.com/300x300?text=No+Image";
-                    }}
-                  />
-                  <p className="product-brand">Nội thất cao cấp</p>
-                  <h4 className="product-name">{product.name}</h4>
+              products.map((product) => {
+                const isOutOfStock = product.quantity <= 0; // ✅ THÊM DÒNG NÀY
 
-                  <div className="price-block">
-                    <div className="price-left">
-                      {product.priceSale < product.priceOriginal ? (
-                        <>
+                return (
+                  <div
+                    className={`product-card ${
+                      isOutOfStock ? "out-of-stock" : ""
+                    }`} // ✅ SỬA CLASS
+                    key={product._id}
+                  >
+                    <div style={{ position: "relative" }}>
+                      {" "}
+                      {/* ✅ WRAP IMG */}
+                      {/* ✅ THÊM BADGE HẾT HÀNG */}
+                      {isOutOfStock && (
+                        <span className="badge out-of-stock-badge">
+                          Hết hàng
+                        </span>
+                      )}
+                      <img
+                        src={getFirstImageUrl(product.images)}
+                        alt={product.name}
+                        style={{
+                          cursor: "pointer",
+                          objectFit: "cover",
+                          height: "220px",
+                        }}
+                        onClick={() =>
+                          navigate(`/san-pham/${product.slug || product._id}`)
+                        }
+                        onError={(e) => {
+                          e.currentTarget.src =
+                            "https://via.placeholder.com/300x300?text=No+Image";
+                        }}
+                      />
+                    </div>
+
+                    <p className="product-brand">Nội thất cao cấp</p>
+                    <h4 className="product-name">{product.name}</h4>
+
+                    <div className="price-block">
+                      <div className="price-left">
+                        {product.priceSale < product.priceOriginal ? (
+                          <>
+                            <div className="discount-price">
+                              {formatCurrency(product.priceSale)}
+                            </div>
+                            <div className="original-price">
+                              {formatCurrency(product.priceOriginal)}
+                            </div>
+                          </>
+                        ) : (
                           <div className="discount-price">
-                            {formatCurrency(product.priceSale)}
-                          </div>
-                          <div className="original-price">
                             {formatCurrency(product.priceOriginal)}
                           </div>
-                        </>
-                      ) : (
-                        <div className="discount-price">
-                          {formatCurrency(product.priceOriginal)}
+                        )}
+                      </div>
+                      {product.priceSale < product.priceOriginal && (
+                        <div className="discount-percent">
+                          -
+                          {Math.round(
+                            ((product.priceOriginal - product.priceSale) /
+                              product.priceOriginal) *
+                              100
+                          )}
+                          %
                         </div>
                       )}
                     </div>
-                    {product.priceSale < product.priceOriginal && (
-                      <div className="discount-percent">
-                        -
-                        {Math.round(
-                          ((product.priceOriginal - product.priceSale) /
-                            product.priceOriginal) *
-                            100
-                        )}
-                        %
-                      </div>
-                    )}
-                  </div>
 
-                  <button
-                    className="add-to-cart"
-                    onClick={() => handleAddToCart(product)}
-                  >
-                    <FaShoppingCart /> Thêm vào giỏ
-                  </button>
-                </div>
-              ))
+                    <button
+                      className="add-to-cart"
+                      onClick={() => handleAddToCart(product)}
+                      disabled={isOutOfStock} // ✅ DISABLE NÚT KHI HẾT HÀNG
+                    >
+                      <FaShoppingCart />
+                      {isOutOfStock ? "Hết hàng" : "Thêm vào giỏ"}{" "}
+                      {/* ✅ ĐỔI TEXT */}
+                    </button>
+                  </div>
+                );
+              })
             ) : (
               <div
                 style={{

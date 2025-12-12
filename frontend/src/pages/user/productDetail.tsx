@@ -59,32 +59,37 @@ const ProductDetail: React.FC = () => {
   const [showLightbox, setShowLightbox] = useState(false);
   const [lightboxIndex, setLightboxIndex] = useState(0);
   // ✅ THÊM STATE CHO ATTRIBUTES
-  const [selectedAttributes, setSelectedAttributes] = useState<Record<string, string>>({});
+  const [selectedAttributes, setSelectedAttributes] = useState<
+    Record<string, string>
+  >({});
 
-  const incrementProductView = async (productId: string, productSlug: string) => {
+  const incrementProductView = async (
+    productId: string,
+    productSlug: string
+  ) => {
     if (viewIncrementedRef.current) {
-      console.log('View already incremented (ref check), skipping...');
+      console.log("View already incremented (ref check), skipping...");
       return;
     }
 
     viewIncrementedRef.current = true;
 
     try {
-      const viewUrl = productSlug 
+      const viewUrl = productSlug
         ? `http://localhost:5000/api/products/slug/${productSlug}/increment-view`
         : `http://localhost:5000/api/products/${productId}/increment-view`;
-      
+
       await fetch(viewUrl, {
-        method: 'POST',
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
       });
-      
-      console.log('View incremented successfully - only once!');
+
+      console.log("View incremented successfully - only once!");
     } catch (error) {
       viewIncrementedRef.current = false;
-      console.error('Error incrementing view:', error);
+      console.error("Error incrementing view:", error);
     }
   };
 
@@ -122,9 +127,9 @@ const ProductDetail: React.FC = () => {
           const data = await res.json();
           setProduct(data);
           setLoading(false);
-          
+
           incrementProductView(data._id, data.slug);
-          
+
           return;
         } catch (e) {
           console.warn(`[ProductDetail] fetch failed ${url}`, e);
@@ -136,7 +141,7 @@ const ProductDetail: React.FC = () => {
 
     fetchProduct();
     setSelectedImageIndex(0);
-    
+
     return () => {
       viewIncrementedRef.current = false;
     };
@@ -242,42 +247,44 @@ const ProductDetail: React.FC = () => {
     const productImages = getImageUrls(product.images);
 
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
+      if (e.key === "Escape") {
         setShowLightbox(false);
-        document.body.style.overflow = 'auto';
-      } else if (e.key === 'ArrowRight') {
+        document.body.style.overflow = "auto";
+      } else if (e.key === "ArrowRight") {
         setLightboxIndex((prev) => (prev + 1) % productImages.length);
-      } else if (e.key === 'ArrowLeft') {
-        setLightboxIndex((prev) => (prev - 1 + productImages.length) % productImages.length);
+      } else if (e.key === "ArrowLeft") {
+        setLightboxIndex(
+          (prev) => (prev - 1 + productImages.length) % productImages.length
+        );
       }
     };
 
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
   }, [showLightbox, product]);
 
   // ✅ KHỞI TẠO GIÁ TRỊ MẶC ĐỊNH CHO ATTRIBUTES
   useEffect(() => {
     if (!product?.attributes) return;
-    
+
     const defaults: Record<string, string> = {};
     product.attributes.forEach((attr) => {
-      const defaultOption = attr.options.find(opt => opt.isDefault);
+      const defaultOption = attr.options.find((opt) => opt.isDefault);
       if (defaultOption) {
         defaults[attr.name] = defaultOption.value;
       } else if (attr.options.length > 0) {
         defaults[attr.name] = attr.options[0].value;
       }
     });
-    
+
     setSelectedAttributes(defaults);
   }, [product]);
 
   // ✅ HÀM XỬ LÝ CHỌN ATTRIBUTE
   const handleAttributeSelect = (attrName: string, optionValue: string) => {
-    setSelectedAttributes(prev => ({
+    setSelectedAttributes((prev) => ({
       ...prev,
-      [attrName]: optionValue
+      [attrName]: optionValue,
     }));
   };
 
@@ -299,12 +306,12 @@ const ProductDetail: React.FC = () => {
   const openLightbox = (index: number) => {
     setLightboxIndex(index);
     setShowLightbox(true);
-    document.body.style.overflow = 'hidden';
+    document.body.style.overflow = "hidden";
   };
 
   const closeLightbox = () => {
     setShowLightbox(false);
-    document.body.style.overflow = 'auto';
+    document.body.style.overflow = "auto";
   };
 
   const nextImage = () => {
@@ -312,7 +319,9 @@ const ProductDetail: React.FC = () => {
   };
 
   const prevImage = () => {
-    setLightboxIndex((prev) => (prev - 1 + productImages.length) % productImages.length);
+    setLightboxIndex(
+      (prev) => (prev - 1 + productImages.length) % productImages.length
+    );
   };
 
   const handleAdd = async (qty: number = 1, buyNow: boolean = false) => {
@@ -329,20 +338,35 @@ const ProductDetail: React.FC = () => {
 
   const actionArea = (
     <div className="action-area">
-      <button className="btn-buy-now" onClick={() => handleAdd(quantity, true)}>
-        MUA NGAY
+      <button
+        className="btn-buy-now"
+        onClick={() => handleAdd(quantity, true)}
+        disabled={product.quantity <= 0}
+        style={{
+          opacity: product.quantity <= 0 ? 0.5 : 1,
+          cursor: product.quantity <= 0 ? "not-allowed" : "pointer",
+        }}
+      >
+        {product.quantity <= 0 ? "HẾT HÀNG" : "MUA NGAY"}
       </button>
 
       <button
         className="btn-add-cart"
         onClick={() => handleAdd(quantity, false)}
+        disabled={product.quantity <= 0}
+        style={{
+          opacity: product.quantity <= 0 ? 0.5 : 1,
+          cursor: product.quantity <= 0 ? "not-allowed" : "pointer",
+        }}
       >
-        THÊM VÀO GIỎ
+        {product.quantity <= 0 ? "HẾT HÀNG" : "THÊM VÀO GIỎ"}
       </button>
     </div>
   );
 
   const ProductCard: React.FC<{ product: Product }> = ({ product }) => {
+    const isOutOfStock = product.quantity <= 0; // ✅ THÊM DÒNG NÀY
+
     const discount =
       product.priceOriginal > product.priceSale
         ? Math.round(
@@ -353,8 +377,16 @@ const ProductDetail: React.FC = () => {
         : 0;
 
     return (
-      <Link to={`/san-pham/${product.slug}`} className="product-card">
+      <Link
+        to={`/san-pham/${product.slug}`}
+        className={`product-card ${isOutOfStock ? "out-of-stock" : ""}`} // ✅ SỬA CLASS
+      >
         <div className="product-image">
+          {/* ✅ THÊM BADGE HẾT HÀNG */}
+          {isOutOfStock && (
+            <span className="badge out-of-stock-badge">Hết hàng</span>
+          )}
+
           <img
             src={getFirstImageUrl(product.images)}
             alt={product.name}
@@ -396,11 +428,18 @@ const ProductDetail: React.FC = () => {
               {discount > 0 && <div className="sale-badge">-{discount}%</div>}
 
               <div className="main-image">
+                {/* ✅ THÊM BADGE HẾT HÀNG */}
+                {product.quantity <= 0 && (
+                  <div className="out-of-stock-overlay">
+                    <span className="out-of-stock-text">HẾT HÀNG</span>
+                  </div>
+                )}
+
                 <img
                   src={currentImage}
                   alt={product.name}
                   onClick={() => openLightbox(selectedImageIndex)}
-                  style={{ cursor: 'pointer' }}
+                  style={{ cursor: "pointer" }}
                   onError={(e) => {
                     e.currentTarget.src =
                       "https://via.placeholder.com/600x600?text=No+Image";
@@ -475,22 +514,27 @@ const ProductDetail: React.FC = () => {
                     <label>{attr.name}:</label>
                     <div className="option-buttons">
                       {attr.options.map((opt, optIdx) => {
-                        const isSelected = selectedAttributes[attr.name] === opt.value;
-                        
+                        const isSelected =
+                          selectedAttributes[attr.name] === opt.value;
+
                         return (
                           <button
                             key={optIdx}
-                            className={`option-btn ${isSelected ? 'active' : ''}`}
-                            onClick={() => handleAttributeSelect(attr.name, opt.value)}
+                            className={`option-btn ${
+                              isSelected ? "active" : ""
+                            }`}
+                            onClick={() =>
+                              handleAttributeSelect(attr.name, opt.value)
+                            }
                             type="button"
                           >
                             {opt.image && (
-                              <img 
-                                src={getImageUrl(opt.image)} 
+                              <img
+                                src={getImageUrl(opt.image)}
                                 alt={opt.label}
                                 className="option-image"
                                 onError={(e) => {
-                                  e.currentTarget.style.display = 'none';
+                                  e.currentTarget.style.display = "none";
                                 }}
                               />
                             )}
@@ -628,12 +672,21 @@ const ProductDetail: React.FC = () => {
           </button>
 
           {productImages.length > 1 && (
-            <button className="lightbox-nav lightbox-prev" onClick={(e) => { e.stopPropagation(); prevImage(); }}>
+            <button
+              className="lightbox-nav lightbox-prev"
+              onClick={(e) => {
+                e.stopPropagation();
+                prevImage();
+              }}
+            >
               ‹
             </button>
           )}
 
-          <div className="lightbox-content" onClick={(e) => e.stopPropagation()}>
+          <div
+            className="lightbox-content"
+            onClick={(e) => e.stopPropagation()}
+          >
             <img
               src={productImages[lightboxIndex]}
               alt={`${product.name} - ${lightboxIndex + 1}`}
@@ -646,17 +699,28 @@ const ProductDetail: React.FC = () => {
           </div>
 
           {productImages.length > 1 && (
-            <button className="lightbox-nav lightbox-next" onClick={(e) => { e.stopPropagation(); nextImage(); }}>
+            <button
+              className="lightbox-nav lightbox-next"
+              onClick={(e) => {
+                e.stopPropagation();
+                nextImage();
+              }}
+            >
               ›
             </button>
           )}
 
           {productImages.length > 1 && (
-            <div className="lightbox-thumbnails" onClick={(e) => e.stopPropagation()}>
+            <div
+              className="lightbox-thumbnails"
+              onClick={(e) => e.stopPropagation()}
+            >
               {productImages.map((img: string, i: number) => (
                 <div
                   key={i}
-                  className={`lightbox-thumb ${lightboxIndex === i ? 'active' : ''}`}
+                  className={`lightbox-thumb ${
+                    lightboxIndex === i ? "active" : ""
+                  }`}
                   onClick={() => setLightboxIndex(i)}
                 >
                   <img src={img} alt={`Thumbnail ${i + 1}`} />
