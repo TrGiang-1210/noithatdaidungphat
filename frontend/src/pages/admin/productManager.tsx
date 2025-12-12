@@ -1,9 +1,21 @@
-// src/admin/pages/ProductManager.tsx
+// src/admin/pages/ProductManager.tsx - FULL CODE WITH ATTRIBUTES
 import { useState, useEffect } from "react";
-import { Plus, Edit2, Trash2, Loader2, Image as ImageIcon } from "lucide-react";
+import { Plus, Edit2, Trash2, Loader2, X } from "lucide-react";
 import axiosInstance from "../../axios";
 import { getImageUrl, getFirstImageUrl } from "@/utils/imageUrl";
 import "@/styles/pages/admin/productManager.scss";
+
+interface AttributeOption {
+  label: string;
+  value: string;
+  image?: string;
+  isDefault?: boolean;
+}
+
+interface Attribute {
+  name: string;
+  options: AttributeOption[];
+}
 
 interface Product {
   _id: string;
@@ -19,6 +31,7 @@ interface Product {
   hot: boolean;
   onSale: boolean;
   sold: number;
+  attributes?: Attribute[];
 }
 
 interface Category {
@@ -47,8 +60,10 @@ export default function ProductManager() {
     hot: false,
     onSale: false,
     images: [] as File[],
+    attributes: [] as Attribute[],
   });
   const [imagePreviews, setImagePreviews] = useState<string[]>([]);
+  const [attributeImages, setAttributeImages] = useState<Map<string, File>>(new Map());
 
   const fetchProducts = async () => {
     try {
@@ -111,8 +126,10 @@ export default function ProductManager() {
       hot: false,
       onSale: false,
       images: [],
+      attributes: [],
     });
     setImagePreviews([]);
+    setAttributeImages(new Map());
     setShowModal(true);
   };
 
@@ -129,8 +146,10 @@ export default function ProductManager() {
       hot: prod.hot,
       onSale: prod.onSale,
       images: [],
+      attributes: prod.attributes || [],
     });
     setImagePreviews(prod.images);
+    setAttributeImages(new Map());
     setShowModal(true);
   };
 
@@ -145,8 +164,68 @@ export default function ProductManager() {
     setImagePreviews(previews);
   };
 
+  const addAttribute = () => {
+    setFormData({
+      ...formData,
+      attributes: [
+        ...formData.attributes,
+        { name: "", options: [{ label: "", value: "", isDefault: false }] }
+      ]
+    });
+  };
+
+  const removeAttribute = (attrIdx: number) => {
+    const newAttrs = formData.attributes.filter((_, i) => i !== attrIdx);
+    setFormData({ ...formData, attributes: newAttrs });
+  };
+
+  const updateAttributeName = (attrIdx: number, name: string) => {
+    const newAttrs = [...formData.attributes];
+    newAttrs[attrIdx].name = name;
+    setFormData({ ...formData, attributes: newAttrs });
+  };
+
+  const addOption = (attrIdx: number) => {
+    const newAttrs = [...formData.attributes];
+    newAttrs[attrIdx].options.push({ label: "", value: "", isDefault: false });
+    setFormData({ ...formData, attributes: newAttrs });
+  };
+
+  const removeOption = (attrIdx: number, optIdx: number) => {
+    const newAttrs = [...formData.attributes];
+    newAttrs[attrIdx].options = newAttrs[attrIdx].options.filter((_, i) => i !== optIdx);
+    setFormData({ ...formData, attributes: newAttrs });
+  };
+
+  const updateOption = (attrIdx: number, optIdx: number, field: keyof AttributeOption, value: any) => {
+    const newAttrs = [...formData.attributes];
+    (newAttrs[attrIdx].options[optIdx] as any)[field] = value;
+    
+    if (field === 'label') {
+      newAttrs[attrIdx].options[optIdx].value = value
+        .toLowerCase()
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .replace(/đ/g, "d")
+        .replace(/[^a-z0-9\s-]/g, "")
+        .replace(/\s+/g, "-");
+    }
+    
+    setFormData({ ...formData, attributes: newAttrs });
+  };
+
+  const handleAttributeImageChange = (attrIdx: number, optIdx: number, file: File | null) => {
+    if (file) {
+      const key = `${attrIdx}_${optIdx}`;
+      const newMap = new Map(attributeImages);
+      newMap.set(key, file);
+      setAttributeImages(newMap);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
     const data = new FormData();
     data.append("name", formData.name);
     data.append("sku", formData.sku);
@@ -157,7 +236,14 @@ export default function ProductManager() {
     formData.categories.forEach((cat) => data.append("categories[]", cat));
     data.append("hot", formData.hot.toString());
     data.append("onSale", formData.onSale.toString());
+    
     formData.images.forEach((file) => data.append("images", file));
+    
+    attributeImages.forEach((file, key) => {
+      data.append(`attribute_${key}`, file);
+    });
+    
+    data.append("attributes", JSON.stringify(formData.attributes));
 
     try {
       if (editingProd) {
@@ -204,9 +290,7 @@ export default function ProductManager() {
 
       <div className="product-table">
         {products.length === 0 ? (
-          <p className="empty">
-            Chưa có sản phẩm nào. Hãy thêm sản phẩm đầu tiên!
-          </p>
+          <p className="empty">Chưa có sản phẩm nào. Hãy thêm sản phẩm đầu tiên!</p>
         ) : (
           <table>
             <thead>
@@ -230,9 +314,7 @@ export default function ProductManager() {
                       alt={prod.name}
                       className="thumbnail"
                       onError={(e) => {
-                        // Nếu ảnh lỗi, hiển thị placeholder
-                        e.currentTarget.src =
-                          "https://via.placeholder.com/150?text=Error";
+                        e.currentTarget.src = "https://via.placeholder.com/150?text=Error";
                       }}
                     />
                   </td>
@@ -243,16 +325,10 @@ export default function ProductManager() {
                   <td>{prod.quantity}</td>
                   <td>{prod.categories.map((c) => c.name).join(", ")}</td>
                   <td className="actions">
-                    <button
-                      onClick={() => openEditModal(prod)}
-                      className="btn-small"
-                    >
+                    <button onClick={() => openEditModal(prod)} className="btn-small">
                       <Edit2 size={16} />
                     </button>
-                    <button
-                      onClick={() => setDeletingProd(prod)}
-                      className="btn-small btn-danger"
-                    >
+                    <button onClick={() => setDeletingProd(prod)} className="btn-small btn-danger">
                       <Trash2 size={16} />
                     </button>
                   </td>
@@ -263,77 +339,57 @@ export default function ProductManager() {
         )}
       </div>
 
-      {/* Modal thêm/sửa */}
       {showModal && (
         <div className="modal-overlay" onClick={() => setShowModal(false)}>
-          <div className="modal" onClick={(e) => e.stopPropagation()}>
+          <div className="modal modal-large" onClick={(e) => e.stopPropagation()}>
             <h3>{editingProd ? "Sửa" : "Thêm"} sản phẩm</h3>
             <form onSubmit={handleSubmit}>
-              {/* Tên sản phẩm */}
               <input
                 type="text"
                 placeholder="Tên sản phẩm"
                 value={formData.name}
-                onChange={(e) =>
-                  setFormData({ ...formData, name: e.target.value })
-                }
+                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                 required
               />
 
-              {/* SKU */}
               <input
                 type="text"
                 placeholder="SKU"
                 value={formData.sku}
-                onChange={(e) =>
-                  setFormData({ ...formData, sku: e.target.value })
-                }
+                onChange={(e) => setFormData({ ...formData, sku: e.target.value })}
                 required
               />
 
-              {/* Giá gốc */}
               <input
                 type="number"
                 placeholder="Giá gốc (₫)"
                 value={formData.priceOriginal}
-                onChange={(e) =>
-                  setFormData({ ...formData, priceOriginal: e.target.value })
-                }
+                onChange={(e) => setFormData({ ...formData, priceOriginal: e.target.value })}
                 required
               />
 
-              {/* Giá bán */}
               <input
                 type="number"
                 placeholder="Giá bán (₫)"
                 value={formData.priceSale}
-                onChange={(e) =>
-                  setFormData({ ...formData, priceSale: e.target.value })
-                }
+                onChange={(e) => setFormData({ ...formData, priceSale: e.target.value })}
                 required
               />
 
-              {/* Số lượng */}
               <input
                 type="number"
                 placeholder="Số lượng"
                 value={formData.quantity}
-                onChange={(e) =>
-                  setFormData({ ...formData, quantity: e.target.value })
-                }
+                onChange={(e) => setFormData({ ...formData, quantity: e.target.value })}
                 required
               />
 
-              {/* Mô tả */}
               <textarea
                 placeholder="Mô tả sản phẩm"
                 value={formData.description}
-                onChange={(e) =>
-                  setFormData({ ...formData, description: e.target.value })
-                }
+                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
               />
 
-              {/* Danh mục */}
               <div className="category-select-wrapper">
                 <label>Chọn danh mục (giữ Ctrl/Cmd để chọn nhiều)</label>
                 <select
@@ -342,10 +398,7 @@ export default function ProductManager() {
                   onChange={(e) =>
                     setFormData({
                       ...formData,
-                      categories: Array.from(
-                        e.target.selectedOptions,
-                        (option) => option.value
-                      ),
+                      categories: Array.from(e.target.selectedOptions, (option) => option.value),
                     })
                   }
                 >
@@ -357,20 +410,15 @@ export default function ProductManager() {
                     </option>
                   ))}
                 </select>
-                <span className="select-hint">
-                  Đã chọn: {formData.categories.length} danh mục
-                </span>
+                <span className="select-hint">Đã chọn: {formData.categories.length} danh mục</span>
               </div>
 
-              {/* Checkbox Hot & On Sale */}
               <div className="checkbox-group">
                 <label>
                   <input
                     type="checkbox"
                     checked={formData.hot}
-                    onChange={(e) =>
-                      setFormData({ ...formData, hot: e.target.checked })
-                    }
+                    onChange={(e) => setFormData({ ...formData, hot: e.target.checked })}
                   />
                   🔥 Hot
                 </label>
@@ -378,58 +426,123 @@ export default function ProductManager() {
                   <input
                     type="checkbox"
                     checked={formData.onSale}
-                    onChange={(e) =>
-                      setFormData({ ...formData, onSale: e.target.checked })
-                    }
+                    onChange={(e) => setFormData({ ...formData, onSale: e.target.checked })}
                   />
                   💰 On Sale
                 </label>
               </div>
 
-              {/* Upload ảnh */}
               <div className="file-input-wrapper">
                 <label className="file-label">Hình ảnh sản phẩm</label>
-                <input
-                  type="file"
-                  multiple
-                  accept="image/*"
-                  onChange={handleImageChange}
-                />
-                <span className="file-hint">
-                  Tối đa 3 ảnh, mỗi ảnh dưới 5MB
-                </span>
+                <input type="file" multiple accept="image/*" onChange={handleImageChange} />
+                <span className="file-hint">Tối đa 3 ảnh, mỗi ảnh dưới 5MB</span>
               </div>
 
-              {/* Preview ảnh */}
               {imagePreviews.length > 0 && (
                 <div className="image-previews">
                   {imagePreviews.map((prev, idx) => (
                     <img
                       key={idx}
-                      src={
-                        // Nếu là ảnh cũ từ server (bắt đầu bằng /uploads) → dùng getImageUrl
-                        prev.startsWith("/uploads") ? getImageUrl(prev) : prev // Nếu là blob URL (file mới upload) → giữ nguyên
-                      }
+                      src={prev.startsWith("/uploads") ? getImageUrl(prev) : prev}
                       alt={`preview-${idx}`}
                       onError={(e) => {
-                        e.currentTarget.src =
-                          "https://via.placeholder.com/150?text=Error";
+                        e.currentTarget.src = "https://via.placeholder.com/150?text=Error";
                       }}
                     />
                   ))}
                 </div>
               )}
+
+              {/* ✅ PHẦN ATTRIBUTES */}
+              <div className="attributes-section">
+                <div className="attributes-header">
+                  <label className="section-label">Thuộc tính sản phẩm</label>
+                  <button type="button" onClick={addAttribute} className="btn-add-attribute">
+                    <Plus size={16} /> Thêm thuộc tính
+                  </button>
+                </div>
+
+                {formData.attributes.map((attr, attrIdx) => (
+                  <div key={attrIdx} className="attribute-card">
+                    <div className="attribute-header">
+                      <input
+                        type="text"
+                        placeholder="Tên thuộc tính (VD: Chất liệu, Màu sắc, Kích thước)"
+                        value={attr.name}
+                        onChange={(e) => updateAttributeName(attrIdx, e.target.value)}
+                        className="attribute-name-input"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => removeAttribute(attrIdx)}
+                        className="btn-remove-attribute"
+                      >
+                        <X size={16} />
+                      </button>
+                    </div>
+
+                    <div className="options-list">
+                      {attr.options.map((opt, optIdx) => (
+                        <div key={optIdx} className="option-item">
+                          <input
+                            type="text"
+                            placeholder="Nhãn option (VD: MDF EC | Duy chuẩn / Không LED)"
+                            value={opt.label}
+                            onChange={(e) => updateOption(attrIdx, optIdx, 'label', e.target.value)}
+                          />
+                          
+                          <div className="option-image-upload">
+                            <input
+                              type="file"
+                              accept="image/*"
+                              onChange={(e) => handleAttributeImageChange(attrIdx, optIdx, e.target.files?.[0] || null)}
+                              id={`attr-img-${attrIdx}-${optIdx}`}
+                            />
+                            <label htmlFor={`attr-img-${attrIdx}-${optIdx}`} className="file-label-small">
+                              Chọn ảnh
+                            </label>
+                            {attributeImages.has(`${attrIdx}_${optIdx}`) && (
+                              <span className="file-selected">✓</span>
+                            )}
+                          </div>
+
+                          <label className="option-default">
+                            <input
+                              type="checkbox"
+                              checked={opt.isDefault || false}
+                              onChange={(e) => updateOption(attrIdx, optIdx, 'isDefault', e.target.checked)}
+                            />
+                            Mặc định
+                          </label>
+
+                          <button
+                            type="button"
+                            onClick={() => removeOption(attrIdx, optIdx)}
+                            className="btn-remove-option"
+                          >
+                            <X size={14} />
+                          </button>
+                        </div>
+                      ))}
+                      
+                      <button
+                        type="button"
+                        onClick={() => addOption(attrIdx)}
+                        className="btn-add-option"
+                      >
+                        <Plus size={14} /> Thêm lựa chọn
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
             </form>
 
             <div className="modal-actions">
               <button type="button" onClick={() => setShowModal(false)}>
                 Hủy
               </button>
-              <button
-                type="submit"
-                className="btn-primary"
-                onClick={handleSubmit}
-              >
+              <button type="submit" className="btn-primary" onClick={handleSubmit}>
                 {editingProd ? "Cập nhật" : "Thêm mới"}
               </button>
             </div>
@@ -437,7 +550,6 @@ export default function ProductManager() {
         </div>
       )}
 
-      {/* Confirm xóa */}
       {deletingProd && (
         <div className="modal-overlay" onClick={() => setDeletingProd(null)}>
           <div className="modal" onClick={(e) => e.stopPropagation()}>
@@ -449,11 +561,7 @@ export default function ProductManager() {
               <button type="button" onClick={() => setDeletingProd(null)}>
                 Hủy
               </button>
-              <button
-                type="button"
-                onClick={handleDelete}
-                className="btn-danger"
-              >
+              <button type="button" onClick={handleDelete} className="btn-danger">
                 Xóa vĩnh viễn
               </button>
             </div>

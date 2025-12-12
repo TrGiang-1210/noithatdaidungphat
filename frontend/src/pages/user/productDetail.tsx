@@ -1,13 +1,40 @@
+// src/pages/productDetail.tsx - FULL CODE WITH ATTRIBUTES
 import React, { useEffect, useState, useContext, useRef } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { useCart } from "@/context/CartContext";
 import "@/styles/pages/user/productDetail.scss";
-import { toast } from "react-toastify";
 import { AuthContext } from "@/context/AuthContext";
-import { getImageUrls, getFirstImageUrl } from "@/utils/imageUrl";
+import { getImageUrls, getFirstImageUrl, getImageUrl } from "@/utils/imageUrl";
 import { ChevronRight } from "lucide-react";
 
-type Product = any;
+type Product = {
+  _id: string;
+  name: string;
+  slug: string;
+  sku: string;
+  images: string[];
+  description: string;
+  priceOriginal: number;
+  priceSale: number;
+  quantity: number;
+  categories: any[];
+  hot: boolean;
+  onSale: boolean;
+  sold: number;
+  material?: string;
+  color?: string;
+  size?: string;
+  // ✅ THÊM ATTRIBUTES
+  attributes?: Array<{
+    name: string;
+    options: Array<{
+      label: string;
+      value: string;
+      image?: string;
+      isDefault?: boolean;
+    }>;
+  }>;
+};
 
 const endpointCandidates = (param: string) => [
   `http://localhost:5000/api/products/slug/${encodeURIComponent(param)}`,
@@ -31,8 +58,9 @@ const ProductDetail: React.FC = () => {
   const viewIncrementedRef = useRef(false);
   const [showLightbox, setShowLightbox] = useState(false);
   const [lightboxIndex, setLightboxIndex] = useState(0);
+  // ✅ THÊM STATE CHO ATTRIBUTES
+  const [selectedAttributes, setSelectedAttributes] = useState<Record<string, string>>({});
 
-  // ✅ Hàm tăng lượt xem - CHỈ GỌI 1 LẦN DUY NHẤT
   const incrementProductView = async (productId: string, productSlug: string) => {
     if (viewIncrementedRef.current) {
       console.log('View already incremented (ref check), skipping...');
@@ -114,7 +142,6 @@ const ProductDetail: React.FC = () => {
     };
   }, [param]);
 
-  // Load sản phẩm liên quan
   useEffect(() => {
     if (!product) return;
 
@@ -209,7 +236,6 @@ const ProductDetail: React.FC = () => {
     fetchRelatedProducts();
   }, [product]);
 
-  // ✅ Xử lý phím ESC và mũi tên - ĐẶT TRƯỚC CÁC RETURN
   useEffect(() => {
     if (!showLightbox || !product) return;
 
@@ -230,6 +256,31 @@ const ProductDetail: React.FC = () => {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [showLightbox, product]);
 
+  // ✅ KHỞI TẠO GIÁ TRỊ MẶC ĐỊNH CHO ATTRIBUTES
+  useEffect(() => {
+    if (!product?.attributes) return;
+    
+    const defaults: Record<string, string> = {};
+    product.attributes.forEach((attr) => {
+      const defaultOption = attr.options.find(opt => opt.isDefault);
+      if (defaultOption) {
+        defaults[attr.name] = defaultOption.value;
+      } else if (attr.options.length > 0) {
+        defaults[attr.name] = attr.options[0].value;
+      }
+    });
+    
+    setSelectedAttributes(defaults);
+  }, [product]);
+
+  // ✅ HÀM XỬ LÝ CHỌN ATTRIBUTE
+  const handleAttributeSelect = (attrName: string, optionValue: string) => {
+    setSelectedAttributes(prev => ({
+      ...prev,
+      [attrName]: optionValue
+    }));
+  };
+
   if (loading) return <div>Đang tải sản phẩm...</div>;
   if (error) return <div style={{ color: "red" }}>Lỗi: {error}</div>;
   if (!product) return <div>Không có dữ liệu sản phẩm</div>;
@@ -245,20 +296,17 @@ const ProductDetail: React.FC = () => {
         )
       : 0;
 
-  // ✅ Hàm mở lightbox
   const openLightbox = (index: number) => {
     setLightboxIndex(index);
     setShowLightbox(true);
     document.body.style.overflow = 'hidden';
   };
 
-  // ✅ Hàm đóng lightbox
   const closeLightbox = () => {
     setShowLightbox(false);
     document.body.style.overflow = 'auto';
   };
 
-  // ✅ Chuyển ảnh trong lightbox
   const nextImage = () => {
     setLightboxIndex((prev) => (prev + 1) % productImages.length);
   };
@@ -270,24 +318,12 @@ const ProductDetail: React.FC = () => {
   const handleAdd = async (qty: number = 1, buyNow: boolean = false) => {
     if (!product) return;
 
-    const success = await addToCart(product, qty);
+    await addToCart(product, qty);
 
-    if (success) {
-      toast.success("Đã thêm vào giỏ hàng!");
-
-      if (buyNow) {
-        setTimeout(() => {
-          navigate("/thanh-toan");
-        }, 300);
-      }
-    } else {
-      toast.success("Đã thêm vào giỏ hàng!");
-
-      if (buyNow) {
-        setTimeout(() => {
-          navigate("/thanh-toan");
-        }, 300);
-      }
+    if (buyNow) {
+      setTimeout(() => {
+        navigate("/thanh-toan");
+      }, 300);
     }
   };
 
@@ -301,12 +337,11 @@ const ProductDetail: React.FC = () => {
         className="btn-add-cart"
         onClick={() => handleAdd(quantity, false)}
       >
-        THÊM VÀO GIỎ HÀNG
+        THÊM VÀO GIỎ
       </button>
     </div>
   );
 
-  // Component ProductCard giống Home
   const ProductCard: React.FC<{ product: Product }> = ({ product }) => {
     const discount =
       product.priceOriginal > product.priceSale
@@ -356,7 +391,6 @@ const ProductDetail: React.FC = () => {
     <div className="product-detail-page">
       <div className="container">
         <div className="new-layout">
-          {/* ==================== TRÁI: ẢNH + MÔ TẢ DƯỚI ==================== */}
           <div className="left-column">
             <div className="image-area">
               {discount > 0 && <div className="sale-badge">-{discount}%</div>}
@@ -409,7 +443,6 @@ const ProductDetail: React.FC = () => {
             )}
           </div>
 
-          {/* ==================== PHẢI: THÔNG TIN CHI TIẾT ==================== */}
           <div className="right-column">
             <h1 className="product-title">{product.name}</h1>
 
@@ -434,26 +467,64 @@ const ProductDetail: React.FC = () => {
               )}
             </div>
 
-            <div className="options-group">
-              {product.material && (
-                <div className="option-item">
-                  <label>Chất liệu:</label>
-                  <button className="active">{product.material}</button>
-                </div>
-              )}
-              {product.color && (
-                <div className="option-item">
-                  <label>Màu sắc:</label>
-                  <button className="active">{product.color}</button>
-                </div>
-              )}
-              {product.size && (
-                <div className="option-item">
-                  <label>Kích thước (cm):</label>
-                  <button className="active">{product.size}</button>
-                </div>
-              )}
-            </div>
+            {/* ✅ HIỂN THỊ ATTRIBUTES ĐỘNG */}
+            {product.attributes && product.attributes.length > 0 ? (
+              <div className="options-group">
+                {product.attributes.map((attr, attrIdx) => (
+                  <div key={attrIdx} className="option-item">
+                    <label>{attr.name}:</label>
+                    <div className="option-buttons">
+                      {attr.options.map((opt, optIdx) => {
+                        const isSelected = selectedAttributes[attr.name] === opt.value;
+                        
+                        return (
+                          <button
+                            key={optIdx}
+                            className={`option-btn ${isSelected ? 'active' : ''}`}
+                            onClick={() => handleAttributeSelect(attr.name, opt.value)}
+                            type="button"
+                          >
+                            {opt.image && (
+                              <img 
+                                src={getImageUrl(opt.image)} 
+                                alt={opt.label}
+                                className="option-image"
+                                onError={(e) => {
+                                  e.currentTarget.style.display = 'none';
+                                }}
+                              />
+                            )}
+                            <span className="option-label">{opt.label}</span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              /* ✅ FALLBACK: Hiển thị các field cũ nếu không có attributes */
+              <div className="options-group">
+                {product.material && (
+                  <div className="option-item">
+                    <label>Chất liệu:</label>
+                    <button className="active">{product.material}</button>
+                  </div>
+                )}
+                {product.color && (
+                  <div className="option-item">
+                    <label>Màu sắc:</label>
+                    <button className="active">{product.color}</button>
+                  </div>
+                )}
+                {product.size && (
+                  <div className="option-item">
+                    <label>Kích thước (cm):</label>
+                    <button className="active">{product.size}</button>
+                  </div>
+                )}
+              </div>
+            )}
 
             <div className="quantity-area">
               <button
@@ -472,12 +543,10 @@ const ProductDetail: React.FC = () => {
               <button
                 className="qty-btn"
                 onClick={() => setQuantity(quantity + 1)}
+                disabled={quantity >= (product.quantity || 0)}
               >
                 +
               </button>
-              <span className="note">
-                (Còn {product.quantity || 0} sản phẩm)
-              </span>
             </div>
 
             {actionArea}
@@ -531,7 +600,6 @@ const ProductDetail: React.FC = () => {
         </div>
       </div>
 
-      {/* ==================== SECTION SẢN PHẨM LIÊN QUAN ==================== */}
       {relatedProducts.length > 0 && (
         <section className="related-products-section">
           <div className="container">
@@ -553,21 +621,18 @@ const ProductDetail: React.FC = () => {
         </section>
       )}
 
-      {/* ==================== LIGHTBOX ==================== */}
       {showLightbox && (
         <div className="lightbox-overlay" onClick={closeLightbox}>
           <button className="lightbox-close" onClick={closeLightbox}>
             ✕
           </button>
 
-          {/* Nút Previous */}
           {productImages.length > 1 && (
             <button className="lightbox-nav lightbox-prev" onClick={(e) => { e.stopPropagation(); prevImage(); }}>
               ‹
             </button>
           )}
 
-          {/* Ảnh chính */}
           <div className="lightbox-content" onClick={(e) => e.stopPropagation()}>
             <img
               src={productImages[lightboxIndex]}
@@ -575,20 +640,17 @@ const ProductDetail: React.FC = () => {
               className="lightbox-main-image"
             />
 
-            {/* Số thứ tự ảnh */}
             <div className="lightbox-counter">
               {lightboxIndex + 1} / {productImages.length}
             </div>
           </div>
 
-          {/* Nút Next */}
           {productImages.length > 1 && (
             <button className="lightbox-nav lightbox-next" onClick={(e) => { e.stopPropagation(); nextImage(); }}>
               ›
             </button>
           )}
 
-          {/* Thumbnail sidebar bên phải */}
           {productImages.length > 1 && (
             <div className="lightbox-thumbnails" onClick={(e) => e.stopPropagation()}>
               {productImages.map((img: string, i: number) => (

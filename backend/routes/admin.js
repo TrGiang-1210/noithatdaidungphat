@@ -128,9 +128,8 @@ router.delete('/categories/:id', auth, admin, categoryController.deleteCategory)
 // GET: Lấy tất cả sản phẩm (cho admin panel)
 router.get('/products', auth, admin, productController.getAllProductsAdmin);
 // POST: Tạo sản phẩm mới
-router.post('/products', auth, admin, productUpload.array('images', 3), productController.createProduct);
-// PUT: Cập nhật sản phẩm
-router.put('/products/:id', auth, admin, productUpload.array('images', 3), productController.updateProduct);
+router.post('/products', auth, admin, productUpload.any(), productController.createProduct);
+router.put('/products/:id', auth, admin, productUpload.any(), productController.updateProduct);
 // DELETE: Xóa sản phẩm
 router.delete('/products/:id', auth, admin, productController.deleteProduct);
 // POST: Gán danh mục hàng loạt

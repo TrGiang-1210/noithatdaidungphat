@@ -8,6 +8,7 @@ const EmailService = require("../services/emailService");
 const Joi = require("joi");
 const { createMomoPayment } = require("../services/orderService");
 
+// ✅ FIXED SCHEMA - XÓA ward và district
 const orderSchema = Joi.object({
   payment_method: Joi.string().valid("cod", "bank", "momo").default("cod"),
   customer: Joi.object({
@@ -16,8 +17,6 @@ const orderSchema = Joi.object({
     email: Joi.string().allow("", null),
     address: Joi.string().required(),
   }).required(),
-  ward: Joi.string().allow("", null),
-  district: Joi.string().allow("", null),
   city: Joi.string().required(),
   note: Joi.string().allow("", null),
   items: Joi.array()
@@ -52,7 +51,7 @@ module.exports = {
       }
 
       const userId = req.user?.id || null;
-      const { customer, payment_method, items, total, ward, district, city, note } = req.body;
+      const { customer, payment_method, items, total, city, note } = req.body;
 
       // 1. KIỂM TRA VÀ TRỪ TỒN KHO (RESERVE)
       for (const item of items) {
@@ -76,15 +75,15 @@ module.exports = {
         });
       }
 
-      // 2. TẠO ĐỊA CHỈ ĐẦY ĐỦ
-      const fullAddress = `${customer.address}${ward ? ', ' + ward : ''}${district ? ', ' + district : ''}, ${city}`;
+      // 2. ✅ TẠO ĐỊA CHỈ ĐƠN GIẢN - CHỈ address + city
+      const fullAddress = `${customer.address}, ${city}`.trim();
 
       // 3. ✅ TẠO ORDER_CODE TRƯỚC KHI TẠO ĐƠN HÀNG
       const orderCode = generateOrderCode();
 
       // 4. TẠO ĐƠN HÀNG VỚI TRẠNG THÁI PENDING
       const order = await OrderService.create({
-        order_code: orderCode, // ✅ THÊM DÒNG NÀY
+        order_code: orderCode,
         user_id: userId,
         payment_method,
         total,
@@ -94,7 +93,6 @@ module.exports = {
           address: fullAddress,
         },
         note: note || "",
-        // RESERVE STOCK: Giữ hàng trong 24h
         reservedUntil: new Date(Date.now() + 24 * 60 * 60 * 1000)
       });
 
@@ -135,8 +133,8 @@ module.exports = {
         order: {
           _id: order._id,
           order_code: order.order_code,
-          code: order.order_code, // Thêm alias cho frontend
-          tracking_token: order.tracking_token || "", // Nếu có
+          code: order.order_code,
+          tracking_token: order.tracking_token || "",
         },
         order_id: order._id,
         order_code: order.order_code,
@@ -160,7 +158,7 @@ module.exports = {
       }
 
       const userId = req.user?.id || null;
-      const { customer, items, total, ward, district, city, note } = req.body;
+      const { customer, items, total, city, note } = req.body;
 
       // Kiểm tra và trừ tồn kho
       for (const item of items) {
@@ -175,13 +173,14 @@ module.exports = {
         });
       }
 
-      const fullAddress = `${customer.address}${ward ? ', ' + ward : ''}${district ? ', ' + district : ''}, ${city}`;
+      // ✅ TẠO ĐỊA CHỈ ĐƠN GIẢN - CHỈ address + city
+      const fullAddress = `${customer.address}, ${city}`.trim();
 
       // ✅ TẠO ORDER_CODE
       const orderCode = generateOrderCode();
 
       const order = await OrderService.create({
-        order_code: orderCode, // ✅ THÊM DÒNG NÀY
+        order_code: orderCode,
         user_id: userId,
         payment_method: "momo",
         total,

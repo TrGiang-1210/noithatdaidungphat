@@ -18,7 +18,7 @@ const normalizeString = (s) => {
     .toLowerCase();
 };
 
-// GET /api/products — ĐÃ FIX: THÊM POPULATE CATEGORIES
+// GET /api/products – ĐÃ FIX: THÊM POPULATE CATEGORIES
 exports.getProducts = async (req, res) => {
   try {
     let filters = {};
@@ -335,7 +335,7 @@ exports.getAllProductsAdmin = async (req, res) => {
   }
 };
 
-// POST /api/admin/products - Tạo sản phẩm mới
+// POST /api/admin/products - Tạo sản phẩm mới (✅ HỖ TRỢ ATTRIBUTES)
 exports.createProduct = async (req, res) => {
   try {
     const {
@@ -351,6 +351,7 @@ exports.createProduct = async (req, res) => {
       categories,
       hot,
       onSale,
+      attributes, // ✅ THÊM
     } = req.body;
 
     // Validate
@@ -378,10 +379,12 @@ exports.createProduct = async (req, res) => {
       .replace(/\s+/g, "-")
       .replace(/-+/g, "-");
 
-    // Xử lý images
+    // ✅ Xử lý images chính của sản phẩm
     let images = [];
     if (req.files && req.files.length > 0) {
-      images = req.files.map((file) => `/uploads/products/${file.filename}`);
+      // Lọc ra những file không phải attribute images
+      const mainImages = req.files.filter(f => !f.fieldname.startsWith('attribute_'));
+      images = mainImages.map((file) => `/uploads/products/${file.filename}`);
     }
 
     // Xử lý categories
@@ -394,6 +397,32 @@ exports.createProduct = async (req, res) => {
           .split(",")
           .map((id) => id.trim())
           .filter(id => mongoose.Types.ObjectId.isValid(id));
+      }
+    }
+
+    // ✅ Xử lý attributes
+    let parsedAttributes = [];
+    if (attributes) {
+      try {
+        // attributes được gửi dạng JSON string từ frontend
+        parsedAttributes = typeof attributes === 'string' 
+          ? JSON.parse(attributes) 
+          : attributes;
+
+        // Xử lý upload ảnh cho từng option
+        if (req.files && req.files.length > 0) {
+          parsedAttributes.forEach((attr, attrIdx) => {
+            attr.options.forEach((opt, optIdx) => {
+              const fieldName = `attribute_${attrIdx}_${optIdx}`;
+              const file = req.files.find(f => f.fieldname === fieldName);
+              if (file) {
+                opt.image = `/uploads/products/${file.filename}`;
+              }
+            });
+          });
+        }
+      } catch (e) {
+        console.error("Error parsing attributes:", e);
       }
     }
 
@@ -412,6 +441,7 @@ exports.createProduct = async (req, res) => {
       hot: hot === "true" || hot === true || false,
       onSale: onSale === "true" || onSale === true || false,
       images: images.length > 0 ? images : [],
+      attributes: parsedAttributes, // ✅ Lưu attributes
     });
 
     await product.save();
@@ -427,7 +457,7 @@ exports.createProduct = async (req, res) => {
   }
 };
 
-// PUT /api/admin/products/:id - Cập nhật sản phẩm
+// PUT /api/admin/products/:id - Cập nhật sản phẩm (✅ HỖ TRỢ ATTRIBUTES)
 exports.updateProduct = async (req, res) => {
   try {
     const product = await Product.findById(req.params.id);
@@ -448,6 +478,7 @@ exports.updateProduct = async (req, res) => {
       categories,
       hot,
       onSale,
+      attributes, // ✅ THÊM
     } = req.body;
 
     // Kiểm tra SKU trùng
@@ -498,10 +529,39 @@ exports.updateProduct = async (req, res) => {
       product.categories = categoryIds;
     }
 
-    // Xử lý images mới
+    // ✅ Xử lý attributes
+    if (attributes !== undefined) {
+      try {
+        let parsedAttributes = typeof attributes === 'string' 
+          ? JSON.parse(attributes) 
+          : attributes;
+
+        // Xử lý upload ảnh mới cho attributes
+        if (req.files && req.files.length > 0) {
+          parsedAttributes.forEach((attr, attrIdx) => {
+            attr.options.forEach((opt, optIdx) => {
+              const fieldName = `attribute_${attrIdx}_${optIdx}`;
+              const file = req.files.find(f => f.fieldname === fieldName);
+              if (file) {
+                opt.image = `/uploads/products/${file.filename}`;
+              }
+              // Nếu không có file mới, giữ nguyên ảnh cũ (nếu có)
+            });
+          });
+        }
+
+        product.attributes = parsedAttributes;
+      } catch (e) {
+        console.error("Error parsing attributes:", e);
+      }
+    }
+
+    // Xử lý images chính
     if (req.files && req.files.length > 0) {
-      const newImages = req.files.map((file) => `/uploads/products/${file.filename}`);
-      product.images = newImages;
+      const mainImages = req.files.filter(f => !f.fieldname.startsWith('attribute_'));
+      if (mainImages.length > 0) {
+        product.images = mainImages.map((file) => `/uploads/products/${file.filename}`);
+      }
     }
 
     await product.save();
