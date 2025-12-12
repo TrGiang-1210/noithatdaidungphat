@@ -99,7 +99,7 @@ const PayCart: React.FC = () => {
     setLoading(true);
 
     try {
-      // Chuẩn bị dữ liệu order
+      // ✅ Chuẩn bị dữ liệu order - XÓA ward và district
       const orderData = {
         items: cartItems.map((item) => ({
           product_id: item.product._id,
@@ -114,14 +114,13 @@ const PayCart: React.FC = () => {
         payment_method: formData.paymentMethod === "cod" ? "cod" : "bank",
         customer: {
           name: formData.name.trim(),
-          phone: formData.phone.trim().replace(/\D/g, ''), // Chỉ giữ số
-          email: formData.email.trim() || undefined, // Dùng undefined thay vì null
+          phone: formData.phone.trim().replace(/\D/g, ''),
+          email: formData.email.trim() || undefined,
           address: `${formData.address.trim()}, ${formData.city}`,
         },
         city: formData.city,
-        district: "Không yêu cầu",
-        ward: "Không yêu cầu",
-        note: formData.note.trim() || "", // Thêm note vào
+        note: formData.note.trim() || "",
+        // ✅ XÓA HOÀN TOÀN ward và district
       };
 
       console.log("Đang gửi order data:", orderData);
@@ -130,7 +129,7 @@ const PayCart: React.FC = () => {
       const result = await addOrder(orderData);
       console.log("Kết quả từ backend:", result);
 
-      // Lấy thông tin đơn hàng (backend có thể trả về nhiều format khác nhau)
+      // Lấy thông tin đơn hàng
       const order = result?.order || result?.data || result;
 
       // Xóa giỏ hàng
@@ -157,7 +156,6 @@ const PayCart: React.FC = () => {
       console.error("Lỗi đặt hàng:", err);
       console.error("Error response:", err.response?.data);
       
-      // Hiển thị lỗi chi tiết hơn
       const errorMessage = err.response?.data?.message 
         || err.response?.data?.error
         || err.message
@@ -165,7 +163,6 @@ const PayCart: React.FC = () => {
       
       toast.error(errorMessage);
       
-      // Log thêm thông tin để debug
       if (err.response?.data) {
         console.error("Backend error details:", err.response.data);
       }
@@ -283,7 +280,7 @@ const PayCart: React.FC = () => {
               <div className="bank-transfer-info">
                 <div className="bank-header">
                   <strong>
-                    Tài khoản ngân hàng: Ngân hàng Thương Mại Cổ Phần Á Châu
+                    Tài khoản ngân hàng: Ngân hàng Thương mại Cổ phần Á Châu
                     (ACB)
                   </strong>
                   <br />

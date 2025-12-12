@@ -186,7 +186,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
         });
         
         // KHÔNG TOAST Ở ĐÂY vì đã toast ở catch block phía trên
-        showSuccessToast("Đã thêm vào giỏ hàng (chế độ offline)"); // ← DÙNG DEBOUNCED TOAST
+        showSuccessToast("Đã thêm vào giỏ hàng"); // ← DÙNG DEBOUNCED TOAST
         return false;
       }
     }

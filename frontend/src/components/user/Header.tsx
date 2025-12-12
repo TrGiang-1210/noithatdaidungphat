@@ -4,6 +4,7 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useCart } from "@/context/CartContext";
 import "@/styles/components/user/header.scss";
 import { AuthContext } from "@/context/AuthContext";
+import { getImageUrl, getFirstImageUrl } from "@/utils/imageUrl";
 
 interface Category {
   _id: string;
@@ -249,12 +250,14 @@ const Header: React.FC = () => {
                     }}
                   >
                     <img
-                      src={product.images?.[0] || "/placeholder.jpg"}
+                      src={getFirstImageUrl(product.images)}
                       alt={product.name}
                       className="suggestion-img"
-                      onError={(e) =>
-                        (e.currentTarget.src = "/placeholder.jpg")
-                      }
+                      onError={(e) => {
+                        // Nếu ảnh lỗi, hiển thị placeholder
+                        e.currentTarget.src =
+                          "https://via.placeholder.com/150?text=Error";
+                      }}
                     />
                     <div className="suggestion-info">
                       <div className="suggestion-name">{product.name}</div>
