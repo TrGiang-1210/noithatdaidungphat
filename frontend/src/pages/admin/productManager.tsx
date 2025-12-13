@@ -1,4 +1,4 @@
-// src/admin/pages/ProductManager.tsx - FULL CODE WITH ATTRIBUTES - FIXED
+// src/admin/pages/ProductManager.tsx - FULL CODE ENHANCED
 import { useState, useEffect } from "react";
 import { Plus, Edit2, Trash2, Loader2, X } from "lucide-react";
 import axiosInstance from "../../axios";
@@ -63,9 +63,11 @@ export default function ProductManager() {
     attributes: [] as Attribute[],
   });
   const [imagePreviews, setImagePreviews] = useState<string[]>([]);
-  const [attributeImages, setAttributeImages] = useState<Map<string, File>>(
+  const [attributeImages, setAttributeImages] = useState<Map<string, File | string>>(
     new Map()
   );
+  const [successMessage, setSuccessMessage] = useState("");
+  const [previewImage, setPreviewImage] = useState<string | null>(null);
 
   const fetchProducts = async () => {
     try {
@@ -111,7 +113,11 @@ export default function ProductManager() {
 
   useEffect(() => {
     return () => {
-      imagePreviews.forEach((prev) => URL.revokeObjectURL(prev));
+      imagePreviews.forEach((prev) => {
+        if (prev.startsWith("blob:")) {
+          URL.revokeObjectURL(prev);
+        }
+      });
     };
   }, [imagePreviews]);
 
@@ -151,7 +157,17 @@ export default function ProductManager() {
       attributes: prod.attributes || [],
     });
     setImagePreviews(prod.images);
-    setAttributeImages(new Map());
+    
+    // Load existing attribute images
+    const newAttrImgMap = new Map<string, File | string>();
+    prod.attributes?.forEach((attr, attrIdx) => {
+      attr.options?.forEach((opt, optIdx) => {
+        if (opt.image) {
+          newAttrImgMap.set(`${attrIdx}_${optIdx}`, opt.image);
+        }
+      });
+    });
+    setAttributeImages(newAttrImgMap);
     setShowModal(true);
   };
 
@@ -236,6 +252,28 @@ export default function ProductManager() {
     }
   };
 
+  // Format number with thousand separator
+  const formatCurrency = (value: string) => {
+    const num = value.replace(/\D/g, "");
+    return num.replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+  };
+
+  const handlePriceChange = (field: "priceOriginal" | "priceSale", value: string) => {
+    const numericValue = value.replace(/\D/g, "");
+    setFormData({ ...formData, [field]: numericValue });
+  };
+
+  // Calculate discount percentage
+  const calculateDiscount = () => {
+    const original = parseFloat(formData.priceOriginal) || 0;
+    const sale = parseFloat(formData.priceSale) || 0;
+    if (original > 0 && sale > 0 && sale < original) {
+      const discount = ((original - sale) / original) * 100;
+      return Math.round(discount);
+    }
+    return 0;
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -247,7 +285,6 @@ export default function ProductManager() {
     data.append("quantity", (formData.quantity || "0").toString());
     data.append("description", formData.description || "");
 
-    // ✅ SỬA: Xử lý categories an toàn hơn
     if (formData.categories && formData.categories.length > 0) {
       formData.categories.forEach((cat) => {
         if (cat) {
@@ -259,17 +296,17 @@ export default function ProductManager() {
     data.append("hot", formData.hot.toString());
     data.append("onSale", formData.onSale.toString());
 
-    // ✅ Chỉ append images nếu có file mới
     if (formData.images && formData.images.length > 0) {
       formData.images.forEach((file) => data.append("images", file));
     }
 
-    // ✅ Xử lý attribute images
+    // Only append new attribute images (File objects)
     attributeImages.forEach((file, key) => {
-      data.append(`attribute_${key}`, file);
+      if (file instanceof File) {
+        data.append(`attribute_${key}`, file);
+      }
     });
 
-    // ✅ Xử lý attributes
     if (formData.attributes && formData.attributes.length > 0) {
       data.append("attributes", JSON.stringify(formData.attributes));
     }
@@ -281,15 +318,21 @@ export default function ProductManager() {
             "Content-Type": "multipart/form-data",
           },
         });
+        setSuccessMessage("✅ Cập nhật thành công!");
       } else {
         await axiosInstance.post("/admin/products", data, {
           headers: {
             "Content-Type": "multipart/form-data",
           },
         });
+        setSuccessMessage("✅ Thêm sản phẩm thành công!");
       }
-      setShowModal(false);
-      fetchProducts();
+      
+      setTimeout(() => {
+        setSuccessMessage("");
+        setShowModal(false);
+        fetchProducts();
+      }, 1500);
     } catch (err: any) {
       console.error("Lỗi submit:", err);
       alert(err.response?.data?.message || "Lỗi lưu sản phẩm");
@@ -415,24 +458,25 @@ export default function ProductManager() {
               />
 
               <input
-                type="number"
+                type="text"
                 placeholder="Giá gốc (₫)"
-                value={formData.priceOriginal}
-                onChange={(e) =>
-                  setFormData({ ...formData, priceOriginal: e.target.value })
-                }
+                value={formatCurrency(formData.priceOriginal)}
+                onChange={(e) => handlePriceChange("priceOriginal", e.target.value)}
                 required
               />
 
-              <input
-                type="number"
-                placeholder="Giá bán (₫)"
-                value={formData.priceSale}
-                onChange={(e) =>
-                  setFormData({ ...formData, priceSale: e.target.value })
-                }
-                required
-              />
+              <div className="price-with-discount">
+                <input
+                  type="text"
+                  placeholder="Giá bán (₫)"
+                  value={formatCurrency(formData.priceSale)}
+                  onChange={(e) => handlePriceChange("priceSale", e.target.value)}
+                  required
+                />
+                {calculateDiscount() > 0 && (
+                  <span className="discount-badge">-{calculateDiscount()}%</span>
+                )}
+              </div>
 
               <input
                 type="number"
@@ -534,7 +578,7 @@ export default function ProductManager() {
                 </div>
               )}
 
-              {/* ✅ PHẦN ATTRIBUTES */}
+              {/* PHẦN ATTRIBUTES */}
               <div className="attributes-section">
                 <div className="attributes-header">
                   <label className="section-label">Thuộc tính sản phẩm</label>
@@ -607,6 +651,27 @@ export default function ProductManager() {
                             {attributeImages.has(`${attrIdx}_${optIdx}`) && (
                               <span className="file-selected">✓</span>
                             )}
+                            {(attributeImages.get(`${attrIdx}_${optIdx}`) || opt.image) && (
+                              <img
+                                src={
+                                  (() => {
+                                    const img = attributeImages.get(`${attrIdx}_${optIdx}`);
+                                    if (img instanceof File) {
+                                      return URL.createObjectURL(img);
+                                    }
+                                    if (typeof img === 'string') {
+                                      return getImageUrl(img);
+                                    }
+                                    if (opt.image) {
+                                      return getImageUrl(opt.image);
+                                    }
+                                    return '';
+                                  })()
+                                }
+                                alt="preview"
+                                className="attr-img-preview"
+                              />
+                            )}
                           </div>
 
                           <label className="option-default">
@@ -660,6 +725,10 @@ export default function ProductManager() {
                 {editingProd ? "Cập nhật" : "Thêm mới"}
               </button>
             </div>
+
+            {successMessage && (
+              <div className="success-message">{successMessage}</div>
+            )}
           </div>
         </div>
       )}
