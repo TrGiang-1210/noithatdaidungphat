@@ -670,6 +670,19 @@ export default function ProductManager() {
                                 }
                                 alt="preview"
                                 className="attr-img-preview"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  const img = attributeImages.get(`${attrIdx}_${optIdx}`);
+                                  let imgUrl = '';
+                                  if (img instanceof File) {
+                                    imgUrl = URL.createObjectURL(img);
+                                  } else if (typeof img === 'string') {
+                                    imgUrl = getImageUrl(img);
+                                  } else if (opt.image) {
+                                    imgUrl = getImageUrl(opt.image);
+                                  }
+                                  if (imgUrl) setPreviewImage(imgUrl);
+                                }}
                               />
                             )}
                           </div>
@@ -752,6 +765,18 @@ export default function ProductManager() {
                 Xóa vĩnh viễn
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Image Preview Modal */}
+      {previewImage && (
+        <div className="image-preview-modal" onClick={() => setPreviewImage(null)}>
+          <div className="preview-content" onClick={(e) => e.stopPropagation()}>
+            <button className="close-preview" onClick={() => setPreviewImage(null)}>
+              <X size={24} />
+            </button>
+            <img src={previewImage} alt="Preview" />
           </div>
         </div>
       )}

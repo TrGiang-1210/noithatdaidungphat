@@ -1,6 +1,8 @@
+// src/styles/pages/user/orderSuccess.scss - IMPROVED VERSION
+
 .order-success-container {
-  max-width: 600px;
-  margin: 60px auto;
+  max-width: 650px;
+  margin: 40px auto 60px; // ✅ Giảm margin-top để kéo lên cao hơn
   text-align: center;
   padding: 40px 20px;
   font-family: Arial, sans-serif;
@@ -8,23 +10,90 @@
   .success-icon {
     font-size: 80px;
     color: #27ae60;
-    margin-bottom: 20px;
+    margin-bottom: 15px;
+    animation: scaleIn 0.5s ease;
   }
   
-  h1 { font-size: 36px; color: #e67e22; margin: 20px 0; }
+  h1 { 
+    font-size: 36px; 
+    color: #e67e22; 
+    margin: 15px 0 10px; // ✅ Giảm khoảng cách
+    font-weight: bold;
+  }
+
+  .thank-you {
+    font-size: 16px;
+    color: #333;
+    margin-bottom: 25px; // ✅ Giảm khoảng cách trước order code
+    line-height: 1.6;
+  }
+  
+  // ✅ MÃ ĐƠN HÀNG - NỔI BẬT NGAY ĐẦU
+  .order-code-section {
+    background: linear-gradient(135deg, #fff5e6 0%, #ffe6cc 100%);
+    padding: 30px 25px;
+    border-radius: 16px;
+    text-align: center;
+    margin: 25px 0 30px; // ✅ Vị trí ngay sau thank-you
+    border: 3px solid #ff8c42;
+    box-shadow: 0 8px 24px rgba(255, 140, 66, 0.2);
+    animation: slideDown 0.6s ease;
+    
+    .order-code-label {
+      font-size: 15px;
+      font-weight: 600;
+      color: #e67e22;
+      margin-bottom: 12px;
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+    }
+  }
+
+  .order-code-highlight {
+    font-size: 3rem; // ✅ Tăng size để nổi bật hơn
+    font-weight: 900;
+    color: #d4380d;
+    margin: 10px 0;
+    letter-spacing: 4px;
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
+    font-family: 'Courier New', monospace;
+  }
+
+  .small-note {
+    color: #666;
+    font-size: 14px;
+    margin-top: 12px;
+    font-style: italic;
+  }
   
   .info-box {
     background: #f8f9fa;
     padding: 25px;
     border-radius: 12px;
-    margin: 30px 0;
+    margin: 25px 0;
     line-height: 1.8;
+    border: 1px solid #e0e0e0;
+
+    p {
+      margin: 10px 0;
+      color: #444;
+    }
+
+    strong {
+      color: #e67e22;
+    }
   }
   
-  .hotline { font-size: 32px; color: #e67e22; margin: 10px 0; }
+  .hotline { 
+    font-size: 32px; 
+    color: #e67e22; 
+    margin: 15px 0 10px;
+    font-weight: bold;
+    letter-spacing: 2px;
+  }
   
   .buttons {
-    margin: 40px 0;
+    margin: 35px 0;
     display: flex;
     gap: 20px;
     justify-content: center;
@@ -32,42 +101,90 @@
   }
   
   .btn-home, .btn-history {
-    padding: 14px 30px;
+    padding: 14px 35px;
     font-size: 16px;
+    font-weight: 600;
     border: none;
     border-radius: 8px;
     cursor: pointer;
+    transition: all 0.3s ease;
+    
+    &:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    }
   }
   
   .btn-home {
     background: #e67e22;
     color: white;
+    
+    &:hover {
+      background: #d35400;
+    }
   }
   
   .btn-history {
     background: #34495e;
     color: white;
+    
+    &:hover {
+      background: #2c3e50;
+    }
+  }
+
+  .footer-text {
+    color: #666;
+    font-size: 15px;
+    line-height: 1.8;
+    margin-top: 30px;
+    
+    strong {
+      color: #e67e22;
+    }
   }
 }
 
-.order-code-section {
-  background: #f0f8ff;
-  padding: 20px;
-  border-radius: 12px;
-  text-align: center;
-  margin: 20px 0;
-  border: 2px dashed #007bff;
+// ✅ ANIMATIONS
+@keyframes scaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.5);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
 }
 
-.order-code-highlight {
-  font-size: 2.5rem;
-  font-weight: bold;
-  color: #d4380d;
-  margin: 10px 0;
-  letter-spacing: 3px;
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
-.small-note {
-  color: #666;
-  font-size: 0.95rem;
+// ✅ RESPONSIVE
+@media (max-width: 768px) {
+  .order-success-container {
+    margin: 20px auto 40px;
+    padding: 30px 15px;
+    
+    h1 {
+      font-size: 28px;
+    }
+    
+    .order-code-highlight {
+      font-size: 2.2rem;
+      letter-spacing: 2px;
+    }
+    
+    .hotline {
+      font-size: 26px;
+    }
+  }
 }

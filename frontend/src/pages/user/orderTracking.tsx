@@ -1,8 +1,8 @@
-// src/pages/orderTracking/OrderTracking.tsx - FIXED
+// src/pages/orderTracking/OrderTracking.tsx - FIXED WITH VIETNAMESE PAYMENT LABELS
 import { useState, useEffect } from 'react';
 import axiosInstance from '@/axios';
 import '@/styles/pages/user/orderTracking.scss';
-import { getImageUrl } from "@/utils/imageUrl"; // ✅ Dùng getImageUrl thay vì getFirstImageUrl
+import { getImageUrl } from "@/utils/imageUrl";
 import { Package, Clock, CheckCircle, Truck, AlertCircle } from 'lucide-react';
 
 interface OrderTrackingResult {
@@ -19,8 +19,8 @@ interface OrderTrackingResult {
     name: string;
     quantity: number;
     price: string;
-    img_url?: string; // ✅ Backend trả về img_url (string), KHÔNG phải images (array)
-    images?: string[]; // Giữ lại để tương thích nếu backend thay đổi sau
+    img_url?: string;
+    images?: string[];
   }>;
 }
 
@@ -31,7 +31,19 @@ export default function OrderTrackingPage() {
   const [result, setResult] = useState<OrderTrackingResult | null>(null);
   const [error, setError] = useState('');
 
-  // ✅ 1. LOAD LẠI ĐƠN HÀNG TỪ localStorage KHI REFRESH
+  // ✅ THÊM FUNCTION CHUYỂN ĐỔI PAYMENT METHOD SANG TIẾNG VIỆT
+  const getPaymentMethodLabel = (method: string) => {
+    const labels: Record<string, string> = {
+      'cod': 'Thanh toán khi nhận hàng (COD)',
+      'bank': 'Chuyển khoản ngân hàng',
+      'momo': 'Ví điện tử MoMo',
+      'COD': 'Thanh toán khi nhận hàng (COD)',
+      'Bank': 'Chuyển khoản ngân hàng',
+      'Momo': 'Ví điện tử MoMo'
+    };
+    return labels[method] || method;
+  };
+
   useEffect(() => {
     try {
       const savedOrder = localStorage.getItem('lastTrackedOrder');
@@ -42,13 +54,11 @@ export default function OrderTrackingPage() {
         const order = JSON.parse(savedOrder);
         setResult(order);
         
-        // Khôi phục luôn mã đơn và SĐT để user có thể tra cứu lại
         if (savedOrderNumber) setOrderNumber(savedOrderNumber);
         if (savedPhone) setPhone(savedPhone);
       }
     } catch (err) {
       console.error('Error loading saved order:', err);
-      // Xóa dữ liệu lỗi
       localStorage.removeItem('lastTrackedOrder');
       localStorage.removeItem('lastOrderNumber');
       localStorage.removeItem('lastPhone');
@@ -72,7 +82,6 @@ export default function OrderTrackingPage() {
         { params: { phone: phone.replace(/\D/g, '') } }
       );
       
-      // ✅ 2. LƯU ĐƠN HÀNG VÀO localStorage SAU KHI TÌM THÀNH CÔNG
       setResult(res.data);
       localStorage.setItem('lastTrackedOrder', JSON.stringify(res.data));
       localStorage.setItem('lastOrderNumber', orderNumber.toUpperCase().trim());
@@ -127,7 +136,6 @@ export default function OrderTrackingPage() {
     setOrderNumber('');
     setPhone('');
     setError('');
-    // Xóa localStorage khi user muốn tra cứu đơn khác
     localStorage.removeItem('lastTrackedOrder');
     localStorage.removeItem('lastOrderNumber');
     localStorage.removeItem('lastPhone');
@@ -219,7 +227,8 @@ export default function OrderTrackingPage() {
                   </div>
                   <div className="detail-item">
                     <strong>Thanh toán:</strong>
-                    <span>{result.paymentMethod}</span>
+                    {/* ✅ SỬ DỤNG getPaymentMethodLabel */}
+                    <span>{getPaymentMethodLabel(result.paymentMethod)}</span>
                   </div>
                 </div>
               </div>
@@ -227,9 +236,7 @@ export default function OrderTrackingPage() {
               <div className="detail-section">
                 <h3>Sản phẩm đã đặt</h3>
                 <div className="items-list">
-                  {/* ✅ 3. FIX HIỂN THỊ ẢNH - Backend trả về img_url (string) */}
                   {result.items.map((item, idx) => {
-                    // Ưu tiên img_url, nếu không có thì dùng images[0]
                     const imageUrl = item.img_url || 
                                     (item.images && item.images.length > 0 ? item.images[0] : null);
                     
@@ -238,7 +245,7 @@ export default function OrderTrackingPage() {
                         <img 
                           src={
                             imageUrl
-                              ? getImageUrl(imageUrl) // ✅ Dùng getImageUrl thay vì getFirstImageUrl
+                              ? getImageUrl(imageUrl)
                               : 'https://via.placeholder.com/60?text=No+Image'
                           }
                           alt={item.name}

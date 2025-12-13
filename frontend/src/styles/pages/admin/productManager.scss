@@ -839,12 +839,19 @@
             border-radius: 6px;
             border: 2px solid #10b981;
             box-shadow: 0 2px 8px rgba(16, 185, 129, 0.2);
-            cursor: zoom-in;
+            cursor: pointer;
             transition: all 0.2s;
+            position: relative;
+            z-index: 1;
 
             &:hover {
-              transform: scale(1.1);
-              box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4);
+              transform: scale(1.15);
+              box-shadow: 0 4px 16px rgba(16, 185, 129, 0.5);
+              z-index: 10;
+            }
+
+            &:active {
+              transform: scale(1.05);
             }
           }
         }
@@ -972,8 +979,8 @@
 
     .close-preview {
       position: absolute;
-      top: -50px;
-      right: 0;
+      top: 0px;
+      right: -50px;
       background: rgba(255, 255, 255, 0.9);
       color: #1f2937;
       border: none;

@@ -1,11 +1,16 @@
-// src/pages/order/OrderSuccess.tsx
-import React from 'react';
+// src/pages/order/OrderSuccess.tsx - IMPROVED VERSION
+import React, { useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import '@/styles/pages/user/orderSuccess.scss';
 
 const OrderSuccess = () => {
   const navigate = useNavigate();
   const location = useLocation();
+
+  // ✅ TỰ ĐỘNG SCROLL LÊN ĐẦU TRANG KHI VÀO
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, []);
 
   // Lấy dữ liệu từ payCart (nếu có)
   const orderData = location.state as {
@@ -27,9 +32,9 @@ const OrderSuccess = () => {
         Cảm ơn Quý khách đã tin tưởng mua sắm tại <strong>NỘI THẤT ĐẠI DŨNG PHÁT</strong>
       </p>
 
-      {/* PHẦN DUY NHẤT GIỮ LẠI: MÃ ĐƠN HÀNG – HIỂN THỊ CHO TẤT CẢ KHÁCH */}
+      {/* ✅ CHUYỂN MÃ ĐƠN HÀNG LÊN NGAY SAU TIÊU ĐỀ */}
       <div className="order-code-section">
-        <p><strong>Mã đơn hàng của Quý khách:</strong></p>
+        <p className="order-code-label">MÃ ĐỜN HÀNG CỦA QUÝ KHÁCH</p>
         <h2 className="order-code-highlight">{orderCode}</h2>
         <p className="small-note">
           Vui lòng giữ lại mã này để tiện trao đổi với nhân viên tư vấn
