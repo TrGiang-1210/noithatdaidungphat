@@ -339,7 +339,7 @@ const Home: React.FC = () => {
       {hotProducts.length > 0 && (
         <section className="product-section">
           <div className="container">
-            <SectionHeader title="🔥 Sản phẩm HOT" />
+            <SectionHeader title="Sản phẩm HOT" />
             <ProductCarousel
               products={hotProducts}
               currentIndex={hotCarouselIndex}
@@ -354,7 +354,7 @@ const Home: React.FC = () => {
       {saleProducts.length > 0 && (
         <section className="product-section">
           <div className="container">
-            <SectionHeader title="💰 Sản phẩm siêu giảm giá" />
+            <SectionHeader title="Sản phẩm siêu giảm giá" />
             <ProductCarousel
               products={saleProducts}
               currentIndex={saleCarouselIndex}

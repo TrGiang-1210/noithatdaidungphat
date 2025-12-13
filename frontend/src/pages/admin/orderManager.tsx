@@ -1,4 +1,4 @@
-// src/admin/pages/OrderManager.tsx - FIXED VERSION
+// src/admin/pages/OrderManager.tsx - FIXED VERSION WITH VIETNAMESE PAYMENT LABELS
 import { useState, useEffect } from "react";
 import {
   Package,
@@ -57,14 +57,26 @@ export default function OrderManager() {
     null
   );
 
+  // ✅ THÊM FUNCTION CHUYỂN ĐỔI PAYMENT METHOD SANG TIẾNG VIỆT
+  const getPaymentMethodLabel = (method: string) => {
+    const labels: Record<string, string> = {
+      'cod': 'Thanh toán khi nhận hàng (COD)',
+      'bank': 'Chuyển khoản ngân hàng',
+      'momo': 'Ví điện tử MoMo',
+      'COD': 'Thanh toán khi nhận hàng (COD)',
+      'Bank': 'Chuyển khoản ngân hàng',
+      'Momo': 'Ví điện tử MoMo'
+    };
+    return labels[method] || method;
+  };
+
   const fetchOrders = async () => {
     try {
       setLoading(true);
       const res = await axiosInstance.get("/admin/orders");
 
-      console.log("📦 RAW ORDERS DATA:", res.data); // Debug
+      console.log("📦 RAW ORDERS DATA:", res.data);
 
-      // ✅ LỌC VÀ VALIDATE DỮ LIỆU TRƯỚC KHI SET
       const validOrders = (res.data || [])
         .filter((order: any) => {
           if (!order) {
@@ -79,7 +91,6 @@ export default function OrderManager() {
         })
         .map((order: any) => ({
           ...order,
-          // ✅ ĐẢM BẢO items LUÔN HỢP LỆ
           items: (order.items || [])
             .filter((item: any) => item && item.product)
             .map((item: any) => ({
@@ -93,7 +104,7 @@ export default function OrderManager() {
             })),
         }));
 
-      console.log("✅ VALID ORDERS:", validOrders); // Debug
+      console.log("✅ VALID ORDERS:", validOrders);
       setOrders(validOrders);
     } catch (err) {
       alert("Lỗi tải đơn hàng");
@@ -143,7 +154,6 @@ export default function OrderManager() {
       },
     };
 
-    // ✅ Thêm fallback nếu status không hợp lệ
     return (
       statusMap[status] || {
         label: "Không xác định",
@@ -366,10 +376,8 @@ export default function OrderManager() {
                     </td>
                     <td>
                       <div className="items-preview">
-                        {/* ✅ FIX: KIỂM TRA item.product TỒN TẠI */}
                         {order.items
                           .filter((item) => {
-                            // ✅ Kiểm tra kỹ hơn
                             return (
                               item &&
                               item.product &&
@@ -379,7 +387,6 @@ export default function OrderManager() {
                           })
                           .slice(0, 2)
                           .map((item, idx) => {
-                            // ✅ Thêm fallback an toàn
                             const product = item.product || {};
                             const images = Array.isArray(product.images)
                               ? product.images
@@ -581,7 +588,8 @@ export default function OrderManager() {
                   </div>
                   <div className="info-item">
                     <strong>Thanh toán:</strong>
-                    <span>{selectedOrder.paymentMethod}</span>
+                    {/* ✅ SỬ DỤNG getPaymentMethodLabel */}
+                    <span>{getPaymentMethodLabel(selectedOrder.paymentMethod)}</span>
                   </div>
                 </div>
 
@@ -613,9 +621,8 @@ export default function OrderManager() {
                   <Package size={18} /> Sản phẩm đã đặt
                 </h4>
                 <div className="items-list">
-                  {/* ✅ FIX: KIỂM TRA item.product TỒN TẠI */}
                   {selectedOrder.items
-                    .filter((item) => item && item.product) // Lọc bỏ item null
+                    .filter((item) => item && item.product)
                     .map((item, idx) => (
                       <div key={idx} className="item-row">
                         <img
