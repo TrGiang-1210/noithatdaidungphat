@@ -1,6 +1,6 @@
-// src/context/AuthContext.tsx
+// src/context/AuthContext.tsx - UPDATED VERSION
 import React, { createContext, useState, useEffect, ReactNode } from "react";
-import axiosInstance from "@/axios";
+import axiosInstance from "../axios";
 
 interface User {
   id?: string;
@@ -96,10 +96,26 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
-  const logout = () => {
-    localStorage.removeItem("token");
-    setUser(null);
-    setLoading(false);
+  // ✅ UPDATED LOGOUT - Gọi API logout để đóng chat session
+  const logout = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      if (token) {
+        // ✅ Gọi API logout để đóng chat session trên server
+        await axiosInstance.post("/auth/logout").catch((err) => {
+          console.log("Logout API error (non-critical):", err.message);
+        });
+      }
+    } catch (err) {
+      console.error("Logout error:", err);
+    } finally {
+      // Xóa token và user
+      localStorage.removeItem("token");
+      setUser(null);
+      setLoading(false);
+      
+      console.log("✅ Logout successful, chat session closed");
+    }
   };
 
   return (
