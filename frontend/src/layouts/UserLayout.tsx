@@ -1,25 +1,41 @@
-import React, { useState } from "react";
+import { useState, useEffect } from "react";
 import { Outlet } from "react-router-dom";
 import Footer from "@/components/user/Footer";
 import Header from "@/components/user/Header";
-// import CartSidebar from "@/components/user/CartSidebar";
-import { FaShoppingCart } from "react-icons/fa";
+import ChatWidget from "@/components/user/ChatWidget"; // ← THÊM
 
-const UserLayout: React.FC = () => {
-//   const [isCartOpen, setCartOpen] = useState(false);
+const UserLayout = () => {
+  const [userId, setUserId] = useState('');
+
+  useEffect(() => {
+    // Lấy hoặc tạo userId cho chat
+    let id = localStorage.getItem('chatUserId');
+    if (!id) {
+      // Tạo unique ID cho khách
+      id = `guest_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      localStorage.setItem('chatUserId', id);
+    }
+    setUserId(id);
+  }, []);
 
   return (
     <div className="user-layout">
       <Header />
-    
-      {/* Cart Sidebar
-      <CartSidebar isOpen={isCartOpen} onClose={() => setCartOpen(false)} /> */}
 
       <main className="user-content">
         <Outlet />
       </main>
 
       <Footer />
+
+      {/* ✅ CHAT WIDGET - hiển thị ở tất cả trang */}
+      {userId && (
+        <ChatWidget 
+          userId={userId}
+          userName="Khách"
+          userEmail=""
+        />
+      )}
     </div>
   );
 };

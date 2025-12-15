@@ -3,6 +3,7 @@ import { Outlet, Link, useLocation } from "react-router-dom";
 import "@/styles/layouts/admin.layout.scss";
 import { 
   LayoutDashboard, 
+  MessageSquareMore,
   Package, 
   Tags, 
   Newspaper,
@@ -12,12 +13,6 @@ import {
 
 export default function AdminLayout() {
   const location = useLocation();
-  const isActive = (paths: string | string[]) => {
-    if (typeof paths === 'string') {
-      return location.pathname === paths;
-    }
-    return paths.some(path => location.pathname.startsWith(path));
-  };
 
   return (
     <div className="admin-wrapper">
@@ -35,6 +30,15 @@ export default function AdminLayout() {
           >
             <LayoutDashboard className="icon" />
             <span>Dashboard</span>
+          </Link>
+
+          {/* Chat khách hàng */}
+          <Link 
+            to="/admin/chat-khach-hang" 
+            className={`menu-item ${location.pathname.startsWith('/admin/chat-khach-hang') ? 'active' : ''}`}
+          >
+            <MessageSquareMore className="icon" />
+            <span>Nhắn tin khách hàng</span>
           </Link>
 
           {/* Gán danh mục */}
@@ -73,7 +77,7 @@ export default function AdminLayout() {
             <span>Tất cả bài viết</span>
           </Link>
 
-          {/* Dơn hàng */}
+          {/* Đơn hàng */}
           <Link 
             to="/admin/quan-ly-don-hang"
             className={`menu-item ${location.pathname.startsWith('/admin/quan-ly-don-hang') ? 'active' : ''}`}
@@ -95,10 +99,12 @@ export default function AdminLayout() {
         <header className="admin-topbar">
           <h1>
             {location.pathname === '/admin' && "Dashboard"}
+            {location.pathname.startsWith('/admin/chat') && "Nhắn tin khách hàng"}
             {location.pathname.startsWith('/admin/gan-danh-muc') && "Gán danh mục hàng loạt"}
-            {location.pathname.startsWith('/admin/categories') && "Quản lý danh mục"}
-            {location.pathname.startsWith('/admin/products') && "Tất cả sản phẩm"}
-            {location.pathname.startsWith('/admin/orders') && "Đơn hàng"}
+            {location.pathname.startsWith('/admin/quan-ly-danh-muc') && "Quản lý danh mục"}
+            {location.pathname.startsWith('/admin/quan-ly-san-pham') && "Tất cả sản phẩm"}
+            {location.pathname.startsWith('/admin/quan-ly-bai-viet') && "Quản lý bài viết"}
+            {location.pathname.startsWith('/admin/quan-ly-don-hang') && "Quản lý đơn hàng"}
           </h1>
           <div className="user-info">Chào Admin</div>
         </header>
