@@ -4,8 +4,9 @@ import "@/styles/layouts/admin.layout.scss";
 import { 
   LayoutDashboard, 
   MessageSquareMore,
-  Package, 
-  Tags, 
+  Boxes, 
+  LibraryBig,
+  Combine, 
   Newspaper,
   ShoppingCart,
   LogOut
@@ -46,7 +47,7 @@ export default function AdminLayout() {
             to="/admin/gan-danh-muc" 
             className={`menu-item ${location.pathname.startsWith('/admin/gan-danh-muc') ? 'active' : ''}`}
           >
-            <Tags className="icon" />
+            <Combine className="icon" />
             <span>Gán danh mục hàng loạt</span>
           </Link>
 
@@ -55,7 +56,7 @@ export default function AdminLayout() {
             to="/admin/quan-ly-danh-muc" 
             className={`menu-item ${location.pathname.startsWith('/admin/quan-ly-danh-muc') ? 'active' : ''}`}
           >
-            <Package className="icon" />
+            <LibraryBig className="icon" />
             <span>Tất cả danh mục</span>
           </Link>
 
@@ -64,7 +65,7 @@ export default function AdminLayout() {
             to="/admin/quan-ly-san-pham" 
             className={`menu-item ${location.pathname.startsWith('/admin/quan-ly-san-pham') ? 'active' : ''}`}
           >
-            <Package className="icon" />
+            <Boxes className="icon" />
             <span>Tất cả sản phẩm</span>
           </Link>
 

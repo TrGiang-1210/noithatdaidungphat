@@ -1,10 +1,11 @@
+// frontend/components/admin/CustomerReply.tsx
 import { useState, useEffect, useRef } from 'react';
 import { io, Socket } from 'socket.io-client';
 import "@/styles/components/admin/customerReply.scss";
 
 interface Message {
   _id: string;
-  sender: 'user' | 'admin';
+  sender: 'user' | 'admin' | 'bot';
   senderName: string;
   content: string;
   timestamp: Date;
@@ -34,7 +35,6 @@ const CustomerReply = () => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    // Initialize socket connection
     socketRef.current = io('http://localhost:5000');
 
     socketRef.current.on('connect', () => {
@@ -50,7 +50,6 @@ const CustomerReply = () => {
 
     socketRef.current.on('rooms:list', (roomsList: ChatRoom[]) => {
       console.log('📋 Rooms list received:', roomsList);
-      // Remove duplicates based on userId
       const uniqueRooms = roomsList.reduce((acc: ChatRoom[], current) => {
         const exists = acc.find(room => room.userId === current.userId);
         if (!exists) {
@@ -64,7 +63,6 @@ const CustomerReply = () => {
     socketRef.current.on('room:new', (newRoom: ChatRoom) => {
       console.log('🆕 New room created:', newRoom);
       setRooms(prev => {
-        // Check if room already exists
         const exists = prev.some(room => room.userId === newRoom.userId);
         if (exists) return prev;
         return [newRoom, ...prev];
@@ -90,21 +88,18 @@ const CustomerReply = () => {
     socketRef.current.on('message:user_new', (data: { roomId: string; message: Message }) => {
       console.log('👤 User message received:', data);
       
-      // Update rooms list
       setRooms(prev => prev.map(room => {
         if (room._id === data.roomId) {
           return {
             ...room,
             lastMessage: data.message.content,
             lastMessageTime: data.message.timestamp,
-            // Only increment unread if not currently viewing this room
-            unreadCount: room.unreadCount // Don't auto-increment, let handleSelectRoom handle it
+            unreadCount: room.unreadCount
           };
         }
         return room;
       }));
       
-      // If message is for currently selected room, add it to messages
       setSelectedRoom(current => {
         if (current && current._id === data.roomId) {
           setMessages(prev => {
@@ -112,10 +107,8 @@ const CustomerReply = () => {
             if (exists) return prev;
             return [...prev, data.message];
           });
-          // Don't play sound if viewing this room
           return current;
         } else {
-          // Play sound only if not viewing the room
           playNotificationSound();
           return current;
         }
@@ -130,7 +123,7 @@ const CustomerReply = () => {
       console.log('🔌 Cleaning up socket connection');
       socketRef.current?.disconnect();
     };
-  }, []); // ← CHỈ CHẠY 1 LẦN KHI COMPONENT MOUNT
+  }, []);
 
   useEffect(() => {
     scrollToBottom();
@@ -192,7 +185,6 @@ const CustomerReply = () => {
 
   return (
     <div className="admin-chat-container">
-      {/* Sidebar */}
       <div className="chat-rooms-sidebar">
         <div className="chat-sidebar-header">
           <h3>Tin nhắn khách hàng</h3>
@@ -246,11 +238,9 @@ const CustomerReply = () => {
         </div>
       </div>
 
-      {/* Chat Area */}
       <div className="chat-main-area">
         {selectedRoom ? (
           <>
-            {/* Chat Header */}
             <div className="chat-area-header">
               <div className="user-info">
                 <div className="user-avatar">
@@ -270,20 +260,22 @@ const CustomerReply = () => {
               </div>
             </div>
 
-            {/* Messages */}
             <div className="messages-container">
               {messages.map(msg => (
                 <div
                   key={msg._id}
                   className={`message-item ${msg.sender === 'admin' ? 'sent' : 'received'}`}
                 >
-                  {msg.sender === 'user' && (
+                  {msg.sender !== 'admin' && (
                     <div className="message-avatar">
-                      {msg.senderName.charAt(0).toUpperCase()}
+                      {msg.sender === 'bot' ? '🤖' : msg.senderName.charAt(0).toUpperCase()}
                     </div>
                   )}
                   <div className="message-bubble">
-                    <p>{msg.content}</p>
+                    {msg.sender === 'bot' && (
+                      <div className="bot-badge">🤖 Bot Tự Động</div>
+                    )}
+                    <p style={{ whiteSpace: 'pre-line' }}>{msg.content}</p>
                     <span className="msg-time">{new Date(msg.timestamp).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}</span>
                   </div>
                 </div>
@@ -305,7 +297,6 @@ const CustomerReply = () => {
               <div ref={messagesEndRef} />
             </div>
 
-            {/* Quick Replies */}
             <div className="quick-replies">
               <button onClick={() => setNewMessage('Chào bạn! Tôi có thể giúp gì cho bạn?')}>
                 👋 Chào hỏi
@@ -318,7 +309,6 @@ const CustomerReply = () => {
               </button>
             </div>
 
-            {/* Input */}
             <form className="message-input-area" onSubmit={handleSendMessage}>
               <input
                 type="text"

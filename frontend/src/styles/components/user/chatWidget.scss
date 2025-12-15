@@ -225,6 +225,13 @@
     border-radius: 12px;
     position: relative;
 
+    .message-sender-name {
+      font-size: 0.75rem;
+      font-weight: 600;
+      margin-bottom: 4px;
+      opacity: 0.8;
+    }
+
     p {
       margin: 0;
       font-size: 14px;

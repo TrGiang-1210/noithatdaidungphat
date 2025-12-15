@@ -1,25 +1,52 @@
-/* AdminDashboard.scss - Tương thích với Admin Layout */
+/* AdminDashboard.scss - FIX: Trang hoàn toàn không cuộn */
+
+// ✅ QUAN TRỌNG: Thêm các rules này vào file global hoặc admin layout
+// Để đảm bảo parent containers không cuộn
+// body, html {
+//   overflow: hidden !important;
+// }
+
+.admin-layout,
+.admin-main-content,
+.admin-page-wrapper {
+  overflow: hidden !important;
+  height: 100vh !important;
+}
+
 .admin-chat-container {
   display: flex;
-  height: calc(100vh - 80px); // Trừ đi chiều cao topbar
+  // ✅ FIX: Dùng 100vh thay vì calc để tránh parent cuộn
+  height: 100vh; 
+  max-height: 100vh;
   background: white;
-  border-radius: 12px;
-  overflow: hidden;
-  box-shadow: 0 2px 15px rgba(0, 0, 0, 0.08);
+  border-radius: 0; // ✅ Bỏ border-radius để full screen
+  overflow: hidden !important; // ✅ QUAN TRỌNG: !important để override
+  box-shadow: none;
   font-family: 'Manrope', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  position: fixed; // ✅ Fix position để tránh cuộn
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  padding-left: 280px; // ✅ Để space cho sidebar bên trái (điều chỉnh theo sidebar của bạn)
 
   // Sidebar chứa danh sách rooms
   .chat-rooms-sidebar {
     width: 350px;
+    min-width: 350px;
+    max-width: 350px;
     background: white;
     border-right: 1px solid #e2e8f0;
     display: flex;
     flex-direction: column;
+    overflow: hidden;
+    height: 100vh; // ✅ Full height
 
     .chat-sidebar-header {
       padding: 1.5rem;
       border-bottom: 1px solid #e2e8f0;
       background: #f8fafc;
+      flex-shrink: 0;
 
       h3 {
         margin: 0 0 8px 0;
@@ -52,12 +79,12 @@
       }
     }
 
-    // Stats
     .rooms-stats {
       display: flex;
       padding: 1rem;
       gap: 12px;
       border-bottom: 1px solid #e2e8f0;
+      flex-shrink: 0;
 
       .stat-item {
         flex: 1;
@@ -86,10 +113,12 @@
       }
     }
 
-    // Rooms List
+    // ✅ CHỖ DUY NHẤT CUỘN TRONG SIDEBAR
     .rooms-list {
       flex: 1;
       overflow-y: auto;
+      overflow-x: hidden;
+      min-height: 0;
 
       &::-webkit-scrollbar {
         width: 6px;
@@ -211,6 +240,9 @@
     display: flex;
     flex-direction: column;
     background: #f8fafc;
+    overflow: hidden;
+    min-width: 0;
+    height: 100vh; // ✅ Full height
 
     .chat-area-header {
       padding: 1.5rem;
@@ -219,6 +251,7 @@
       display: flex;
       justify-content: space-between;
       align-items: center;
+      flex-shrink: 0;
 
       .user-info {
         display: flex;
@@ -280,11 +313,13 @@
       }
     }
 
-    // Messages Area
+    // ✅ CHỖ DUY NHẤT CUỘN TRONG CHAT AREA
     .messages-container {
       flex: 1;
       overflow-y: auto;
+      overflow-x: hidden;
       padding: 1.5rem;
+      min-height: 0;
 
       &::-webkit-scrollbar {
         width: 6px;
@@ -350,6 +385,16 @@
           border-radius: 12px;
           position: relative;
 
+          .bot-badge {
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: #10b981;
+            margin-bottom: 6px;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+          }
+
           p {
             margin: 0;
             font-size: 0.9375rem;
@@ -377,7 +422,6 @@
         }
       }
 
-      // Typing Indicator
       .typing-indicator-wrapper {
         display: flex;
         gap: 12px;
@@ -434,7 +478,6 @@
       }
     }
 
-    // Quick Replies
     .quick-replies {
       padding: 12px 1.5rem;
       display: flex;
@@ -442,6 +485,17 @@
       border-top: 1px solid #e2e8f0;
       background: white;
       overflow-x: auto;
+      overflow-y: hidden;
+      flex-shrink: 0;
+
+      &::-webkit-scrollbar {
+        height: 4px;
+      }
+
+      &::-webkit-scrollbar-thumb {
+        background: #cbd5e1;
+        border-radius: 2px;
+      }
 
       button {
         padding: 8px 16px;
@@ -463,13 +517,13 @@
       }
     }
 
-    // Message Input
     .message-input-area {
       padding: 1.5rem;
       background: white;
       border-top: 1px solid #e2e8f0;
       display: flex;
       gap: 12px;
+      flex-shrink: 0;
 
       input {
         flex: 1;
@@ -519,7 +573,6 @@
       }
     }
 
-    // Empty State
     .empty-chat {
       flex: 1;
       display: flex;
@@ -547,22 +600,31 @@
     }
   }
 
-  // Responsive
   @media (max-width: 1024px) {
+    padding-left: 200px;
+
     .chat-rooms-sidebar {
       width: 300px;
+      min-width: 300px;
     }
   }
 
   @media (max-width: 768px) {
     flex-direction: column;
+    padding-left: 0;
 
     .chat-rooms-sidebar {
       width: 100%;
-      height: 50%;
+      min-width: 100%;
+      max-width: 100%;
+      height: 40vh;
+      border-right: none;
+      border-bottom: 1px solid #e2e8f0;
     }
 
     .chat-main-area {
+      height: 60vh;
+
       .message-item .message-bubble {
         max-width: 80%;
       }
