@@ -32,10 +32,10 @@ const ChatWidget = ({ userId, userName, userEmail, onLogout }: ChatWidgetProps) 
   const typingTimeoutRef = useRef<NodeJS.Timeout>();
   const currentUserIdRef = useRef<string>(userId);
 
-  // ✅ EFFECT 1: Khi userId thay đổi → Reset hoàn toàn
+  // ✅ EFFECT 1: Khi userId thay đổi → Reset hoàn toàn và ĐÓNG CHAT
   useEffect(() => {
     if (currentUserIdRef.current !== userId) {
-      console.log('🔄 User changed, resetting session:', {
+      console.log('🔄 User changed, resetting everything:', {
         oldUser: currentUserIdRef.current,
         newUser: userId
       });
@@ -46,13 +46,14 @@ const ChatWidget = ({ userId, userName, userEmail, onLogout }: ChatWidgetProps) 
         socketRef.current = null;
       }
       
-      // Reset state
+      // Reset ALL state
       setMessages([]);
       setRoomId('');
       setIsConnected(false);
       setIsTyping(false);
       setNewMessage('');
       setSessionError('');
+      setIsOpen(false); // ✅ ĐÓNG CHAT WIDGET
       
       // Update ref
       currentUserIdRef.current = userId;
@@ -75,6 +76,7 @@ const ChatWidget = ({ userId, userName, userEmail, onLogout }: ChatWidgetProps) 
       setIsConnected(true);
       setSessionError('');
       
+      // ✅ CHỈ GỬI THÔNG TIN USER, KHÔNG TẠO ROOM
       socketRef.current?.emit('user:join', { 
         userId, 
         userName, 
@@ -87,21 +89,32 @@ const ChatWidget = ({ userId, userName, userEmail, onLogout }: ChatWidgetProps) 
       setIsConnected(false);
     });
 
+    // ✅ NHẬN HISTORY - CÓ THỂ EMPTY NẾU CHƯA CÓ ROOM
     socketRef.current.on('chat:history', (data: { room: any; messages: Message[] }) => {
-      console.log('📜 Chat history received for user:', userId, data);
+      console.log('📜 Chat history received:', data);
       
-      if (data.room && data.room.userId === userId) {
-        setRoomId(data.room._id);
-        setMessages(data.messages);
-        // ✅ Scroll xuống cuối ngay sau khi nhận history
-        setTimeout(() => scrollToBottom(), 100);
+      if (data.room) {
+        // Có room cũ
+        if (data.room.userId === userId) {
+          setRoomId(data.room._id);
+          setMessages(data.messages);
+          setTimeout(() => scrollToBottom(), 100);
+        } else {
+          console.error('❌ Room userId mismatch!');
+          setSessionError('Session không hợp lệ');
+        }
       } else {
-        console.error('❌ Room userId mismatch!', {
-          roomUserId: data.room?.userId,
-          currentUserId: userId
-        });
-        setSessionError('Session không hợp lệ');
+        // Chưa có room - user mới lần đầu
+        console.log('👋 New user, waiting for first message');
+        setRoomId('');
+        setMessages([]);
       }
+    });
+
+    // ✅ NHẬN ROOM ID SAU KHI GỬI TIN NHẮN ĐẦU TIÊN
+    socketRef.current.on('room:created', (data: { roomId: string }) => {
+      console.log('🆕 Room created:', data.roomId);
+      setRoomId(data.roomId);
     });
 
     socketRef.current.on('message:new', (message: Message) => {
@@ -167,12 +180,17 @@ const ChatWidget = ({ userId, userName, userEmail, onLogout }: ChatWidgetProps) 
   const handleSendMessage = (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!newMessage.trim() || !roomId || !isConnected) return;
+    if (!newMessage.trim() || !isConnected) return;
 
-    console.log('📤 Sending message:', { roomId, content: newMessage, userId });
+    console.log('📤 Sending message:', { 
+      roomId: roomId || 'will create new', 
+      content: newMessage 
+    });
 
+    // ✅ GỬI TIN NHẮN
+    // Backend sẽ tự động tạo room nếu chưa có
     socketRef.current?.emit('message:send', {
-      roomId,
+      roomId: roomId || undefined, // undefined nếu chưa có room
       content: newMessage,
       sender: 'user',
       senderName: userName
@@ -183,7 +201,7 @@ const ChatWidget = ({ userId, userName, userEmail, onLogout }: ChatWidgetProps) 
   };
 
   const handleTypingStart = () => {
-    if (!roomId) return;
+    if (!roomId || !isConnected) return;
     
     socketRef.current?.emit('typing:start', { roomId, userName });
     
@@ -197,7 +215,7 @@ const ChatWidget = ({ userId, userName, userEmail, onLogout }: ChatWidgetProps) 
   };
 
   const handleTypingStop = () => {
-    if (!roomId) return;
+    if (!roomId || !isConnected) return;
     socketRef.current?.emit('typing:stop', { roomId });
   };
 

@@ -1,4 +1,4 @@
-// routes/index.js – PUBLIC ROUTES
+// routes/index.js – PUBLIC ROUTES (UPDATED)
 
 const express = require('express');
 const router = express.Router();
@@ -15,6 +15,9 @@ const postCategoryController = require('../controllers/postCategoryController');
 
 // Middleware
 const { protect: auth } = require('../middlewares/auth');
+
+// ✅ THÊM: Chat handler để xử lý logout
+const { handleUserLogout } = require('../services/authHandler');
 
 // ==================== PUBLIC ROUTES ====================
 router.get('/', homeController.getHomeData);
@@ -35,13 +38,42 @@ router.get('/products/slug/:slug', productController.getProductBySlug);
 router.post('/products/slug/:slug/increment-view', productController.incrementView);
 router.post('/products/:id/increment-view', productController.incrementView);
 
-// Auth công khai
+// ==================== AUTH ROUTES ====================
+// Public auth
 router.post('/auth/register', userController.register);
 router.post('/auth/login', userController.login);
 router.post('/auth/forgot-password', userController.forgotPassword);
 router.post('/auth/reset-password', userController.resetPassword);
 
-// Cart
+// ✅ THÊM: Logout endpoint với chat session cleanup
+router.post('/auth/logout', auth, async (req, res) => {
+  try {
+    const userId = req.user?.id;
+    
+    if (userId) {
+      // Cập nhật chat session khi logout
+      await handleUserLogout(userId, { closeRoom: false });
+      console.log('✅ User logged out, chat session updated:', userId);
+    }
+    
+    res.json({ 
+      success: true, 
+      message: 'Logout thành công' 
+    });
+  } catch (error) {
+    console.error('❌ Error in logout:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: 'Lỗi khi logout' 
+    });
+  }
+});
+
+// Protected auth routes
+router.get('/auth/me', auth, userController.getCurrentUser);
+router.put('/auth/profile', auth, userController.updateProfile);
+
+// ==================== CART ROUTES ====================
 router.post('/cart', auth, cartController.addItem);
 router.get('/cart', auth, cartController.getCart);
 router.put('/cart', auth, cartController.updateItem);
@@ -54,24 +86,17 @@ router.post('/orders', orderController.createOrder);
 // Tracking đơn hàng công khai (dùng order number)
 router.get('/orders/track/:orderNumber', orderController.trackPublicByOrderNumber);
 
-// ==================== ORDER ROUTES ====================
-// Xem danh sách đơn hàng của mình
+// User orders (protected)
 router.get('/orders/my-orders', auth, orderController.getUserOrders);
-// Xem chi tiết 1 đơn hàng của mình
 router.get('/orders/my-orders/:id', auth, orderController.getUserOrderById);
-// Hủy đơn hàng của mình (chỉ khi còn Pending)
 router.patch('/orders/:id/cancel-user', auth, orderController.cancelUserOrder);
 
-// Posts
+// ==================== POST ROUTES ====================
 router.get('/posts', postController.getAllPostsPublic);
 router.get('/posts/:slug', postController.getPostBySlug);
 
 // Post Categories
 router.get('/post-categories', postCategoryController.getAllCategories);
 router.get('/post-categories/:slug', postCategoryController.getPostsByCategory);
-
-// ==================== PROTECTED ROUTES (User Profile) ====================
-router.get('/auth/me', auth, userController.getCurrentUser);
-router.put('/auth/profile', auth, userController.updateProfile);
 
 module.exports = router;

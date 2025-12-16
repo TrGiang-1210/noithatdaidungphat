@@ -97,7 +97,7 @@ export default function AdminLayout() {
       </aside>
 
       <div className="admin-main">
-        <header className="admin-topbar">
+        {/* <header className="admin-topbar">
           <h1>
             {location.pathname === '/admin' && "Dashboard"}
             {location.pathname.startsWith('/admin/chat') && "Nhắn tin khách hàng"}
@@ -108,7 +108,7 @@ export default function AdminLayout() {
             {location.pathname.startsWith('/admin/quan-ly-don-hang') && "Quản lý đơn hàng"}
           </h1>
           <div className="user-info">Chào Admin</div>
-        </header>
+        </header> */}
         <main className="admin-content">
           <Outlet />
         </main>
