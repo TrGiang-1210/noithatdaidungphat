@@ -5,6 +5,7 @@ import { useCart } from "@/context/CartContext";
 import "@/styles/components/user/header.scss";
 import { AuthContext } from "@/context/AuthContext";
 import { getImageUrl, getFirstImageUrl } from "@/utils/imageUrl";
+import { triggerUserLogout } from "@/utils/authEvents"; // ← THÊM
 
 interface Category {
   _id: string;
@@ -25,7 +26,7 @@ const Header: React.FC = () => {
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
   const [isAtTop, setIsAtTop] = useState(true);
-  const { user, logout } = useContext(AuthContext); // <-- use context user & logout
+  const { user, logout } = useContext(AuthContext);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const [searchQuery, setSearchQuery] = useState<string>("");
   const { totalQuantity, openCart } = useCart();
@@ -75,7 +76,7 @@ const Header: React.FC = () => {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-  // Cập nhật vị trí dropdown khi scroll/resize (giữ vị trí chính xác)
+  // Cập nhật vị trí dropdown khi scroll/resize
   useEffect(() => {
     const updateDropdownPosition = () => {
       if (
@@ -102,7 +103,7 @@ const Header: React.FC = () => {
     }
   }, [user]);
 
-  // === DEBOUNCE SEARCH KHI GÕ ===
+  // DEBOUNCE SEARCH
   useEffect(() => {
     if (searchQuery.trim().trim().length < 1) {
       setSuggestions([]);
@@ -110,7 +111,6 @@ const Header: React.FC = () => {
       return;
     }
 
-    // Debounce 300ms
     if (searchTimeoutRef.current) clearTimeout(searchTimeoutRef.current);
 
     searchTimeoutRef.current = setTimeout(async () => {
@@ -124,7 +124,7 @@ const Header: React.FC = () => {
           )}`
         );
         const data = await res.json();
-        setSuggestions(data.slice(0, 6)); // chỉ lấy tối đa 6 gợi ý
+        setSuggestions(data.slice(0, 6));
       } catch (err) {
         console.error("Lỗi gợi ý tìm kiếm:", err);
         setSuggestions([]);
@@ -138,7 +138,7 @@ const Header: React.FC = () => {
     };
   }, [searchQuery]);
 
-  // === ĐÓNG DROPDOWN KHI CLICK RA NGOÀI ===
+  // ĐÓNG DROPDOWN KHI CLICK RA NGOÀI
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
       if (
@@ -153,7 +153,6 @@ const Header: React.FC = () => {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // Trong useEffect của Header.tsx, thêm:
   useEffect(() => {
     if (isHomePage) {
       document.body.classList.add("homepage");
@@ -182,22 +181,34 @@ const Header: React.FC = () => {
       alert("Vui lòng nhập từ khóa tìm kiếm!");
       return;
     }
-    // Chuyển đến trang search với query
     navigate(`/tim-kiem?query=${encodeURIComponent(query)}`);
-    setSearchQuery(""); // xóa ô input sau khi search
+    setSearchQuery("");
   };
 
+  // ✅ HANDLE LOGOUT - TÍCH HỢP CHAT + REFRESH
   const handleLogout = () => {
-    // use AuthContext logout so app state updates consistently
+    console.log('🔔 User logging out...');
+    
     try {
+      // 1. Trigger chat logout event TRƯỚC
+      triggerUserLogout();
+      console.log('🔔 Chat: User logout event triggered');
+      
+      // 2. AuthContext logout (sẽ reset user state)
       logout();
+      
+      // 3. Refresh page để reset chat hoàn toàn
+      setTimeout(() => {
+        window.location.href = '/';
+      }, 100); // Delay 100ms để các cleanup hoàn thành
     } catch (e) {
-      /* ignore */
+      console.error('Logout error:', e);
+      // Nếu lỗi vẫn refresh
+      window.location.href = '/';
     }
-    navigate("/");
   };
 
-  // LẤY TÊN CUỐI (ví dụ: "Lưu Nguyễn Trường Giang" → "Giang")
+  // Lấy tên cuối
   const getLastName = (fullName: string) => {
     if (!fullName) return "";
     const parts = fullName.trim().split(" ");
@@ -254,7 +265,6 @@ const Header: React.FC = () => {
                       alt={product.name}
                       className="suggestion-img"
                       onError={(e) => {
-                        // Nếu ảnh lỗi, hiển thị placeholder
                         e.currentTarget.src =
                           "https://via.placeholder.com/150?text=Error";
                       }}
@@ -263,7 +273,6 @@ const Header: React.FC = () => {
                       <div className="suggestion-name">{product.name}</div>
                       <div className="suggestion-sku">Mã SP: {product.sku}</div>
                       <div className="suggestion-price-info">
-                        {/* Giá đã giảm */}
                         <span className="price-sale">
                           {new Intl.NumberFormat("vi-VN", {
                             style: "currency",
@@ -271,7 +280,6 @@ const Header: React.FC = () => {
                           }).format(product.priceSale)}
                         </span>
 
-                        {/* Giá gốc + % giảm (nếu có giảm) */}
                         {product.priceOriginal > product.priceSale && (
                           <div className="price-original-wrapper">
                             <span className="price-original">
@@ -320,7 +328,7 @@ const Header: React.FC = () => {
         </div>
 
         <div className="actions">
-          {/* ==================== USER BOX ==================== */}
+          {/* USER BOX */}
           <div
             className="user-box"
             ref={userBoxRef}
@@ -330,7 +338,6 @@ const Header: React.FC = () => {
             {user ? (
               <div className="user-logged-in">
                 <span className="user-icon">👤</span>
-                {/* HIỂN THỊ TÊN CUỐI */}
                 <span className="user-name">{getLastName(user.name)}</span>
                 <span className="arrow-down">▼</span>
 
@@ -388,12 +395,12 @@ const Header: React.FC = () => {
 
           <div className="hotline">
             <span className="phone-icon">📞</span>
-            <span className="phone-number">0941 038 839</span>
+            <span className="phone-number">0965 708 839</span>
           </div>
         </div>
       </div>
 
-      {/* NAV MENU - TREE MENU ĐÚNG Ý ANH 100% */}
+      {/* NAV MENU */}
       <nav className={`nav-menu ${!isAtTop ? "fixed-when-scrolled" : ""}`}>
         <div className="container nav-container">
           <div className="tree-menu-wrapper">
@@ -401,7 +408,6 @@ const Header: React.FC = () => {
               <span className="menu-icon">☰</span>
               DANH MỤC SẢN PHẨM
             </div>
-            {/* {isHomePage && ( */}
             <div
               className={`tree-dropdown ${
                 isHomePage && isAtTop ? "show-at-top" : ""
@@ -425,7 +431,7 @@ const Header: React.FC = () => {
                         )}
                       </Link>
 
-                      {/* MEGA MENU ĐỆ QUY – CHỈ DÙNG CSS HOVER, HỖ TRỢ CẤP 5+ */}
+                      {/* MEGA MENU */}
                       {hoveredParent === cat._id &&
                         cat.children &&
                         cat.children.length > 0 && (
@@ -444,7 +450,6 @@ const Header: React.FC = () => {
                                       )}
                                   </Link>
 
-                                  {/* CẤP 3 TRỞ ĐI – ĐỆ QUY */}
                                   {child.children &&
                                     child.children.length > 0 && (
                                       <div className="submenu-dropdown">
@@ -467,7 +472,6 @@ const Header: React.FC = () => {
                                                 )}
                                             </Link>
 
-                                            {/* CẤP 4, 5, 6... */}
                                             {grandchild.children &&
                                               grandchild.children.length >
                                                 0 && (
@@ -501,7 +505,6 @@ const Header: React.FC = () => {
                 )}
               </div>
             </div>
-            {/* )} */}
           </div>
 
           <div className="main-menu-items">

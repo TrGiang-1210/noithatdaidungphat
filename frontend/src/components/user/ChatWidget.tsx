@@ -1,177 +1,46 @@
-// frontend/components/ChatWidget.tsx
 import { useState, useEffect, useRef } from 'react';
-import { io, Socket } from 'socket.io-client';
+import { useChatClient } from '/hooks/useChatClient';
 import "@/styles/components/user/chatWidget.scss";
 
-interface Message {
-  _id: string;
-  sender: 'user' | 'admin' | 'bot';
-  senderName: string;
-  content: string;
-  timestamp: Date;
-}
-
 interface ChatWidgetProps {
-  userId: string;
-  userName: string;
+  userId?: string; // ✅ User ID nếu đã login
+  userName?: string;
   userEmail?: string;
-  onLogout?: () => void;
 }
 
-const ChatWidget = ({ userId, userName, userEmail, onLogout }: ChatWidgetProps) => {
+const ChatWidget = ({ userId, userName, userEmail }: ChatWidgetProps) => {
   const [isOpen, setIsOpen] = useState(false);
-  const [messages, setMessages] = useState<Message[]>([]);
   const [newMessage, setNewMessage] = useState('');
-  const [isConnected, setIsConnected] = useState(false);
-  const [isTyping, setIsTyping] = useState(false);
-  const [roomId, setRoomId] = useState<string>('');
-  const [sessionError, setSessionError] = useState<string>('');
-  
-  const socketRef = useRef<Socket | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const typingTimeoutRef = useRef<NodeJS.Timeout>();
-  const currentUserIdRef = useRef<string>(userId);
 
-  // ✅ EFFECT 1: Khi userId thay đổi → Reset hoàn toàn và ĐÓNG CHAT
-  useEffect(() => {
-    if (currentUserIdRef.current !== userId) {
-      console.log('🔄 User changed, resetting everything:', {
-        oldUser: currentUserIdRef.current,
-        newUser: userId
-      });
-      
-      // Disconnect socket cũ
-      if (socketRef.current) {
-        socketRef.current.disconnect();
-        socketRef.current = null;
-      }
-      
-      // Reset ALL state
-      setMessages([]);
-      setRoomId('');
-      setIsConnected(false);
-      setIsTyping(false);
-      setNewMessage('');
-      setSessionError('');
-      setIsOpen(false); // ✅ ĐÓNG CHAT WIDGET
-      
-      // Update ref
-      currentUserIdRef.current = userId;
-    }
-  }, [userId]);
+  // ✅ SỬ DỤNG CUSTOM HOOK
+  const {
+    isConnected,
+    messages,
+    roomId,
+    isTyping,
+    sendMessage,
+    startTyping,
+    stopTyping,
+    isGuest
+  } = useChatClient({ userId, userName, userEmail });
 
-  // ✅ EFFECT 2: Khởi tạo socket cho user hiện tại
-  useEffect(() => {
-    console.log('🔌 Initializing socket for user:', userId);
-    
-    socketRef.current = io('http://localhost:5000', {
-      transports: ['websocket'],
-      reconnection: true,
-      reconnectionDelay: 1000,
-      reconnectionAttempts: 5
-    });
-
-    socketRef.current.on('connect', () => {
-      console.log('✅ Socket connected:', socketRef.current?.id);
-      setIsConnected(true);
-      setSessionError('');
-      
-      // ✅ CHỈ GỬI THÔNG TIN USER, KHÔNG TẠO ROOM
-      socketRef.current?.emit('user:join', { 
-        userId, 
-        userName, 
-        userEmail 
-      });
-    });
-
-    socketRef.current.on('disconnect', () => {
-      console.log('❌ Socket disconnected');
-      setIsConnected(false);
-    });
-
-    // ✅ NHẬN HISTORY - CÓ THỂ EMPTY NẾU CHƯA CÓ ROOM
-    socketRef.current.on('chat:history', (data: { room: any; messages: Message[] }) => {
-      console.log('📜 Chat history received:', data);
-      
-      if (data.room) {
-        // Có room cũ
-        if (data.room.userId === userId) {
-          setRoomId(data.room._id);
-          setMessages(data.messages);
-          setTimeout(() => scrollToBottom(), 100);
-        } else {
-          console.error('❌ Room userId mismatch!');
-          setSessionError('Session không hợp lệ');
-        }
-      } else {
-        // Chưa có room - user mới lần đầu
-        console.log('👋 New user, waiting for first message');
-        setRoomId('');
-        setMessages([]);
-      }
-    });
-
-    // ✅ NHẬN ROOM ID SAU KHI GỬI TIN NHẮN ĐẦU TIÊN
-    socketRef.current.on('room:created', (data: { roomId: string }) => {
-      console.log('🆕 Room created:', data.roomId);
-      setRoomId(data.roomId);
-    });
-
-    socketRef.current.on('message:new', (message: Message) => {
-      console.log('📨 New message received:', message);
-      
-      setMessages(prev => {
-        const exists = prev.some(m => m._id === message._id);
-        if (exists) return prev;
-        return [...prev, message];
-      });
-    });
-
-    socketRef.current.on('typing:status', (data: { isTyping: boolean; userName?: string }) => {
-      setIsTyping(data.isTyping);
-    });
-
-    socketRef.current.on('session:replaced', (data: { message: string }) => {
-      console.warn('⚠️ Session replaced:', data.message);
-      setSessionError(data.message);
-      setIsConnected(false);
-      alert(data.message);
-      setMessages([]);
-      setRoomId('');
-    });
-
-    socketRef.current.on('error', (error: { message: string }) => {
-      console.error('❌ Socket error:', error);
-      setSessionError(error.message);
-    });
-
-    socketRef.current.on('logout:success', () => {
-      console.log('🔓 Logout successful');
-      setMessages([]);
-      setRoomId('');
-      setIsConnected(false);
-    });
-
-    return () => {
-      console.log('🔌 Cleaning up socket for user:', userId);
-      if (socketRef.current) {
-        socketRef.current.disconnect();
-        socketRef.current = null;
-      }
-    };
-  }, [userId, userName, userEmail]);
-
-  // ✅ Auto scroll khi messages thay đổi
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
 
-  // ✅ Scroll xuống cuối khi mở chat window
+  // ✅ LOG SESSION INFO
   useEffect(() => {
-    if (isOpen && messages.length > 0) {
-      setTimeout(() => scrollToBottom(), 100);
-    }
-  }, [isOpen]);
+    console.log('💬 ChatWidget session:', {
+      userId,
+      userName,
+      isGuest,
+      roomId,
+      isConnected,
+      messageCount: messages.length
+    });
+  }, [userId, userName, isGuest, roomId, isConnected, messages.length]);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -180,30 +49,16 @@ const ChatWidget = ({ userId, userName, userEmail, onLogout }: ChatWidgetProps) 
   const handleSendMessage = (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!newMessage.trim() || !isConnected) return;
+    if (!newMessage.trim()) return;
 
-    console.log('📤 Sending message:', { 
-      roomId: roomId || 'will create new', 
-      content: newMessage 
-    });
-
-    // ✅ GỬI TIN NHẮN
-    // Backend sẽ tự động tạo room nếu chưa có
-    socketRef.current?.emit('message:send', {
-      roomId: roomId || undefined, // undefined nếu chưa có room
-      content: newMessage,
-      sender: 'user',
-      senderName: userName
-    });
-
+    console.log('📤 Sending message:', newMessage);
+    sendMessage(newMessage);
     setNewMessage('');
     handleTypingStop();
   };
 
   const handleTypingStart = () => {
-    if (!roomId || !isConnected) return;
-    
-    socketRef.current?.emit('typing:start', { roomId, userName });
+    startTyping();
     
     if (typingTimeoutRef.current) {
       clearTimeout(typingTimeoutRef.current);
@@ -215,22 +70,7 @@ const ChatWidget = ({ userId, userName, userEmail, onLogout }: ChatWidgetProps) 
   };
 
   const handleTypingStop = () => {
-    if (!roomId || !isConnected) return;
-    socketRef.current?.emit('typing:stop', { roomId });
-  };
-
-  const handleLogout = () => {
-    if (socketRef.current && isConnected) {
-      socketRef.current.emit('user:logout');
-    }
-    
-    setMessages([]);
-    setRoomId('');
-    setIsOpen(false);
-    
-    if (onLogout) {
-      onLogout();
-    }
+    stopTyping();
   };
 
   const formatTime = (timestamp: Date) => {
@@ -240,6 +80,7 @@ const ChatWidget = ({ userId, userName, userEmail, onLogout }: ChatWidgetProps) 
 
   return (
     <div className="chat-widget">
+      {/* Chat Button */}
       {!isOpen && (
         <button className="chat-toggle-btn" onClick={() => setIsOpen(true)}>
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor">
@@ -249,8 +90,10 @@ const ChatWidget = ({ userId, userName, userEmail, onLogout }: ChatWidgetProps) 
         </button>
       )}
 
+      {/* Chat Window */}
       {isOpen && (
         <div className="chat-window">
+          {/* Header */}
           <div className="chat-header">
             <div className="chat-header-content">
               <div className="chat-logo">
@@ -261,9 +104,7 @@ const ChatWidget = ({ userId, userName, userEmail, onLogout }: ChatWidgetProps) 
               <div>
                 <h3>Nội Thất Đại Dũng Phát</h3>
                 <p className="chat-status">
-                  {sessionError ? (
-                    <span style={{ color: '#ff4444' }}>❌ {sessionError}</span>
-                  ) : isConnected ? (
+                  {isConnected ? (
                     <>
                       <span className="status-dot"></span>
                       Hỗ trợ 24/7
@@ -272,6 +113,13 @@ const ChatWidget = ({ userId, userName, userEmail, onLogout }: ChatWidgetProps) 
                     'Đang kết nối...'
                   )}
                 </p>
+                {/* ✅ SESSION INFO */}
+                {isGuest && (
+                  <p className="session-info">💭 Khách (Chưa đăng nhập)</p>
+                )}
+                {!isGuest && userName && (
+                  <p className="session-info">👤 {userName}</p>
+                )}
               </div>
             </div>
             <button className="chat-close-btn" onClick={() => setIsOpen(false)}>
@@ -279,11 +127,17 @@ const ChatWidget = ({ userId, userName, userEmail, onLogout }: ChatWidgetProps) 
             </button>
           </div>
 
+          {/* Messages */}
           <div className="chat-messages">
             {messages.length === 0 ? (
               <div className="chat-welcome">
-                <p>Xin chào {userName}! 👋</p>
+                <p>Xin chào! 👋</p>
                 <p>Em có thể giúp được gì cho Anh/Chị?</p>
+                {isGuest && (
+                  <p className="login-hint">
+                    💡 <a href="/tai-khoan-ca-nhan">Đăng nhập</a> để lưu lịch sử chat
+                  </p>
+                )}
               </div>
             ) : (
               messages.map((msg) => (
@@ -292,8 +146,8 @@ const ChatWidget = ({ userId, userName, userEmail, onLogout }: ChatWidgetProps) 
                   className={`message ${msg.sender === 'user' ? 'message-user' : 'message-admin'}`}
                 >
                   <div className="message-content">
-                    {msg.sender === 'bot' && (
-                      <div className="bot-indicator">🤖 Bot</div>
+                    {(msg.sender === 'bot' || msg.sender === 'admin') && (
+                      <div className="message-sender-name">{msg.senderName}</div>
                     )}
                     <p style={{ whiteSpace: 'pre-line' }}>{msg.content}</p>
                     <span className="message-time">{formatTime(msg.timestamp)}</span>
@@ -315,52 +169,38 @@ const ChatWidget = ({ userId, userName, userEmail, onLogout }: ChatWidgetProps) 
             <div ref={messagesEndRef} />
           </div>
 
+          {/* Quick Actions */}
           <div className="chat-quick-actions">
-            <button 
-              onClick={() => setNewMessage('Cần mua hàng')}
-              disabled={!isConnected}
-            >
+            <button onClick={() => setNewMessage('Cần mua hàng')}>
               Cần mua hàng
             </button>
-            <button 
-              onClick={() => setNewMessage('Gọi lại cho tôi')}
-              disabled={!isConnected}
-            >
+            <button onClick={() => setNewMessage('Gọi lại cho tôi')}>
               Gọi lại cho tôi
             </button>
-            <button 
-              onClick={() => setNewMessage('Tư vấn dự án')}
-              disabled={!isConnected}
-            >
+            <button onClick={() => setNewMessage('Tư vấn dự án')}>
               Tư vấn dự án
             </button>
           </div>
 
+          {/* Input */}
           <form className="chat-input" onSubmit={handleSendMessage}>
             <input
               type="text"
-              placeholder={sessionError ? "Session không hợp lệ" : "Nhập tin nhắn..."}
+              placeholder="Nhập tin nhắn..."
               value={newMessage}
               onChange={(e) => {
                 setNewMessage(e.target.value);
                 handleTypingStart();
               }}
-              disabled={!isConnected || !!sessionError}
+              disabled={!isConnected}
             />
-            <button 
-              type="submit" 
-              disabled={!newMessage.trim() || !isConnected || !!sessionError}
-            >
+            <button type="submit" disabled={!newMessage.trim() || !isConnected}>
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor">
                 <path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z" />
               </svg>
             </button>
           </form>
 
-          <div className="chat-footer">
-            <button className="feedback-btn" disabled={!isConnected}>👍</button>
-            <button className="feedback-btn" disabled={!isConnected}>👎</button>
-          </div>
         </div>
       )}
     </div>
