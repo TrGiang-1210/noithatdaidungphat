@@ -15,12 +15,12 @@ const Footer: React.FC = () => {
   useEffect(() => {
     const fetchCategories = async () => {
       try {
-        const response = await fetch('http://localhost:5000/api/categories');
+        const response = await fetch("http://localhost:5000/api/categories");
         const data = await response.json();
         setCategories(data);
         setLoading(false);
       } catch (error) {
-        console.error('Error fetching categories:', error);
+        console.error("Error fetching categories:", error);
         setLoading(false);
       }
     };
@@ -30,14 +30,15 @@ const Footer: React.FC = () => {
   return (
     <footer className="ddp-footer">
       <div className="container footer-grid">
-
         {/* Cột 1 — Logo + mô tả */}
         <div className="footer-col">
           <div className="footer-logo">
-            <img src="./src/assets/logo-ddp-removebg.png" alt="ddp" /> {/* Giả sử logo mới */}
+            <img src="./src/assets/logo-ddp-removebg.png" alt="ddp" />{" "}
+            {/* Giả sử logo mới */}
           </div>
           <p className="footer-desc">
-            Nội Thất Đại Dũng Phát — cung cấp sản phẩm nội thất chất lượng, bền đẹp, giá tốt cho gia đình, khách sạn, văn phòng.
+            Nội Thất Đại Dũng Phát — cung cấp sản phẩm nội thất chất lượng, bền
+            đẹp, giá tốt cho gia đình, khách sạn, văn phòng.
           </p>
           <div className="footer-hotline">
             <span className="phone-icon">📞</span>
@@ -49,10 +50,18 @@ const Footer: React.FC = () => {
         <div className="footer-col">
           <h3 className="footer-title">Chính sách</h3>
           <ul>
-            <li><Link to="/chinh-sach-bao-hanh">Chính sách bảo hành</Link></li>
-            <li><Link to="/chinh-sach-van-chuyen">Chính sách vận chuyển</Link></li>
-            <li><Link to="/doi-tra">Chính sách đổi trả</Link></li>
-            <li><Link to="/bao-mat">Bảo mật thông tin</Link></li>
+            <li>
+              <Link to="/chinh-sach-bao-hanh">Chính sách bảo hành</Link>
+            </li>
+            <li>
+              <Link to="/chinh-sach-van-chuyen">Chính sách vận chuyển</Link>
+            </li>
+            <li>
+              <Link to="/doi-tra">Chính sách đổi trả</Link>
+            </li>
+            <li>
+              <Link to="/bao-mat">Bảo mật thông tin</Link>
+            </li>
           </ul>
         </div>
 
@@ -63,9 +72,20 @@ const Footer: React.FC = () => {
             <p>Đang tải...</p>
           ) : categories.length > 0 ? (
             <ul>
-              {categories.slice(0, 6).map((cat) => ( // Giới hạn 6 để gọn
-                <li key={cat._id}><Link to={`/${cat.slug}`}>{cat.name}</Link></li>
-              ))}
+              {categories.slice(0, 15).map(
+                (
+                  cat // Giới hạn 6 để gọn
+                ) => (
+                  <li key={cat._id}>
+                    <Link to={`/danh-muc/${cat.slug}`} className="tree-link">
+                      <span>{cat.name}</span>
+                      {cat.children && cat.children.length > 0 && (
+                        <span className="tree-arrow">›</span>
+                      )}
+                    </Link>
+                  </li>
+                )
+              )}
             </ul>
           ) : (
             <p>Không có danh mục</p>
@@ -78,7 +98,10 @@ const Footer: React.FC = () => {
           <div className="store-info">
             <h4>Nội Thất Đại Dũng Phát - Nội Thất Rẻ Đẹp Long An</h4>
             <ul>
-              <li>Địa chỉ: 474 ĐT824, Mỹ Hạnh Nam, Đức Hòa, Long An 82703, Việt Nam</li>
+              <li>
+                Địa chỉ: 474 ĐT824, Mỹ Hạnh Nam, Đức Hòa, Long An 82703, Việt
+                Nam
+              </li>
               <li>Email: noithatdaidungphat@gmail.com</li>
               <li>Điện thoại: 0941038839 - 0965708839</li>
             </ul>

@@ -1,6 +1,7 @@
-// src/context/AuthContext.tsx - FIXED VERSION
+// src/context/AuthContext.tsx - INTEGRATED WITH CHAT
 import React, { createContext, useState, useEffect, ReactNode } from "react";
 import axiosInstance from "../axios";
+import { triggerUserLogout } from "@/utils/authEvents"; // ← THÊM
 
 interface User {
   id?: string;
@@ -73,6 +74,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const login = async (token: string, userData?: User) => {
     localStorage.setItem("token", token);
+    
+    // ✅ LƯU USER VÀO LOCALSTORAGE để ChatWidget đọc được
+    if (userData) {
+      localStorage.setItem("user", JSON.stringify(userData));
+    }
+    
     setLoading(true);
     if (userData) {
       setUser(userData);
@@ -82,10 +89,16 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     try {
       const res = await axiosInstance.get("/auth/me").catch(() => null);
       if (res && res.data) {
-        setUser(res.data.user || res.data);
+        const user = res.data.user || res.data;
+        setUser(user);
+        localStorage.setItem("user", JSON.stringify(user)); // ← LƯU USER
       } else {
         const res2 = await axiosInstance.get("/user/me").catch(() => null);
-        setUser(res2?.data?.user || res2?.data || null);
+        const user = res2?.data?.user || res2?.data || null;
+        setUser(user);
+        if (user) {
+          localStorage.setItem("user", JSON.stringify(user)); // ← LƯU USER
+        }
       }
     } catch (err) {
       setUser(null);
@@ -94,21 +107,25 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
-  // ✅ FIXED LOGOUT - Reset user NGAY LẬP TỨC
+  // ✅ LOGOUT - TÍCH HỢP CHAT
   const logout = async () => {
-    console.log('🔓 Logging out user:', user?.id);
-    
-    // ✅ 1. RESET USER NGAY - Không đợi API
     const currentUserId = user?.id;
+    console.log('🔔 AuthContext: Logging out user:', currentUserId);
+    
+    // ✅ 1. TRIGGER CHAT LOGOUT EVENT TRƯỚC KHI XÓA DATA
+    triggerUserLogout();
+    console.log('🔔 Chat: Logout event triggered from AuthContext');
+    
+    // ✅ 2. RESET USER STATE NGAY LẬP TỨC
     setUser(null);
     setLoading(false);
     
-    // ✅ 2. XÓA TOKEN
+    // ✅ 3. XÓA LOCALSTORAGE
     localStorage.removeItem("token");
+    localStorage.removeItem("user"); // ← XÓA USER
     
-    // ✅ 3. GỌI API LOGOUT (async, không block)
+    // ✅ 4. GỌI API LOGOUT (async, không block)
     try {
-      const token = localStorage.getItem("token");
       if (currentUserId) {
         await axiosInstance.post("/auth/logout").catch((err) => {
           console.log("Logout API error (non-critical):", err.message);
@@ -118,7 +135,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       console.error("Logout error:", err);
     }
     
-    console.log("✅ Logout complete, user reset, chat will unmount");
+    console.log("✅ AuthContext: Logout complete");
   };
 
   return (

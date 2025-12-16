@@ -1,13 +1,17 @@
-// frontend/src/App.tsx - FIXED VERSION
+// frontend/src/App.tsx - With i18n Integration
 import React, { useContext } from "react";
 import { ToastContainer } from "react-toastify";
+import { useTranslation } from 'react-i18next';
 import { AuthContext } from "./context/AuthContext";
 import MainRouter from "./router/index.router";
 import ChatWidget from "./components/user/ChatWidget";
+import LanguageSwitcher from "./components/common/LanguageSwitcher";
 import "react-toastify/dist/ReactToastify.css";
+import './i18n'; // Import i18n configuration
 
 const AppContent: React.FC = () => {
   const { user, loading } = useContext(AuthContext);
+  const { t } = useTranslation();
 
   // Loading state
   if (loading) {
@@ -16,9 +20,12 @@ const AppContent: React.FC = () => {
         display: 'flex', 
         justifyContent: 'center', 
         alignItems: 'center', 
-        height: '100vh' 
+        height: '100vh',
+        flexDirection: 'column',
+        gap: '10px'
       }}>
-        <div>Loading...</div>
+        <div className="spinner"></div>
+        <div>{t('common.loading')}</div>
       </div>
     );
   }
@@ -31,6 +38,9 @@ const AppContent: React.FC = () => {
 
   return (
     <>
+      {/* Language Switcher - Fixed position */}
+      <LanguageSwitcher />
+      
       <MainRouter />
       <ToastContainer position="top-right" autoClose={3000} />
       
