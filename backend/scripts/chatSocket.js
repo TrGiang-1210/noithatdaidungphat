@@ -1,25 +1,47 @@
-// backend/scripts/chatSocket.js
+// backend/scripts/chatSocket.js - FIXED: Sửa lỗi Guest ID query
 const Message = require('../models/Message');
 const ChatRoom = require('../models/ChatRoom');
+const User = require('../models/User');
 const { handleUserMessage } = require('../services/chatbotService');
+const { getOrCreateChatRoom } = require('../services/authHandler');
+const mongoose = require('mongoose');
 
 module.exports = (io) => {
-  const activeUsers = new Map(); // userId -> { socketId, roomId }
-  const activeAdmins = new Set(); // Set of admin socketIds
-  const socketToUser = new Map(); // socketId -> userId (để cleanup)
+  const activeSessions = new Map(); // identifier (userId/guestId) -> { socketId, roomId, userName, type }
+  const activeAdmins = new Set();
+  const socketToIdentifier = new Map(); // socketId -> identifier
 
   io.on('connection', (socket) => {
-    console.log('User connected:', socket.id);
+    console.log('🔌 User connected:', socket.id);
 
-    // User joins chat
+    // ✅ USER/GUEST JOIN - FIXED
     socket.on('user:join', async (data) => {
       try {
-        console.log('👤 User joining:', data);
+        console.log('👤 User/Guest joining:', data);
         
-        // ✅ KIỂM TRA: Nếu user này đang active ở socket khác → disconnect socket cũ
-        const existingSession = activeUsers.get(data.userId);
+        // ✅ XÁC ĐỊNH IDENTIFIER - FIXED: Kiểm tra ObjectId hợp lệ
+        let identifier;
+        let isGuest;
+        
+        // Nếu có userId VÀ là ObjectId hợp lệ → registered user
+        if (data.userId && mongoose.Types.ObjectId.isValid(data.userId)) {
+          identifier = data.userId;
+          isGuest = false;
+        } 
+        // Nếu có guestId hoặc userId không hợp lệ → guest
+        else {
+          identifier = data.guestId || data.userId || `guest_${socket.id}`;
+          isGuest = true;
+        }
+        
+        const sessionType = isGuest ? 'guest' : 'registered';
+        
+        console.log('🔍 Session type:', sessionType, '| Identifier:', identifier);
+        
+        // ✅ KIỂM TRA SESSION CŨ
+        const existingSession = activeSessions.get(identifier);
         if (existingSession && existingSession.socketId !== socket.id) {
-          console.log('⚠️ User already connected from another socket, disconnecting old session');
+          console.log('⚠️ Replacing old session');
           const oldSocket = io.sockets.sockets.get(existingSession.socketId);
           if (oldSocket) {
             oldSocket.emit('session:replaced', { 
@@ -27,134 +49,220 @@ module.exports = (io) => {
             });
             oldSocket.disconnect(true);
           }
-          // Cleanup old session
-          socketToUser.delete(existingSession.socketId);
+          socketToIdentifier.delete(existingSession.socketId);
         }
 
-        // ✅ TÌM HOẶC TẠO ROOM CHO USER NÀY
-        let room = await ChatRoom.findOne({ userId: data.userId });
-        
-        if (!room) {
-          // Tạo room mới cho user lần đầu
-          room = await ChatRoom.create({
-            userId: data.userId,
-            userName: data.userName,
-            userEmail: data.userEmail,
-            status: 'active'
-          });
-          console.log('🆕 New room created:', room._id);
-          io.to('admin_room').emit('room:new', room);
+        // ✅ TÌM ROOM CŨ - FIXED: Query đúng field
+        let query;
+        if (isGuest) {
+          query = { guestId: identifier, status: 'active' };
         } else {
+          query = { user: identifier, status: 'active' };
+        }
+        
+        console.log('🔍 Query:', query);
+        
+        const room = await ChatRoom.findOne(query).populate('user', 'name email phone');
+        
+        if (room) {
           console.log('📂 Existing room found:', room._id);
-          // Cập nhật thông tin user (có thể đã thay đổi)
-          room.userName = data.userName;
+          
+          // Cập nhật thông tin room
+          room.userName = data.userName || room.userName;
           room.userEmail = data.userEmail || room.userEmail;
-          room.status = 'active';
+          room.lastActiveAt = new Date();
           await room.save();
+
+          // Lưu session
+          activeSessions.set(identifier, {
+            socketId: socket.id,
+            roomId: room._id.toString(),
+            userName: room.userName,
+            userEmail: room.userEmail,
+            type: sessionType,
+            userId: isGuest ? null : identifier,
+            guestId: isGuest ? identifier : null
+          });
+          socketToIdentifier.set(socket.id, identifier);
+
+          // Join rooms
+          socket.join(`session_${identifier}`);
+          socket.join(`room_${room._id}`);
+
+          // Gửi lịch sử chat
+          const messages = await Message.find({ roomId: room._id })
+            .sort({ timestamp: 1 })
+            .limit(100);
+
+          console.log('📜 Sending chat history:', messages.length, 'messages');
+          socket.emit('chat:history', { room, messages });
+
+        } else {
+          console.log('👋 New session, no room yet. Waiting for first message.');
+          
+          // Lưu session (chưa có roomId)
+          activeSessions.set(identifier, {
+            socketId: socket.id,
+            roomId: null,
+            userName: data.userName || (isGuest ? 'Khách' : 'User'),
+            userEmail: data.userEmail,
+            type: sessionType,
+            userId: isGuest ? null : identifier,
+            guestId: isGuest ? identifier : null
+          });
+          socketToIdentifier.set(socket.id, identifier);
+
+          // Join session room
+          socket.join(`session_${identifier}`);
+
+          // Gửi empty history
+          socket.emit('chat:history', { room: null, messages: [] });
         }
 
-        // ✅ LƯU SESSION: map userId -> socketId + roomId
-        activeUsers.set(data.userId, {
-          socketId: socket.id,
-          roomId: room._id.toString(),
-          userName: data.userName
-        });
-        socketToUser.set(socket.id, data.userId);
-
-        // ✅ JOIN ROOM: chỉ socket này được vào room của user này
-        socket.join(`user_${data.userId}`);
-        socket.join(`room_${room._id}`);
-
-        // ✅ GỬI LỊCH SỬ CHAT CỦA USER NÀY
-        const messages = await Message.find({ roomId: room._id })
-          .sort({ timestamp: 1 })
-          .limit(50);
-
-        console.log('📜 Sending chat history, messages:', messages.length);
-        socket.emit('chat:history', { room, messages });
-
-        // ✅ LOG SESSION INFO
         console.log('✅ Session established:', {
-          userId: data.userId,
-          userName: data.userName,
+          identifier,
+          type: sessionType,
           socketId: socket.id,
-          roomId: room._id
+          roomId: room?._id || 'pending'
         });
 
       } catch (error) {
-        console.error('Error in user:join:', error);
-        socket.emit('error', { message: 'Failed to join chat' });
+        console.error('❌ Error in user:join:', error);
+        socket.emit('error', { message: 'Không thể kết nối chat' });
       }
     });
 
-    // Admin joins
+    // ✅ ADMIN JOIN
     socket.on('admin:join', async () => {
-      activeAdmins.add(socket.id);
-      socket.join('admin_room');
-
       try {
+        activeAdmins.add(socket.id);
+        socket.join('admin_room');
+
+        // ✅ LẤY ROOMS với thông tin user đầy đủ
         const rooms = await ChatRoom.find({ status: 'active' })
+          .populate('user', 'name email phone')
           .sort({ lastMessageTime: -1 });
-        socket.emit('rooms:list', rooms);
         
-        console.log('👨‍💼 Admin joined:', socket.id, '| Active admins:', activeAdmins.size);
+        // ✅ Format tên hiển thị cho admin
+        const formattedRooms = rooms.map(room => ({
+          ...room.toObject(),
+          displayName: room.userType === 'registered' 
+            ? (room.user?.name || room.userName)
+            : `Khách ${room.guestId?.substring(0, 8) || ''}`
+        }));
+        
+        socket.emit('rooms:list', formattedRooms);
+        
+        console.log('👨‍💼 Admin joined:', socket.id, '| Rooms:', rooms.length);
       } catch (error) {
-        console.error('Error in admin:join:', error);
+        console.error('❌ Error in admin:join:', error);
       }
     });
 
-    // Admin joins specific room
+    // ✅ ADMIN JOIN ROOM
     socket.on('admin:join_room', async (roomId) => {
-      socket.join(`room_${roomId}`);
-      
       try {
+        socket.join(`room_${roomId}`);
+        
+        const room = await ChatRoom.findById(roomId).populate('user', 'name email phone');
         const messages = await Message.find({ roomId })
           .sort({ timestamp: 1 })
-          .limit(50);
-        socket.emit('chat:history', { messages });
+          .limit(100);
+        
+        socket.emit('chat:history', { room, messages });
 
-        // Mark messages as read
         await Message.updateMany(
           { roomId, sender: 'user', read: false },
           { read: true }
         );
+        
         await ChatRoom.findByIdAndUpdate(roomId, { unreadCount: 0 });
+        
+        console.log('👨‍💼 Admin joined room:', roomId);
       } catch (error) {
-        console.error('Error in admin:join_room:', error);
+        console.error('❌ Error in admin:join_room:', error);
       }
     });
 
-    // Send message - ✅ BẢO MẬT SESSION
+    // ✅ SEND MESSAGE - FIXED
     socket.on('message:send', async (data) => {
       try {
-        console.log('💬 Message sending:', data);
+        console.log('💬 Message received:', {
+          sender: data.sender,
+          hasRoomId: !!data.roomId,
+          content: data.content?.substring(0, 50)
+        });
         
-        // ✅ XÁC THỰC: Nếu là user, kiểm tra socket này có quyền gửi tin cho room này không
+        // ✅ XÁC THỰC SENDER
         if (data.sender === 'user') {
-          const userId = socketToUser.get(socket.id);
-          if (!userId) {
-            console.error('❌ Unauthorized: No userId for socket', socket.id);
+          const identifier = socketToIdentifier.get(socket.id);
+          
+          if (!identifier) {
+            console.error('❌ No identifier for socket:', socket.id);
             socket.emit('error', { message: 'Session không hợp lệ' });
             return;
           }
 
-          const userSession = activeUsers.get(userId);
-          if (!userSession || userSession.socketId !== socket.id) {
-            console.error('❌ Unauthorized: Session mismatch for user', userId);
+          const session = activeSessions.get(identifier);
+          if (!session || session.socketId !== socket.id) {
+            console.error('❌ Session mismatch');
             socket.emit('error', { message: 'Session đã hết hạn' });
             return;
           }
 
-          // ✅ KIỂM TRA: RoomId có thuộc về userId này không?
-          if (userSession.roomId !== data.roomId) {
-            console.error('❌ Unauthorized: User trying to send to wrong room', {
-              userId,
-              userRoomId: userSession.roomId,
-              attemptedRoomId: data.roomId
+          // ✅ NẾU CHƯA CÓ ROOM → TẠO MỚI - FIXED: Dùng userId/guestId từ session
+          if (!session.roomId) {
+            console.log('🆕 First message, creating room for:', identifier);
+            
+            const { room, isNew } = await getOrCreateChatRoom({
+              userId: session.userId, // null nếu guest
+              guestId: session.guestId, // null nếu registered
+              userName: session.userName,
+              userEmail: session.userEmail
             });
-            socket.emit('error', { message: 'Không có quyền truy cập room này' });
-            return;
+
+            // Cập nhật session
+            session.roomId = room._id.toString();
+            activeSessions.set(identifier, session);
+
+            // Join room
+            socket.join(`room_${room._id}`);
+
+            // Gửi room ID
+            socket.emit('room:created', { roomId: room._id.toString() });
+
+            // Thông báo admin nếu room mới
+            if (isNew) {
+              const roomWithUser = await ChatRoom.findById(room._id).populate('user', 'name email phone');
+              const displayName = roomWithUser.userType === 'registered'
+                ? (roomWithUser.user?.name || roomWithUser.userName)
+                : `Khách ${roomWithUser.guestId?.substring(0, 8) || ''}`;
+              
+              io.to('admin_room').emit('room:new', {
+                ...roomWithUser.toObject(),
+                displayName
+              });
+            }
+
+            data.roomId = room._id.toString();
+            console.log('✅ Room created:', room._id);
+          } else {
+            // Đã có room → validate
+            if (data.roomId && session.roomId !== data.roomId) {
+              console.error('❌ User trying wrong room');
+              socket.emit('error', { message: 'Không có quyền truy cập' });
+              return;
+            }
+            
+            data.roomId = data.roomId || session.roomId;
           }
+        }
+
+        // ✅ VALIDATE ROOM ID
+        if (!data.roomId) {
+          console.error('❌ No roomId in message data');
+          socket.emit('error', { message: 'Thiếu roomId' });
+          return;
         }
 
         // ✅ LƯU MESSAGE
@@ -168,26 +276,26 @@ module.exports = (io) => {
 
         console.log('✅ Message saved:', message._id);
 
-        // Update room
+        // ✅ CẬP NHẬT ROOM
         await ChatRoom.findByIdAndUpdate(data.roomId, {
           lastMessage: data.content,
           lastMessageTime: new Date(),
+          lastActiveAt: new Date(),
           $inc: data.sender === 'user' ? { unreadCount: 1 } : {}
         });
 
-        // ✅ PHÁT MESSAGE: chỉ đến room cụ thể
+        // ✅ BROADCAST MESSAGE
         io.to(`room_${data.roomId}`).emit('message:new', message);
-        console.log('📤 Message broadcasted to room:', data.roomId);
+        console.log('📤 Message sent to room:', data.roomId);
         
-        // If user message, notify admins + bot response
+        // ✅ USER MESSAGE → NOTIFY ADMIN + BOT
         if (data.sender === 'user') {
           io.to('admin_room').emit('message:user_new', { 
             roomId: data.roomId, 
             message 
           });
-          console.log('🔔 Admin notified about user message');
           
-          // 🤖 BOT AUTO RESPONSE
+          // 🤖 BOT RESPONSE
           const botResponse = await handleUserMessage(
             data.content, 
             data.roomId, 
@@ -195,7 +303,9 @@ module.exports = (io) => {
           );
           
           if (botResponse) {
-            console.log('🤖 Bot is responding...');
+            console.log('🤖 Bot responding...');
+            
+            await new Promise(resolve => setTimeout(resolve, 1000));
             
             const botMessage = await Message.create({
               roomId: data.roomId,
@@ -210,43 +320,28 @@ module.exports = (io) => {
               lastMessageTime: new Date()
             });
             
-            // ✅ CHỈ GỬI ĐÉN ROOM CỤ THỂ
             io.to(`room_${data.roomId}`).emit('message:new', botMessage);
             io.to('admin_room').emit('message:user_new', { 
               roomId: data.roomId, 
               message: botMessage 
             });
             
-            console.log('🤖 Bot response sent:', botMessage._id);
+            console.log('🤖 Bot response sent');
           }
         }
       } catch (error) {
-        console.error('Error in message:send:', error);
-        socket.emit('error', { message: 'Failed to send message' });
+        console.error('❌ Error in message:send:', error);
+        socket.emit('error', { message: 'Không thể gửi tin nhắn' });
       }
     });
 
-    // Typing indicator - ✅ BẢO MẬT
+    // ✅ TYPING INDICATOR
     socket.on('typing:start', (data) => {
-      // Xác thực user có quyền gửi typing indicator cho room này
       if (!data.roomId) return;
-      
-      const userId = socketToUser.get(socket.id);
-      if (userId) {
-        const userSession = activeUsers.get(userId);
-        if (userSession && userSession.roomId === data.roomId) {
-          socket.to(`room_${data.roomId}`).emit('typing:status', {
-            isTyping: true,
-            userName: data.userName
-          });
-        }
-      } else {
-        // Admin có thể gửi typing
-        socket.to(`room_${data.roomId}`).emit('typing:status', {
-          isTyping: true,
-          userName: data.userName
-        });
-      }
+      socket.to(`room_${data.roomId}`).emit('typing:status', {
+        isTyping: true,
+        userName: data.userName
+      });
     });
 
     socket.on('typing:stop', (data) => {
@@ -256,58 +351,63 @@ module.exports = (io) => {
       });
     });
 
-    // ✅ LOGOUT - Xóa session và không giữ lại chat
+    // ✅ USER LOGOUT
     socket.on('user:logout', async () => {
-      const userId = socketToUser.get(socket.id);
-      if (userId) {
-        console.log('🔓 User logging out:', userId);
+      const identifier = socketToIdentifier.get(socket.id);
+      if (identifier) {
+        console.log('🔓 User logout:', identifier);
         
-        // Xóa session
-        activeUsers.delete(userId);
-        socketToUser.delete(socket.id);
+        const session = activeSessions.get(identifier);
+        if (session && session.roomId) {
+          await ChatRoom.findByIdAndUpdate(session.roomId, {
+            lastActiveAt: new Date()
+          }).catch(err => console.error('Error updating room:', err));
+        }
+        
+        activeSessions.delete(identifier);
+        socketToIdentifier.delete(socket.id);
         
         socket.emit('logout:success');
         socket.disconnect(true);
       }
     });
 
-    // Disconnect - ✅ CLEANUP SESSION
+    // ✅ DISCONNECT
     socket.on('disconnect', () => {
-      console.log('User disconnected:', socket.id);
+      console.log('🔌 User disconnected:', socket.id);
       
-      // Xóa user session
-      const userId = socketToUser.get(socket.id);
-      if (userId) {
-        const userSession = activeUsers.get(userId);
-        if (userSession && userSession.socketId === socket.id) {
-          activeUsers.delete(userId);
-          console.log('🗑️ Cleaned up session for user:', userId);
+      const identifier = socketToIdentifier.get(socket.id);
+      if (identifier) {
+        const session = activeSessions.get(identifier);
+        if (session && session.socketId === socket.id) {
+          activeSessions.delete(identifier);
+          console.log('🗑️ Cleaned up session:', identifier);
         }
-        socketToUser.delete(socket.id);
+        socketToIdentifier.delete(socket.id);
       }
       
-      // Xóa admin
       if (activeAdmins.has(socket.id)) {
         activeAdmins.delete(socket.id);
-        console.log('👨‍💼 Admin disconnected, remaining:', activeAdmins.size);
+        console.log('👨‍💼 Admin disconnected');
       }
     });
 
-    // ✅ DEBUG ENDPOINT (chỉ dùng trong development)
+    // ✅ DEBUG (development only)
     socket.on('debug:get_session', () => {
-      const userId = socketToUser.get(socket.id);
-      const session = userId ? activeUsers.get(userId) : null;
+      const identifier = socketToIdentifier.get(socket.id);
+      const session = identifier ? activeSessions.get(identifier) : null;
       socket.emit('debug:session_info', {
         socketId: socket.id,
-        userId,
+        identifier,
         session,
-        totalActiveSessions: activeUsers.size
+        totalSessions: activeSessions.size,
+        totalAdmins: activeAdmins.size
       });
     });
   });
 
-  // ✅ CLEANUP PERIODIC: Xóa các session cũ mỗi 30 phút
+  // ✅ PERIODIC CLEANUP
   setInterval(() => {
-    console.log('🧹 Cleanup check - Active sessions:', activeUsers.size);
+    console.log('🧹 Active sessions:', activeSessions.size, '| Admins:', activeAdmins.size);
   }, 30 * 60 * 1000);
 };

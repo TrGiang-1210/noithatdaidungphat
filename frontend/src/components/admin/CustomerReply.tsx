@@ -1,4 +1,4 @@
-// frontend/components/admin/CustomerReply.tsx
+// frontend/components/admin/CustomerReply.tsx - FIXED
 import { useState, useEffect, useRef } from 'react';
 import { io, Socket } from 'socket.io-client';
 import "@/styles/components/admin/customerReply.scss";
@@ -11,15 +11,25 @@ interface Message {
   timestamp: Date;
 }
 
+interface User {
+  _id: string;
+  name: string;
+  email?: string;
+  phone?: string;
+}
+
 interface ChatRoom {
   _id: string;
-  userId: string;
+  user?: User; // ✅ Populated user data
+  guestId?: string; // ✅ Guest identifier
   userName: string;
   userEmail?: string;
+  userType: 'registered' | 'guest'; // ✅ Phân biệt user/guest
   status: 'active' | 'closed';
   lastMessage?: string;
   lastMessageTime?: Date;
   unreadCount: number;
+  displayName?: string; // ✅ Tên hiển thị từ backend
 }
 
 const CustomerReply = () => {
@@ -33,6 +43,39 @@ const CustomerReply = () => {
   
   const socketRef = useRef<Socket | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  // ✅ HÀM LẤY TÊN HIỂN THỊ
+  const getDisplayName = (room: ChatRoom): string => {
+    // Ưu tiên displayName từ backend
+    if (room.displayName) return room.displayName;
+    
+    // Nếu là registered user
+    if (room.userType === 'registered') {
+      // Ưu tiên tên từ User model
+      if (room.user?.name) return room.user.name;
+      // Fallback: tên trong ChatRoom
+      if (room.userName && room.userName !== 'Khách') return room.userName;
+      return 'User';
+    }
+    
+    // Nếu là guest
+    const guestSuffix = room.guestId ? ` (${room.guestId.substring(0, 8)})` : '';
+    return `Khách${guestSuffix}`;
+  };
+
+  // ✅ HÀM LẤY SUBTITLE (email hoặc guest label)
+  const getSubtitle = (room: ChatRoom): string => {
+    if (room.userType === 'registered') {
+      return room.user?.email || room.userEmail || 'Khách hàng';
+    }
+    return '👤 Khách chưa đăng ký';
+  };
+
+  // ✅ HÀM LẤY AVATAR
+  const getAvatar = (room: ChatRoom): string => {
+    const displayName = getDisplayName(room);
+    return displayName.charAt(0).toUpperCase();
+  };
 
   useEffect(() => {
     socketRef.current = io('http://localhost:5000');
@@ -50,29 +93,59 @@ const CustomerReply = () => {
 
     socketRef.current.on('rooms:list', (roomsList: ChatRoom[]) => {
       console.log('📋 Rooms list received:', roomsList);
+      
+      // ✅ Loại bỏ duplicate theo userId/guestId
       const uniqueRooms = roomsList.reduce((acc: ChatRoom[], current) => {
-        const exists = acc.find(room => room.userId === current.userId);
+        const identifier = current.userType === 'registered' 
+          ? current.user?._id 
+          : current.guestId;
+        
+        const exists = acc.find(room => {
+          const existingId = room.userType === 'registered'
+            ? room.user?._id
+            : room.guestId;
+          return existingId === identifier;
+        });
+        
         if (!exists) {
           acc.push(current);
         }
         return acc;
       }, []);
+      
       setRooms(uniqueRooms);
     });
 
     socketRef.current.on('room:new', (newRoom: ChatRoom) => {
       console.log('🆕 New room created:', newRoom);
+      
       setRooms(prev => {
-        const exists = prev.some(room => room.userId === newRoom.userId);
+        const identifier = newRoom.userType === 'registered'
+          ? newRoom.user?._id
+          : newRoom.guestId;
+        
+        const exists = prev.some(room => {
+          const existingId = room.userType === 'registered'
+            ? room.user?._id
+            : room.guestId;
+          return existingId === identifier;
+        });
+        
         if (exists) return prev;
         return [newRoom, ...prev];
       });
+      
       playNotificationSound();
     });
 
-    socketRef.current.on('chat:history', (data: { messages: Message[] }) => {
+    socketRef.current.on('chat:history', (data: { room?: ChatRoom; messages: Message[] }) => {
       console.log('📜 Chat history received:', data.messages);
       setMessages(data.messages);
+      
+      // ✅ Cập nhật selected room với data mới nhất
+      if (data.room && selectedRoom?._id === data.room._id) {
+        setSelectedRoom(data.room);
+      }
     });
 
     socketRef.current.on('message:new', (message: Message) => {
@@ -214,16 +287,24 @@ const CustomerReply = () => {
             rooms.map(room => (
               <div
                 key={room._id}
-                className={`room-item ${selectedRoom?._id === room._id ? 'active' : ''}`}
+                className={`room-item ${selectedRoom?._id === room._id ? 'active' : ''} ${room.userType === 'guest' ? 'guest-room' : ''}`}
                 onClick={() => handleSelectRoom(room)}
               >
                 <div className="room-avatar">
-                  {room.userName.charAt(0).toUpperCase()}
+                  {getAvatar(room)}
+                  {room.userType === 'guest' && (
+                    <span className="guest-badge">👤</span>
+                  )}
                 </div>
                 <div className="room-info">
                   <div className="room-header">
-                    <span className="room-name">{room.userName}</span>
+                    <span className="room-name">
+                      {getDisplayName(room)}
+                    </span>
                     <span className="room-time">{formatTime(room.lastMessageTime)}</span>
+                  </div>
+                  <div className="room-preview">
+                    <span className="room-subtitle">{getSubtitle(room)}</span>
                   </div>
                   <div className="room-preview">
                     <span className="room-message">{room.lastMessage || 'Bắt đầu trò chuyện'}</span>
@@ -244,19 +325,31 @@ const CustomerReply = () => {
             <div className="chat-area-header">
               <div className="user-info">
                 <div className="user-avatar">
-                  {selectedRoom.userName.charAt(0).toUpperCase()}
+                  {getAvatar(selectedRoom)}
+                  {selectedRoom.userType === 'guest' && (
+                    <span className="guest-badge-header">👤</span>
+                  )}
                 </div>
                 <div className="user-details">
-                  <h4>{selectedRoom.userName}</h4>
-                  <p>{selectedRoom.userEmail || 'Khách hàng'}</p>
+                  <h4>{getDisplayName(selectedRoom)}</h4>
+                  <p>{getSubtitle(selectedRoom)}</p>
+                  {selectedRoom.user?.phone && (
+                    <p className="user-phone">📞 {selectedRoom.user.phone}</p>
+                  )}
                 </div>
               </div>
               <div className="chat-actions">
-                <button className="action-btn">
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                    <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/>
-                  </svg>
-                </button>
+                {selectedRoom.user?.phone && (
+                  <a 
+                    href={`tel:${selectedRoom.user.phone}`}
+                    className="action-btn"
+                    title="Gọi điện"
+                  >
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                      <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/>
+                    </svg>
+                  </a>
+                )}
               </div>
             </div>
 
@@ -284,7 +377,7 @@ const CustomerReply = () => {
               {isTyping && (
                 <div className="typing-indicator-wrapper">
                   <div className="message-avatar">
-                    {selectedRoom.userName.charAt(0).toUpperCase()}
+                    {getAvatar(selectedRoom)}
                   </div>
                   <div className="typing-indicator">
                     <span></span>

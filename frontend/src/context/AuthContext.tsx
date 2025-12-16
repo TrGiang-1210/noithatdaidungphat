@@ -1,4 +1,4 @@
-// src/context/AuthContext.tsx - UPDATED VERSION
+// src/context/AuthContext.tsx - FIXED VERSION
 import React, { createContext, useState, useEffect, ReactNode } from "react";
 import axiosInstance from "../axios";
 
@@ -28,7 +28,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
 
-  // try to fetch current user if token present
+  // Try to fetch current user if token present
   useEffect(() => {
     let mounted = true;
     const init = async () => {
@@ -38,12 +38,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         return;
       }
       try {
-        // axiosInstance already attaches token from localStorage
         const res = await axiosInstance.get("/auth/me").catch(() => null);
         if (res && res.data) {
           if (mounted) setUser(res.data.user || res.data);
         } else {
-          // try fallback endpoint
           const res2 = await axiosInstance.get("/user/me").catch(() => null);
           if (res2 && res2.data) {
             if (mounted) setUser(res2.data.user || res2.data);
@@ -60,7 +58,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
     init();
 
-    // listen to global logout event (dispatched by axios on 401)
+    // Listen to global logout event
     const onLogout = () => {
       setUser(null);
       setLoading(false);
@@ -96,26 +94,31 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
-  // ✅ UPDATED LOGOUT - Gọi API logout để đóng chat session
+  // ✅ FIXED LOGOUT - Reset user NGAY LẬP TỨC
   const logout = async () => {
+    console.log('🔓 Logging out user:', user?.id);
+    
+    // ✅ 1. RESET USER NGAY - Không đợi API
+    const currentUserId = user?.id;
+    setUser(null);
+    setLoading(false);
+    
+    // ✅ 2. XÓA TOKEN
+    localStorage.removeItem("token");
+    
+    // ✅ 3. GỌI API LOGOUT (async, không block)
     try {
       const token = localStorage.getItem("token");
-      if (token) {
-        // ✅ Gọi API logout để đóng chat session trên server
+      if (currentUserId) {
         await axiosInstance.post("/auth/logout").catch((err) => {
           console.log("Logout API error (non-critical):", err.message);
         });
       }
     } catch (err) {
       console.error("Logout error:", err);
-    } finally {
-      // Xóa token và user
-      localStorage.removeItem("token");
-      setUser(null);
-      setLoading(false);
-      
-      console.log("✅ Logout successful, chat session closed");
     }
+    
+    console.log("✅ Logout complete, user reset, chat will unmount");
   };
 
   return (

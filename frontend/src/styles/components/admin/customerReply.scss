@@ -1,7 +1,6 @@
-/* AdminDashboard.scss - FIX: Trang hoàn toàn không cuộn */
+/* customerReply.scss - FULL VERSION với Guest Support */
 
-// ✅ QUAN TRỌNG: Thêm các rules này vào file global hoặc admin layout
-// Để đảm bảo parent containers không cuộn
+// ✅ QUAN TRỌNG: Thêm vào file global hoặc admin layout
 // body, html {
 //   overflow: hidden !important;
 // }
@@ -15,22 +14,21 @@
 
 .admin-chat-container {
   display: flex;
-  // ✅ FIX: Dùng 100vh thay vì calc để tránh parent cuộn
-  height: 100vh; 
+  height: 100vh;
   max-height: 100vh;
   background: white;
-  border-radius: 0; // ✅ Bỏ border-radius để full screen
-  overflow: hidden !important; // ✅ QUAN TRỌNG: !important để override
+  border-radius: 0;
+  overflow: hidden !important;
   box-shadow: none;
   font-family: 'Manrope', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  position: fixed; // ✅ Fix position để tránh cuộn
+  position: fixed;
   top: 0;
   left: 0;
   right: 0;
   bottom: 0;
-  padding-left: 280px; // ✅ Để space cho sidebar bên trái (điều chỉnh theo sidebar của bạn)
+  padding-left: 280px; // Điều chỉnh theo sidebar của bạn
 
-  // Sidebar chứa danh sách rooms
+  // ==================== SIDEBAR - DANH SÁCH ROOMS ====================
   .chat-rooms-sidebar {
     width: 350px;
     min-width: 350px;
@@ -40,7 +38,7 @@
     display: flex;
     flex-direction: column;
     overflow: hidden;
-    height: 100vh; // ✅ Full height
+    height: 100vh;
 
     .chat-sidebar-header {
       padding: 1.5rem;
@@ -113,7 +111,7 @@
       }
     }
 
-    // ✅ CHỖ DUY NHẤT CUỘN TRONG SIDEBAR
+    // ✅ DANH SÁCH ROOMS - CHỖ DUY NHẤT CUỘN
     .rooms-list {
       flex: 1;
       overflow-y: auto;
@@ -153,7 +151,8 @@
         gap: 12px;
         cursor: pointer;
         border-bottom: 1px solid #f1f5f9;
-        transition: background 0.2s;
+        transition: all 0.2s;
+        position: relative;
 
         &:hover {
           background: #f8fafc;
@@ -164,11 +163,30 @@
           border-left: 3px solid #3b82f6;
         }
 
+        // ✅ GUEST ROOM STYLING
+        &.guest-room {
+          border-left: 3px solid transparent;
+
+          &:hover {
+            border-left-color: #667eea;
+          }
+
+          &.active {
+            border-left-color: #764ba2;
+            background: #f5f3ff;
+          }
+
+          .room-avatar {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+          }
+        }
+
         .room-avatar {
           width: 48px;
           height: 48px;
           border-radius: 50%;
-          background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+          background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+          position: relative;
           display: flex;
           align-items: center;
           justify-content: center;
@@ -176,6 +194,22 @@
           font-weight: 600;
           font-size: 1.125rem;
           flex-shrink: 0;
+
+          // ✅ GUEST BADGE trong avatar
+          .guest-badge {
+            position: absolute;
+            bottom: -2px;
+            right: -2px;
+            background: #fff;
+            border-radius: 50%;
+            width: 18px;
+            height: 18px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 10px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+          }
         }
 
         .room-info {
@@ -192,18 +226,37 @@
               font-weight: 600;
               color: #1e293b;
               font-size: 0.9375rem;
+              overflow: hidden;
+              text-overflow: ellipsis;
+              white-space: nowrap;
+              flex: 1;
             }
 
             .room-time {
               font-size: 0.75rem;
               color: #94a3b8;
+              margin-left: 8px;
+              flex-shrink: 0;
             }
+          }
+
+          // ✅ SUBTITLE (email hoặc guest label)
+          .room-subtitle {
+            font-size: 0.75rem;
+            color: #94a3b8;
+            font-style: italic;
+            margin-bottom: 4px;
+            display: block;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
           }
 
           .room-preview {
             display: flex;
             justify-content: space-between;
             align-items: center;
+            gap: 8px;
 
             .room-message {
               font-size: 0.875rem;
@@ -211,6 +264,7 @@
               overflow: hidden;
               text-overflow: ellipsis;
               white-space: nowrap;
+              flex: 1;
             }
 
             .unread-badge {
@@ -222,6 +276,7 @@
               font-weight: 600;
               min-width: 20px;
               text-align: center;
+              flex-shrink: 0;
             }
           }
         }
@@ -234,7 +289,7 @@
     50% { opacity: 0.5; }
   }
 
-  // Chat Area
+  // ==================== CHAT MAIN AREA ====================
   .chat-main-area {
     flex: 1;
     display: flex;
@@ -242,7 +297,7 @@
     background: #f8fafc;
     overflow: hidden;
     min-width: 0;
-    height: 100vh; // ✅ Full height
+    height: 100vh;
 
     .chat-area-header {
       padding: 1.5rem;
@@ -269,20 +324,58 @@
           color: white;
           font-weight: 600;
           font-size: 1.125rem;
+          position: relative;
+          flex-shrink: 0;
+
+          // ✅ GUEST BADGE trong header
+          .guest-badge-header {
+            position: absolute;
+            bottom: -2px;
+            right: -2px;
+            background: #fff;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+          }
         }
 
         .user-details {
+          flex: 1;
+          min-width: 0;
+
           h4 {
             margin: 0;
             font-size: 1.125rem;
             font-weight: 600;
             color: #1e293b;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
           }
 
           p {
             margin: 4px 0 0 0;
             font-size: 0.875rem;
             color: #64748b;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+          }
+
+          // ✅ PHONE NUMBER
+          .user-phone {
+            font-size: 0.85rem;
+            color: #10b981;
+            margin-top: 2px;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 4px;
           }
         }
       }
@@ -303,6 +396,7 @@
           align-items: center;
           justify-content: center;
           transition: all 0.2s;
+          text-decoration: none;
 
           &:hover {
             background: #f8fafc;
@@ -313,7 +407,7 @@
       }
     }
 
-    // ✅ CHỖ DUY NHẤT CUỘN TRONG CHAT AREA
+    // ✅ MESSAGES CONTAINER - CHỖ DUY NHẤT CUỘN
     .messages-container {
       flex: 1;
       overflow-y: auto;
@@ -385,6 +479,7 @@
           border-radius: 12px;
           position: relative;
 
+          // ✅ BOT BADGE
           .bot-badge {
             font-size: 0.75rem;
             font-weight: 600;
@@ -422,10 +517,12 @@
         }
       }
 
+      // ✅ TYPING INDICATOR
       .typing-indicator-wrapper {
         display: flex;
         gap: 12px;
         margin-bottom: 1rem;
+        align-items: flex-start;
 
         .message-avatar {
           width: 36px;
@@ -471,13 +568,16 @@
       @keyframes typing {
         0%, 60%, 100% {
           transform: translateY(0);
+          opacity: 0.7;
         }
         30% {
-          transform: translateY(-8px);
+          transform: translateY(-10px);
+          opacity: 1;
         }
       }
     }
 
+    // ✅ QUICK REPLIES
     .quick-replies {
       padding: 12px 1.5rem;
       display: flex;
@@ -517,6 +617,7 @@
       }
     }
 
+    // ✅ MESSAGE INPUT
     .message-input-area {
       padding: 1.5rem;
       background: white;
@@ -573,6 +674,7 @@
       }
     }
 
+    // ✅ EMPTY STATE
     .empty-chat {
       flex: 1;
       display: flex;
@@ -600,6 +702,7 @@
     }
   }
 
+  // ==================== RESPONSIVE ====================
   @media (max-width: 1024px) {
     padding-left: 200px;
 
