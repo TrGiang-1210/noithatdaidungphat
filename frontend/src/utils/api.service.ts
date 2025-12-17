@@ -1,6 +1,5 @@
-// frontend/src/services/api.service.ts
+// frontend/src/services/api.service.ts - WITHOUT i18n
 import axios from 'axios';
-import i18n from '../i18n';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
@@ -21,13 +20,13 @@ apiClient.interceptors.request.use(
       config.headers.Authorization = `Bearer ${token}`;
     }
     
-    // Add language header
-    const currentLang = i18n.language || 'vi';
+    // Add language header from localStorage (not i18n)
+    const currentLang = localStorage.getItem('language') || 'vi';
     config.headers['Accept-Language'] = currentLang;
     
     // Add language to query params if not already present
     if (config.params) {
-      config.params.lang = currentLang;
+      config.params.lang = config.params.lang || currentLang;
     } else {
       config.params = { lang: currentLang };
     }
@@ -93,6 +92,37 @@ export const authApi = {
   
   logout: async () => {
     const response = await apiClient.post('/auth/logout');
+    return response.data;
+  }
+};
+
+// Translation APIs
+export const translationApi = {
+  getTranslations: async (lang: string, namespace?: string) => {
+    const params: any = { lang };
+    if (namespace) params.namespace = namespace;
+    const response = await apiClient.get('/admin/translations', { params });
+    return response.data;
+  },
+  
+  getTranslationKeys: async (params?: any) => {
+    const response = await apiClient.get('/admin/translations/keys', { params });
+    return response.data;
+  },
+  
+  requestAITranslation: async (translationId: string, targetLang: string = 'zh') => {
+    const response = await apiClient.post('/admin/translations/ai-translate', {
+      translationId,
+      targetLang
+    });
+    return response.data;
+  },
+  
+  batchAITranslation: async (translationIds: string[], targetLang: string = 'zh') => {
+    const response = await apiClient.post('/admin/translations/batch-ai-translate', {
+      translationIds,
+      targetLang
+    });
     return response.data;
   }
 };

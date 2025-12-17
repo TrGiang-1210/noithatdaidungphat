@@ -25,6 +25,7 @@ import ProductManager from "../pages/admin/productManager";
 import PostManager from "../pages/admin/postManager";
 import OrderManager from "../pages/admin/orderManager";
 import AdminChat from "../pages/admin/adminChat";
+import TranslationManagement from "../pages/admin/translateManager";
 
 const MainRouter = () => {
   return (
@@ -58,6 +59,7 @@ const MainRouter = () => {
         <Route path="quan-ly-bai-viet" element={<PostManager />} />
         <Route path="quan-ly-don-hang" element={<OrderManager />} />
         <Route path="chat-khach-hang" element={<AdminChat />} />
+        <Route path="quan-ly-ngon-ngu" element={<TranslationManagement />} />
       </Route>
 
       {/* 404 — tùy chọn */}

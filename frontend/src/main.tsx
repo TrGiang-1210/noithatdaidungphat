@@ -6,7 +6,8 @@ import { BrowserRouter } from "react-router-dom";
 import App from "./App";
 import { CartProvider } from "@/context/CartContext";
 import { OrderProvider } from "@/context/OrderContext";
-import { AuthProvider } from "@/context/AuthContext";   // ← THÊM DÒNG NÀY
+import { AuthProvider } from "@/context/AuthContext"; 
+import { LanguageProvider } from "@/context/LanguageContext";
 
 import "@/styles/main.scss";
 import "react-toastify/dist/ReactToastify.css";
@@ -18,11 +19,13 @@ if (rootEl) {
     <StrictMode>
       <BrowserRouter>
         <AuthProvider>                  {/* ← BỌC TOÀN BỘ APP VÀO ĐÂY */}
-          <CartProvider>
-            <OrderProvider>
-              <App />
-            </OrderProvider>
-          </CartProvider>
+          <LanguageProvider>
+            <CartProvider>
+              <OrderProvider>
+                <App />
+              </OrderProvider>
+            </CartProvider>
+          </LanguageProvider>
         </AuthProvider>
       </BrowserRouter>
     </StrictMode>

@@ -11,6 +11,7 @@ const productController = require('../controllers/productController');
 const postController = require('../controllers/postController');
 const postCategoryController = require('../controllers/postCategoryController');
 const orderController = require('../controllers/orderController');
+const translationController = require('../controllers/translation.controller');
 
 const { protect: auth, admin } = require('../middlewares/auth');
 
@@ -159,5 +160,14 @@ router.patch('/orders/:id/cancel', auth, admin, orderController.cancelOrderAdmin
 router.delete('/orders/:id', auth, admin, orderController.deleteOrder);
 // Thống kê đơn hàng
 router.get('/orders/stats/overview', auth, admin, orderController.getOrderStats);
+
+// ==================== TRANSLATION ROUTES ====================
+// ✅ FIX: Dùng auth và admin đã import ở trên
+router.get('/translations/keys', auth, admin, translationController.getTranslationKeys);
+router.get('/translations/stats', auth, admin, translationController.getStatistics);
+router.post('/translations/keys', auth, admin, translationController.createTranslationKey);
+router.post('/translations/ai-translate', auth, admin, translationController.requestAITranslation);
+router.post('/translations/batch-translate', auth, admin, translationController.batchAITranslation);
+router.put('/translations/:id/review', auth, admin, translationController.reviewTranslation);
 
 module.exports = router;

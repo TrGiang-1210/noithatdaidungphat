@@ -1,4 +1,4 @@
-// routes/index.js – PUBLIC ROUTES (UPDATED)
+// routes/index.js — PUBLIC ROUTES (UPDATED)
 
 const express = require('express');
 const router = express.Router();
@@ -12,6 +12,7 @@ const cartController = require('../controllers/cartController');
 const orderController = require('../controllers/orderController');
 const postController = require('../controllers/postController');
 const postCategoryController = require('../controllers/postCategoryController');
+const translationController = require('../controllers/translation.controller');
 
 // Middleware
 const { protect: auth } = require('../middlewares/auth');
@@ -98,5 +99,9 @@ router.get('/posts/:slug', postController.getPostBySlug);
 // Post Categories
 router.get('/post-categories', postCategoryController.getAllCategories);
 router.get('/post-categories/:slug', postCategoryController.getPostsByCategory);
+
+// ==================== TRANSLATION ROUTES ====================
+// ✅ FIX: Đổi route để không trùng với homepage
+router.get('/translations', translationController.getTranslations);
 
 module.exports = router;
