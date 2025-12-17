@@ -3,6 +3,7 @@ import { Outlet, Link, useLocation } from "react-router-dom";
 import "@/styles/layouts/admin.layout.scss";
 import { 
   LayoutDashboard, 
+  Languages,
   MessageSquareMore,
   Boxes, 
   LibraryBig,
@@ -31,6 +32,15 @@ export default function AdminLayout() {
           >
             <LayoutDashboard className="icon" />
             <span>Dashboard</span>
+          </Link>
+
+          {/* Quản lý ngôn ngữ */}
+          <Link 
+            to="/admin/quan-ly-ngon-ngu" 
+            className={`menu-item ${location.pathname.startsWith('/admin/quan-ly-ngon-ngu') ? 'active' : ''}`}
+          >
+            <Languages className="icon" />
+            <span>Quản lý ngôn ngữ</span>
           </Link>
 
           {/* Chat khách hàng */}

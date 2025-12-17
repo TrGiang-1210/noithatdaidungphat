@@ -1,20 +1,19 @@
-// frontend/src/App.tsx - With i18n Integration
+// frontend/src/App.tsx - WITHOUT i18n
 import React, { useContext } from "react";
 import { ToastContainer } from "react-toastify";
-import { useTranslation } from 'react-i18next';
 import { AuthContext } from "./context/AuthContext";
+import { useLanguage } from "./context/LanguageContext";
 import MainRouter from "./router/index.router";
 import ChatWidget from "./components/user/ChatWidget";
-import LanguageSwitcher from "./components/common/LanguageSwitcher";
+import LanguageSwitcher from "./components/user/LanguageSwitcher";
 import "react-toastify/dist/ReactToastify.css";
-import './i18n'; // Import i18n configuration
 
 const AppContent: React.FC = () => {
-  const { user, loading } = useContext(AuthContext);
-  const { t } = useTranslation();
+  const { user, loading: authLoading } = useContext(AuthContext);
+  const { loading: langLoading } = useLanguage();
 
   // Loading state
-  if (loading) {
+  if (authLoading || langLoading) {
     return (
       <div style={{ 
         display: 'flex', 
@@ -25,7 +24,7 @@ const AppContent: React.FC = () => {
         gap: '10px'
       }}>
         <div className="spinner"></div>
-        <div>{t('common.loading')}</div>
+        <div>{langLoading ? 'Đang tải ngôn ngữ...' : 'Đang tải...'}</div>
       </div>
     );
   }

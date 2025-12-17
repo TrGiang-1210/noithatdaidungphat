@@ -1,6 +1,5 @@
 // frontend/src/components/common/LanguageSwitcher.tsx
 import React from 'react';
-import { useTranslation } from 'react-i18next';
 import "@/styles/components/user/LanguageSwitcher.scss";
 
 const LanguageSwitcher: React.FC = () => {
