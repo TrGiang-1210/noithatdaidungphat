@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { getFirstImageUrl } from "@/utils/imageUrl";
-import { useLanguage } from "@/context/LanguageContext"; // ✅ Import hook
+import { useLanguage } from "@/context/LanguageContext";
 import "@/styles/pages/user/home.scss";
 import { ChevronRight, ChevronLeft } from "lucide-react";
 
@@ -33,7 +33,7 @@ interface Category {
 }
 
 const Home: React.FC = () => {
-  const { t } = useLanguage(); // ✅ Sử dụng hook translation
+  const { t, language } = useLanguage(); // ✅ Lấy cả language
 
   const banners = [
     { src: banner1, alt: "Banner 1" },
@@ -105,13 +105,14 @@ const Home: React.FC = () => {
     setSaleCarouselIndex((prev) => (prev + 1) % saleProducts.length);
   };
 
-  // Load dữ liệu
+  // ✅ Load dữ liệu - THÊM language parameter
   useEffect(() => {
     const loadData = async () => {
       try {
         setLoading(true);
 
-        const productsRes = await fetch("http://localhost:5000/api/products");
+        // ✅ Thêm ?lang=${language}
+        const productsRes = await fetch(`http://localhost:5000/api/products?lang=${language}`);
         const allProducts: Product[] = await productsRes.json();
 
         const hotProds = allProducts.filter(p => p.hot === true);
@@ -127,8 +128,9 @@ const Home: React.FC = () => {
         });
         setNewProducts(sortedByDate.slice(0, 8));
 
+        // ✅ Thêm ?lang=${language}
         const categoriesRes = await fetch(
-          "http://localhost:5000/api/categories"
+          `http://localhost:5000/api/categories?lang=${language}`
         );
         const allCategories: Category[] = await categoriesRes.json();
 
@@ -139,7 +141,8 @@ const Home: React.FC = () => {
 
         for (const cat of parentCategories.slice(0, 4)) {
           try {
-            let url = `http://localhost:5000/api/products?category=${cat.slug}`;
+            // ✅ Thêm ?lang=${language}
+            let url = `http://localhost:5000/api/products?category=${cat.slug}&lang=${language}`;
             const res = await fetch(url);
             const prods = await res.json();
             categoryProds[cat._id] = Array.isArray(prods)
@@ -160,7 +163,7 @@ const Home: React.FC = () => {
     };
 
     loadData();
-  }, []);
+  }, [language]); // ✅ Re-fetch khi language thay đổi
 
   // Component ProductCard
   const ProductCard: React.FC<{ product: Product }> = ({ product }) => {
@@ -183,7 +186,7 @@ const Home: React.FC = () => {
         <div className="product-image">
           {isOutOfStock && (
             <span className="badge out-of-stock-badge">
-              {t('product.outOfStock')} {/* ✅ Dịch */}
+              {t('product.outOfStock')}
             </span>
           )}
 
@@ -228,7 +231,6 @@ const Home: React.FC = () => {
   }> = ({ products, currentIndex, onPrev, onNext }) => {
     if (products.length === 0) return null;
 
-    // Nếu <= 4 sản phẩm, hiển thị bình thường không cần carousel
     if (products.length <= 4) {
       return (
         <div className="product-grid">
@@ -239,7 +241,6 @@ const Home: React.FC = () => {
       );
     }
 
-    // Lấy 4 sản phẩm liên tiếp từ currentIndex
     const getVisibleProducts = () => {
       const visible = [];
       for (let i = 0; i < 4; i++) {
@@ -282,7 +283,7 @@ const Home: React.FC = () => {
       <h2 className="section-title">{title}</h2>
       {link && (
         <Link to={link} className="view-all">
-          {t('common.viewAll')} <ChevronRight size={16} /> {/* ✅ Dịch */}
+          {t('common.viewAll')} <ChevronRight size={16} />
         </Link>
       )}
     </div>
@@ -292,7 +293,7 @@ const Home: React.FC = () => {
     return (
       <div className="loading-container">
         <div className="spinner"></div>
-        <p>{t('common.loading')}</p> {/* ✅ Dịch */}
+        <p>{t('common.loading')}</p>
       </div>
     );
   }
@@ -344,7 +345,7 @@ const Home: React.FC = () => {
       {hotProducts.length > 0 && (
         <section className="product-section">
           <div className="container">
-            <SectionHeader title={t('home.hotProducts')} /> {/* ✅ Dịch */}
+            <SectionHeader title={t('home.hotProducts')} />
             <ProductCarousel
               products={hotProducts}
               currentIndex={hotCarouselIndex}
@@ -359,7 +360,7 @@ const Home: React.FC = () => {
       {saleProducts.length > 0 && (
         <section className="product-section">
           <div className="container">
-            <SectionHeader title={t('home.saleProducts')} /> {/* ✅ Dịch */}
+            <SectionHeader title={t('home.saleProducts')} />
             <ProductCarousel
               products={saleProducts}
               currentIndex={saleCarouselIndex}
@@ -373,7 +374,7 @@ const Home: React.FC = () => {
       {/* ==================== SẢN PHẨM MỚI ==================== */}
       <section className="product-section">
         <div className="container">
-          <SectionHeader title={t('home.newProducts')} /> {/* ✅ Dịch */}
+          <SectionHeader title={t('home.newProducts')} />
           <div className="product-grid">
             {newProducts.map((product) => (
               <ProductCard key={product._id} product={product} />

@@ -267,7 +267,7 @@ const TranslationManagement = () => {
 
   return (
     <div style={{ padding: '20px', fontFamily: 'Arial, sans-serif' }}>
-      <h1>Quản lý dịch thuật</h1>
+      <h1>Dịch UI</h1>
       
       {/* Stats */}
       <div style={{ display: 'flex', gap: '20px', marginBottom: '30px' }}>

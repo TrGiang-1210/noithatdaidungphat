@@ -22,24 +22,23 @@ const productSchema = new mongoose.Schema({
   priceOriginal: { type: Number, required: true },
   priceSale: { type: Number, required: true },
 
-  // ✅ MULTILINGUAL: Attributes (thuộc tính động)
+  // ✅ MULTILINGUAL: Attributes
   attributes: [{
     name: {
-      vi: { type: String, required: true }, // "Chất liệu"
-      zh: { type: String, default: "" }     // "材料"
+      vi: { type: String, required: true },
+      zh: { type: String, default: "" }
     },
     options: [{
       label: {
-        vi: { type: String, required: true }, // "MDF EC | Duy chuẩn"
-        zh: { type: String, default: "" }     // "MDF EC | 标准"
+        vi: { type: String, required: true },
+        zh: { type: String, default: "" }
       },
-      value: { type: String, required: true }, // "mdf-ec-duy-chuan" (không dịch)
+      value: { type: String, required: true },
       image: { type: String },
       isDefault: { type: Boolean, default: false }
     }]
   }],
 
-  // Các field cũ (giữ lại cho backward compatibility)
   material: { type: String, default: "" },
   color: { type: String, default: "" },
   size: { type: String, default: "" },
@@ -62,4 +61,5 @@ productSchema.pre("save", function (next) {
   next();
 });
 
-module.exports = mongoose.model("Product", productSchema);
+// ✅ QUAN TRỌNG: Kiểm tra model đã tồn tại chưa
+module.exports = mongoose.models.Product || mongoose.model("Product", productSchema);
