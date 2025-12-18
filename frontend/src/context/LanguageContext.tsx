@@ -31,17 +31,25 @@ export const LanguageProvider: React.FC<LanguageProviderProps> = ({ children }) 
   const loadTranslations = async (lang: string) => {
     try {
       setLoading(true);
-      const response = await axios.get(`http://localhost:5000/api/admin/translations`, {
+      const response = await axios.get(`http://localhost:5000/api/translations`, {
         params: { lang }
       });
       
       if (response.data.success) {
-        setTranslations(response.data.data);
-        console.log(`✅ Loaded ${lang} translations:`, response.data.data);
+        const data = response.data.data;
+        
+        // ✅ API trả về nested object: { common: {...}, product: {...} }
+        // Không cần convert, dùng luôn!
+        setTranslations(data);
+        
+        console.log(`✅ Loaded ${lang} translations:`, data);
+        console.log(`📊 Namespaces:`, Object.keys(data));
+      } else {
+        console.warn('⚠️ Translation API returned success: false');
+        setTranslations({});
       }
-    } catch (error) {
-      console.error('❌ Failed to load translations:', error);
-      // Fallback to empty object if API fails
+    } catch (error: any) {
+      console.error('❌ Failed to load translations:', error.response?.data || error.message);
       setTranslations({});
     } finally {
       setLoading(false);
@@ -60,20 +68,26 @@ export const LanguageProvider: React.FC<LanguageProviderProps> = ({ children }) 
     localStorage.setItem('language', lang);
   };
 
-  // Translation function (nested key support)
+  // ✅ Translation function - Support nested keys (common.welcome)
   const t = (key: string): string => {
+    // Split key by dot: "common.welcome" -> ["common", "welcome"]
     const keys = key.split('.');
     let value: any = translations;
 
+    // Navigate through nested object
     for (const k of keys) {
       if (value && typeof value === 'object' && k in value) {
         value = value[k];
       } else {
-        console.warn(`⚠️ Translation key not found: ${key}`);
-        return key; // Return key if translation not found
+        // Key not found
+        if (language !== 'vi') {
+          console.warn(`⚠️ Translation not found: "${key}" in language: ${language}`);
+        }
+        return key; // Fallback to original key
       }
     }
 
+    // Return string value or fallback to key
     return typeof value === 'string' ? value : key;
   };
 

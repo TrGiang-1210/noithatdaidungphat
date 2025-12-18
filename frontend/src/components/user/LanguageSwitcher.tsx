@@ -1,14 +1,13 @@
-// frontend/src/components/common/LanguageSwitcher.tsx
+// frontend/src/components/user/LanguageSwitcher.tsx
 import React from 'react';
+import { useLanguage } from '@/context/LanguageContext';
 import "@/styles/components/user/LanguageSwitcher.scss";
 
 const LanguageSwitcher: React.FC = () => {
-  const { i18n } = useTranslation();
+  const { language, changeLanguage } = useLanguage();
 
-  const changeLanguage = (lng: string) => {
-    i18n.changeLanguage(lng);
-    localStorage.setItem('language', lng);
-    
+  const handleChangeLanguage = (lng: string) => {
+    changeLanguage(lng);
     // Update html lang attribute for SEO
     document.documentElement.lang = lng;
   };
@@ -16,15 +15,15 @@ const LanguageSwitcher: React.FC = () => {
   return (
     <div className="language-switcher">
       <button
-        className={i18n.language === 'vi' ? 'active' : ''}
-        onClick={() => changeLanguage('vi')}
+        className={language === 'vi' ? 'active' : ''}
+        onClick={() => handleChangeLanguage('vi')}
         title="Tiếng Việt"
       >
         🇻🇳 VI
       </button>
       <button
-        className={i18n.language === 'zh' ? 'active' : ''}
-        onClick={() => changeLanguage('zh')}
+        className={language === 'zh' ? 'active' : ''}
+        onClick={() => handleChangeLanguage('zh')}
         title="中文"
       >
         🇨🇳 ZH

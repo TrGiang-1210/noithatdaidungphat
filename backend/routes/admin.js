@@ -1,4 +1,4 @@
-// routes/admin.js
+// routes/admin.js - FIXED
 const express = require('express');
 const router = express.Router();
 const multer = require('multer');
@@ -12,18 +12,18 @@ const postController = require('../controllers/postController');
 const postCategoryController = require('../controllers/postCategoryController');
 const orderController = require('../controllers/orderController');
 const translationController = require('../controllers/translation.controller');
+const bulkTranslateController = require('../controllers/bulkTranslateController');
+
 
 const { protect: auth, admin } = require('../middlewares/auth');
 
 // ==================== TẠO FOLDERS ====================
-// Tạo thư mục uploads cho products
 const productsDir = path.join(__dirname, '../uploads/products');
 if (!fs.existsSync(productsDir)) {
   fs.mkdirSync(productsDir, { recursive: true });
   console.log('✅ Đã tạo folder uploads/products');
 }
 
-// Tạo thư mục uploads cho posts
 const postsDir = path.join(__dirname, '../uploads/posts');
 if (!fs.existsSync(postsDir)) {
   fs.mkdirSync(postsDir, { recursive: true });
@@ -31,7 +31,6 @@ if (!fs.existsSync(postsDir)) {
 }
 
 // ==================== MULTER CONFIG ====================
-// Cấu hình multer cho products
 const productStorage = multer.diskStorage({
   destination: (req, file, cb) => {
     cb(null, productsDir);
@@ -42,7 +41,6 @@ const productStorage = multer.diskStorage({
   }
 });
 
-// Cấu hình multer cho posts
 const postStorage = multer.diskStorage({
   destination: (req, file, cb) => {
     cb(null, postsDir);
@@ -53,7 +51,6 @@ const postStorage = multer.diskStorage({
   }
 });
 
-// File filter chung
 const fileFilter = (req, file, cb) => {
   const allowedTypes = /jpeg|jpg|png|gif|webp/;
   const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
@@ -64,30 +61,25 @@ const fileFilter = (req, file, cb) => {
   cb(new Error('Chỉ chấp nhận file ảnh (jpg, jpeg, png, gif, webp)!'));
 };
 
-// Upload instance cho products
 const productUpload = multer({
   storage: productStorage,
-  limits: { fileSize: 5 * 1024 * 1024 }, // 5MB
+  limits: { fileSize: 5 * 1024 * 1024 },
   fileFilter: fileFilter
 });
 
-// Upload instance cho posts
 const postUpload = multer({
   storage: postStorage,
-  limits: { fileSize: 5 * 1024 * 1024 }, // 5MB
+  limits: { fileSize: 5 * 1024 * 1024 },
   fileFilter: fileFilter
 });
 
 // ==================== UPLOAD ROUTES ====================
-// Upload ảnh cho posts (featured image)
 router.post('/upload-image', auth, admin, postUpload.single('image'), (req, res) => {
   try {
     if (!req.file) {
       return res.status(400).json({ error: 'Không có file nào được upload' });
     }
-
     const imageUrl = `/uploads/posts/${req.file.filename}`;
-    
     res.json({
       success: true,
       url: imageUrl,
@@ -99,15 +91,12 @@ router.post('/upload-image', auth, admin, postUpload.single('image'), (req, res)
   }
 });
 
-// Upload nhiều ảnh cho products (nếu cần route riêng)
 router.post('/upload-product-images', auth, admin, productUpload.array('images', 5), (req, res) => {
   try {
     if (!req.files || req.files.length === 0) {
       return res.status(400).json({ error: 'Không có file nào được upload' });
     }
-
     const imageUrls = req.files.map(file => `/uploads/products/${file.filename}`);
-    
     res.json({
       success: true,
       urls: imageUrls,
@@ -119,6 +108,20 @@ router.post('/upload-product-images', auth, admin, productUpload.array('images',
   }
 });
 
+// ==================== BULK TRANSLATION ROUTES ====================
+router.get('/bulk-translate/stats', auth, admin, bulkTranslateController.getTranslationStats);
+router.post('/bulk-translate/products', auth, admin, bulkTranslateController.translateAllProducts);
+router.post('/bulk-translate/categories', auth, admin, bulkTranslateController.translateAllCategories);
+
+// ==================== TRANSLATION ROUTES (ĐẶT TRƯỚC ĐỂ TRÁNH CONFLICT) ====================
+// ✅ IMPORTANT: Đặt các routes cụ thể TRƯỚC các routes có params động
+router.get('/translations/keys', auth, admin, translationController.getTranslationKeys);
+router.get('/translations/statistics', auth, admin, translationController.getStatistics); // ✅ FIX: stats -> statistics
+router.post('/translations/keys', auth, admin, translationController.createTranslationKey);
+router.post('/translations/ai-translate', auth, admin, translationController.requestAITranslation);
+router.post('/translations/batch-ai-translate', auth, admin, translationController.batchAITranslation);
+router.put('/translations/:id/review', auth, admin, translationController.reviewTranslation);
+
 // ==================== CATEGORY ROUTES ====================
 router.get('/categories/tree', auth, admin, categoryController.getCategoryTree);
 router.post('/categories', auth, admin, categoryController.createCategory);
@@ -126,14 +129,10 @@ router.put('/categories/:id', auth, admin, categoryController.updateCategory);
 router.delete('/categories/:id', auth, admin, categoryController.deleteCategory);
 
 // ==================== PRODUCT ROUTES ====================
-// GET: Lấy tất cả sản phẩm (cho admin panel)
 router.get('/products', auth, admin, productController.getAllProductsAdmin);
-// POST: Tạo sản phẩm mới
 router.post('/products', auth, admin, productUpload.any(), productController.createProduct);
 router.put('/products/:id', auth, admin, productUpload.any(), productController.updateProduct);
-// DELETE: Xóa sản phẩm
 router.delete('/products/:id', auth, admin, productController.deleteProduct);
-// POST: Gán danh mục hàng loạt
 router.post('/products/bulk-categories', auth, admin, productController.bulkUpdateCategories);
 
 // ==================== POST ROUTES ====================
@@ -148,26 +147,11 @@ router.post('/post-categories', auth, admin, postCategoryController.createCatego
 router.delete('/post-categories/:id', auth, admin, postCategoryController.deleteCategory);
 
 // ==================== ORDER ROUTES ====================
-// Lấy tất cả đơn hàng với filter
+router.get('/orders/stats/overview', auth, admin, orderController.getOrderStats); // Đặt trước /orders/:id
 router.get('/orders', auth, admin, orderController.getAllOrdersAdmin);
-// Xem chi tiết đơn hàng
 router.get('/orders/:id', auth, admin, orderController.getOrderByIdAdmin);
-// Cập nhật trạng thái đơn hàng
 router.patch('/orders/:id/status', auth, admin, orderController.updateOrderStatus);
-// Hủy đơn hàng (hoàn tồn kho)
 router.patch('/orders/:id/cancel', auth, admin, orderController.cancelOrderAdmin);
-// Xóa đơn hàng (nếu cần)
 router.delete('/orders/:id', auth, admin, orderController.deleteOrder);
-// Thống kê đơn hàng
-router.get('/orders/stats/overview', auth, admin, orderController.getOrderStats);
-
-// ==================== TRANSLATION ROUTES ====================
-// ✅ FIX: Dùng auth và admin đã import ở trên
-router.get('/translations/keys', auth, admin, translationController.getTranslationKeys);
-router.get('/translations/stats', auth, admin, translationController.getStatistics);
-router.post('/translations/keys', auth, admin, translationController.createTranslationKey);
-router.post('/translations/ai-translate', auth, admin, translationController.requestAITranslation);
-router.post('/translations/batch-translate', auth, admin, translationController.batchAITranslation);
-router.put('/translations/:id/review', auth, admin, translationController.reviewTranslation);
 
 module.exports = router;

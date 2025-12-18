@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
+import { toast } from 'react-toastify';
 
-const API_URL = 'http://localhost:5000/api/admin'; // ✅ Thêm /admin
+const API_URL = 'http://localhost:5000/api/admin';
 
 const TranslationManagement = () => {
   const [translations, setTranslations] = useState([]);
@@ -29,28 +30,42 @@ const TranslationManagement = () => {
           'Authorization': `Bearer ${token}`
         }
       });
+      
+      if (!res.ok) {
+        throw new Error(`HTTP ${res.status}: ${res.statusText}`);
+      }
+      
       const data = await res.json();
       
       if (!data.success) {
         console.error('API Error:', data.message);
+        toast.error(data.message || 'Failed to load translations');
         return;
       }
       
       setTranslations(data.data || []);
     } catch (error) {
       console.error('Error fetching translations:', error);
+      toast.error('Failed to load translations: ' + error.message);
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   const fetchStats = async () => {
     try {
       const token = localStorage.getItem('token');
-      const res = await fetch(`${API_URL}/translations/stats`, {
+      const res = await fetch(`${API_URL}/translations/statistics`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
       });
+      
+      if (!res.ok) {
+        console.warn('Failed to load stats');
+        return;
+      }
+      
       const data = await res.json();
       
       if (data.success) {
@@ -64,6 +79,8 @@ const TranslationManagement = () => {
   const handleAITranslate = async (id) => {
     try {
       const token = localStorage.getItem('token');
+      toast.info('🤖 Đang dịch...');
+      
       const res = await fetch(`${API_URL}/translations/ai-translate`, {
         method: 'POST',
         headers: { 
@@ -72,26 +89,43 @@ const TranslationManagement = () => {
         },
         body: JSON.stringify({ translationId: id, targetLang: 'zh' })
       });
+      
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.message || `HTTP ${res.status}`);
+      }
+      
       const data = await res.json();
-      alert(`✅ Translated! Confidence: ${(data.data.confidence * 100).toFixed(0)}%`);
+      
+      if (!data.success) {
+        throw new Error(data.message || 'Translation failed');
+      }
+      
+      const confidence = data.data?.confidence || 0;
+      toast.success(`✅ Dịch thành công! Độ tin cậy: ${(confidence * 100).toFixed(0)}%`);
+      
       fetchTranslations();
+      fetchStats();
     } catch (error) {
-      alert('❌ Translation failed: ' + error.message);
+      console.error('Translation error:', error);
+      toast.error('❌ Dịch thất bại: ' + error.message);
     }
   };
 
   const handleBatchAITranslate = async () => {
     if (selectedKeys.length === 0) {
-      alert('Please select keys to translate');
+      toast.warning('Vui lòng chọn ít nhất 1 key để dịch');
       return;
     }
     
-    if (!confirm(`Translate ${selectedKeys.length} keys with AI?`)) return;
+    if (!confirm(`Dịch ${selectedKeys.length} keys bằng AI?`)) return;
     
     setLoading(true);
     try {
       const token = localStorage.getItem('token');
-      const res = await fetch(`${API_URL}/translations/batch-translate`, {
+      toast.info(`🤖 Đang dịch ${selectedKeys.length} keys...`);
+      
+      const res = await fetch(`${API_URL}/translations/batch-ai-translate`, {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',
@@ -99,20 +133,35 @@ const TranslationManagement = () => {
         },
         body: JSON.stringify({ translationIds: selectedKeys, targetLang: 'zh' })
       });
+      
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.message || `HTTP ${res.status}`);
+      }
+      
       const data = await res.json();
-      alert(`✅ ${data.message}`);
+      
+      if (!data.success) {
+        throw new Error(data.message || 'Batch translation failed');
+      }
+      
+      toast.success(`✅ ${data.message}`);
       setSelectedKeys([]);
       fetchTranslations();
+      fetchStats();
     } catch (error) {
-      alert('❌ Batch translation failed');
+      console.error('Batch translation error:', error);
+      toast.error('❌ Batch dịch thất bại: ' + error.message);
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   const handleSaveEdit = async (id) => {
     try {
       const token = localStorage.getItem('token');
-      await fetch(`${API_URL}/translations/${id}/review`, {
+      
+      const res = await fetch(`${API_URL}/translations/${id}/review`, {
         method: 'PUT',
         headers: { 
           'Content-Type': 'application/json',
@@ -124,11 +173,25 @@ const TranslationManagement = () => {
           status: 'human_reviewed'
         })
       });
-      alert('✅ Translation updated!');
+      
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.message || `HTTP ${res.status}`);
+      }
+      
+      const data = await res.json();
+      
+      if (!data.success) {
+        throw new Error(data.message || 'Update failed');
+      }
+      
+      toast.success('✅ Cập nhật thành công!');
       setEditingId(null);
       fetchTranslations();
+      fetchStats();
     } catch (error) {
-      alert('❌ Update failed');
+      console.error('Update error:', error);
+      toast.error('❌ Cập nhật thất bại: ' + error.message);
     }
   };
 
@@ -136,7 +199,13 @@ const TranslationManagement = () => {
     try {
       const token = localStorage.getItem('token');
       const translation = translations.find(t => t._id === id);
-      await fetch(`${API_URL}/translations/${id}/review`, {
+      
+      if (!translation?.translations?.zh?.value) {
+        toast.error('Không có bản dịch để approve');
+        return;
+      }
+      
+      const res = await fetch(`${API_URL}/translations/${id}/review`, {
         method: 'PUT',
         headers: { 
           'Content-Type': 'application/json',
@@ -148,10 +217,24 @@ const TranslationManagement = () => {
           status: 'approved'
         })
       });
-      alert('✅ Approved!');
+      
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.message || `HTTP ${res.status}`);
+      }
+      
+      const data = await res.json();
+      
+      if (!data.success) {
+        throw new Error(data.message || 'Approval failed');
+      }
+      
+      toast.success('✅ Đã approve!');
       fetchTranslations();
+      fetchStats();
     } catch (error) {
-      alert('❌ Approval failed');
+      console.error('Approval error:', error);
+      toast.error('❌ Approve thất bại: ' + error.message);
     }
   };
 
@@ -177,14 +260,14 @@ const TranslationManagement = () => {
         color: 'white',
         backgroundColor: colors[status] || '#9e9e9e'
       }}>
-        {status?.toUpperCase()}
+        {status?.toUpperCase() || 'UNKNOWN'}
       </span>
     );
   };
 
   return (
     <div style={{ padding: '20px', fontFamily: 'Arial, sans-serif' }}>
-      <h1>🌐 Translation Management</h1>
+      <h1>Quản lý dịch thuật</h1>
       
       {/* Stats */}
       <div style={{ display: 'flex', gap: '20px', marginBottom: '30px' }}>
@@ -239,20 +322,31 @@ const TranslationManagement = () => {
             color: 'white',
             border: 'none',
             borderRadius: '6px',
-            cursor: selectedKeys.length > 0 ? 'pointer' : 'not-allowed',
-            opacity: selectedKeys.length === 0 ? 0.5 : 1
+            cursor: selectedKeys.length > 0 && !loading ? 'pointer' : 'not-allowed',
+            opacity: selectedKeys.length === 0 || loading ? 0.5 : 1
           }}
         >
-          🤖 AI Translate ({selectedKeys.length})
+          {loading ? '⏳ Đang dịch...' : `🤖 AI Translate (${selectedKeys.length})`}
         </button>
       </div>
 
       {/* Translation Table */}
       {loading ? (
-        <div style={{ textAlign: 'center', padding: '50px' }}>Loading...</div>
+        <div style={{ textAlign: 'center', padding: '50px' }}>
+          <div style={{ fontSize: '18px', marginBottom: '10px' }}>⏳</div>
+          <div>Đang tải...</div>
+        </div>
+      ) : translations.length === 0 ? (
+        <div style={{ textAlign: 'center', padding: '50px', background: 'white', borderRadius: '8px' }}>
+          <div style={{ fontSize: '48px', marginBottom: '10px' }}>📭</div>
+          <div>Không có dữ liệu</div>
+          <div style={{ fontSize: '12px', color: '#999', marginTop: '5px' }}>
+            Chạy: node backend/scripts/seedTranslations.js
+          </div>
+        </div>
       ) : (
         <div style={{ overflowX: 'auto' }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse', background: 'white', boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse', background: 'white', boxShadow: '0 2px 8px rgba(0,0,0,0.1)', borderRadius: '8px', overflow: 'hidden' }}>
             <thead>
               <tr style={{ background: '#f5f5f5', borderBottom: '2px solid #ddd' }}>
                 <th style={{ padding: '12px', textAlign: 'left' }}>
@@ -279,27 +373,34 @@ const TranslationManagement = () => {
                       onChange={() => toggleSelect(trans._id)}
                     />
                   </td>
-                  <td style={{ padding: '12px', fontSize: '12px', color: '#666' }}>
+                  <td style={{ padding: '12px', fontSize: '12px', color: '#666', fontFamily: 'monospace' }}>
                     {trans.key}
                   </td>
                   <td style={{ padding: '12px', maxWidth: '200px' }}>
-                    {trans.translations.vi.value}
+                    {trans.translations?.vi?.value || '—'}
                   </td>
                   <td style={{ padding: '12px', maxWidth: '250px' }}>
                     {editingId === trans._id ? (
                       <textarea
                         value={editValue}
                         onChange={(e) => setEditValue(e.target.value)}
-                        style={{ width: '100%', padding: '8px', minHeight: '60px', fontFamily: '"Noto Sans SC", sans-serif' }}
+                        style={{ 
+                          width: '100%', 
+                          padding: '8px', 
+                          minHeight: '60px', 
+                          fontFamily: '"Noto Sans SC", sans-serif',
+                          border: '1px solid #ddd',
+                          borderRadius: '4px'
+                        }}
                       />
                     ) : (
                       <div style={{ fontFamily: '"Noto Sans SC", sans-serif' }}>
-                        {trans.translations.zh?.value || '—'}
+                        {trans.translations?.zh?.value || '—'}
                       </div>
                     )}
                   </td>
                   <td style={{ padding: '12px' }}>
-                    {getStatusBadge(trans.translations.zh?.status)}
+                    {getStatusBadge(trans.translations?.zh?.status || 'draft')}
                   </td>
                   <td style={{ padding: '12px' }}>
                     <div style={{ display: 'flex', gap: '5px', flexWrap: 'wrap' }}>
@@ -307,23 +408,47 @@ const TranslationManagement = () => {
                         <>
                           <button
                             onClick={() => handleSaveEdit(trans._id)}
-                            style={{ padding: '5px 10px', background: '#4caf50', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '12px' }}
+                            style={{ 
+                              padding: '5px 10px', 
+                              background: '#4caf50', 
+                              color: 'white', 
+                              border: 'none', 
+                              borderRadius: '4px', 
+                              cursor: 'pointer', 
+                              fontSize: '12px' 
+                            }}
                           >
                             💾 Save
                           </button>
                           <button
                             onClick={() => setEditingId(null)}
-                            style={{ padding: '5px 10px', background: '#f44336', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '12px' }}
+                            style={{ 
+                              padding: '5px 10px', 
+                              background: '#f44336', 
+                              color: 'white', 
+                              border: 'none', 
+                              borderRadius: '4px', 
+                              cursor: 'pointer', 
+                              fontSize: '12px' 
+                            }}
                           >
                             ✖ Cancel
                           </button>
                         </>
                       ) : (
                         <>
-                          {!trans.translations.zh?.value && (
+                          {(!trans.translations?.zh?.value || trans.translations.zh.status === 'draft') && (
                             <button
                               onClick={() => handleAITranslate(trans._id)}
-                              style={{ padding: '5px 10px', background: '#2196f3', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '12px' }}
+                              style={{ 
+                                padding: '5px 10px', 
+                                background: '#2196f3', 
+                                color: 'white', 
+                                border: 'none', 
+                                borderRadius: '4px', 
+                                cursor: 'pointer', 
+                                fontSize: '12px' 
+                              }}
                             >
                               🤖 AI
                             </button>
@@ -331,16 +456,32 @@ const TranslationManagement = () => {
                           <button
                             onClick={() => {
                               setEditingId(trans._id);
-                              setEditValue(trans.translations.zh?.value || '');
+                              setEditValue(trans.translations?.zh?.value || '');
                             }}
-                            style={{ padding: '5px 10px', background: '#ff9800', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '12px' }}
+                            style={{ 
+                              padding: '5px 10px', 
+                              background: '#ff9800', 
+                              color: 'white', 
+                              border: 'none', 
+                              borderRadius: '4px', 
+                              cursor: 'pointer', 
+                              fontSize: '12px' 
+                            }}
                           >
                             ✏️ Edit
                           </button>
-                          {trans.translations.zh?.status === 'ai_translated' && (
+                          {trans.translations?.zh?.status === 'ai_translated' && (
                             <button
                               onClick={() => handleApprove(trans._id)}
-                              style={{ padding: '5px 10px', background: '#4caf50', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '12px' }}
+                              style={{ 
+                                padding: '5px 10px', 
+                                background: '#4caf50', 
+                                color: 'white', 
+                                border: 'none', 
+                                borderRadius: '4px', 
+                                cursor: 'pointer', 
+                                fontSize: '12px' 
+                              }}
                             >
                               ✓ Approve
                             </button>

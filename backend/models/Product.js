@@ -3,21 +3,39 @@ const Schema = mongoose.Schema;
 
 const productSchema = new mongoose.Schema({
   slug: { type: String, required: true, unique: true },
-  name: { type: String, required: true },
+  
+  // ✅ MULTILINGUAL: Name
+  name: {
+    vi: { type: String, required: true },
+    zh: { type: String, default: "" }
+  },
+  
   sku: { type: String, required: true, unique: true },
   images: { type: [String], required: true },
-  description: { type: String, default: "" },
+  
+  // ✅ MULTILINGUAL: Description
+  description: {
+    vi: { type: String, default: "" },
+    zh: { type: String, default: "" }
+  },
+  
   priceOriginal: { type: Number, required: true },
   priceSale: { type: Number, required: true },
 
-  // ✅ THÊM: Hệ thống thuộc tính động
+  // ✅ MULTILINGUAL: Attributes (thuộc tính động)
   attributes: [{
-    name: { type: String, required: true }, // "Chất liệu", "Màu sắc", "Kích thước (cm)"
+    name: {
+      vi: { type: String, required: true }, // "Chất liệu"
+      zh: { type: String, default: "" }     // "材料"
+    },
     options: [{
-      label: { type: String, required: true }, // "MDF EC | Duy chuẩn / Không LED"
-      value: { type: String, required: true }, // "mdf-ec-duy-chuan"
-      image: { type: String }, // "/uploads/attributes/xxx.jpg" (optional)
-      isDefault: { type: Boolean, default: false } // Option mặc định
+      label: {
+        vi: { type: String, required: true }, // "MDF EC | Duy chuẩn"
+        zh: { type: String, default: "" }     // "MDF EC | 标准"
+      },
+      value: { type: String, required: true }, // "mdf-ec-duy-chuan" (không dịch)
+      image: { type: String },
+      isDefault: { type: Boolean, default: false }
     }]
   }],
 

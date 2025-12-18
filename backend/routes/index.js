@@ -74,6 +74,10 @@ router.post('/auth/logout', auth, async (req, res) => {
 router.get('/auth/me', auth, userController.getCurrentUser);
 router.put('/auth/profile', auth, userController.updateProfile);
 
+// ==================== TRANSLATION ROUTES ====================
+// ✅ FIX: Đổi route để không trùng với homepage
+router.get('/translations', translationController.getTranslations);
+
 // ==================== CART ROUTES ====================
 router.post('/cart', auth, cartController.addItem);
 router.get('/cart', auth, cartController.getCart);
@@ -99,9 +103,5 @@ router.get('/posts/:slug', postController.getPostBySlug);
 // Post Categories
 router.get('/post-categories', postCategoryController.getAllCategories);
 router.get('/post-categories/:slug', postCategoryController.getPostsByCategory);
-
-// ==================== TRANSLATION ROUTES ====================
-// ✅ FIX: Đổi route để không trùng với homepage
-router.get('/translations', translationController.getTranslations);
 
 module.exports = router;

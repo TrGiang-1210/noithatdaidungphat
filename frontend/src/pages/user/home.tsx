@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { getFirstImageUrl } from "@/utils/imageUrl";
+import { useLanguage } from "@/context/LanguageContext"; // ✅ Import hook
 import "@/styles/pages/user/home.scss";
 import { ChevronRight, ChevronLeft } from "lucide-react";
 
@@ -32,6 +33,8 @@ interface Category {
 }
 
 const Home: React.FC = () => {
+  const { t } = useLanguage(); // ✅ Sử dụng hook translation
+
   const banners = [
     { src: banner1, alt: "Banner 1" },
     { src: banner2, alt: "Banner 2" },
@@ -179,7 +182,9 @@ const Home: React.FC = () => {
       >
         <div className="product-image">
           {isOutOfStock && (
-            <span className="badge out-of-stock-badge">Hết hàng</span>
+            <span className="badge out-of-stock-badge">
+              {t('product.outOfStock')} {/* ✅ Dịch */}
+            </span>
           )}
 
           <img
@@ -277,7 +282,7 @@ const Home: React.FC = () => {
       <h2 className="section-title">{title}</h2>
       {link && (
         <Link to={link} className="view-all">
-          Xem tất cả <ChevronRight size={16} />
+          {t('common.viewAll')} <ChevronRight size={16} /> {/* ✅ Dịch */}
         </Link>
       )}
     </div>
@@ -287,7 +292,7 @@ const Home: React.FC = () => {
     return (
       <div className="loading-container">
         <div className="spinner"></div>
-        <p>Đang tải dữ liệu...</p>
+        <p>{t('common.loading')}</p> {/* ✅ Dịch */}
       </div>
     );
   }
@@ -339,7 +344,7 @@ const Home: React.FC = () => {
       {hotProducts.length > 0 && (
         <section className="product-section">
           <div className="container">
-            <SectionHeader title="Sản phẩm HOT" />
+            <SectionHeader title={t('home.hotProducts')} /> {/* ✅ Dịch */}
             <ProductCarousel
               products={hotProducts}
               currentIndex={hotCarouselIndex}
@@ -354,7 +359,7 @@ const Home: React.FC = () => {
       {saleProducts.length > 0 && (
         <section className="product-section">
           <div className="container">
-            <SectionHeader title="Sản phẩm siêu giảm giá" />
+            <SectionHeader title={t('home.saleProducts')} /> {/* ✅ Dịch */}
             <ProductCarousel
               products={saleProducts}
               currentIndex={saleCarouselIndex}
@@ -368,7 +373,7 @@ const Home: React.FC = () => {
       {/* ==================== SẢN PHẨM MỚI ==================== */}
       <section className="product-section">
         <div className="container">
-          <SectionHeader title="Sản phẩm mới" />
+          <SectionHeader title={t('home.newProducts')} /> {/* ✅ Dịch */}
           <div className="product-grid">
             {newProducts.map((product) => (
               <ProductCard key={product._id} product={product} />
