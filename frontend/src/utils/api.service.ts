@@ -1,4 +1,3 @@
-// frontend/src/services/api.service.ts - WITHOUT i18n
 import axios from 'axios';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
@@ -20,7 +19,7 @@ apiClient.interceptors.request.use(
       config.headers.Authorization = `Bearer ${token}`;
     }
     
-    // Add language header from localStorage (not i18n)
+    // Add language header from localStorage
     const currentLang = localStorage.getItem('language') || 'vi';
     config.headers['Accept-Language'] = currentLang;
     

@@ -4,6 +4,16 @@ const Translation = require('../models/Translation');
 require('dotenv').config();
 
 const sampleTranslations = [
+
+  // ✅ THÊM MỚI - Home page
+  { key: 'home.hotProducts', namespace: 'home', viText: 'Sản phẩm HOT', category: 'UI', context: 'Hot products section title' },
+  { key: 'home.saleProducts', namespace: 'home', viText: 'Sản phẩm siêu giảm giá', category: 'UI', context: 'Sale products section title' },
+  { key: 'home.newProducts', namespace: 'home', viText: 'Sản phẩm mới', category: 'UI', context: 'New products section title' },
+  
+  // Common
+  { key: 'common.viewAll', namespace: 'common', viText: 'Xem tất cả', category: 'UI', context: 'View all link' },
+  { key: 'common.loading', namespace: 'common', viText: 'Đang tải dữ liệu...', category: 'UI', context: 'Loading message' },
+  
   // Common UI
   { key: 'common.welcome', namespace: 'common', viText: 'Chào mừng', category: 'UI', context: 'Welcome message' },
   { key: 'common.home', namespace: 'common', viText: 'Trang chủ', category: 'UI', context: 'Homepage link' },

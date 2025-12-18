@@ -1,4 +1,3 @@
-// frontend/src/App.tsx - WITHOUT i18n
 import React, { useContext } from "react";
 import { ToastContainer } from "react-toastify";
 import { AuthContext } from "./context/AuthContext";

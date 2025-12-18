@@ -1,4 +1,4 @@
-// backend/models/TranslationRequest.js
+// backend/models/TranslationRequest.js - FIXED
 const mongoose = require('mongoose');
 
 const translationRequestSchema = new mongoose.Schema({
@@ -29,8 +29,8 @@ const translationRequestSchema = new mongoose.Schema({
   aiResult: { type: String },
   aiProvider: { 
     type: String, 
-    enum: ['claude', 'gpt', 'google'], 
-    default: 'claude' 
+    enum: ['claude', 'gpt', 'google', 'google-translate-free'], // ✅ THÊM google-translate-free
+    default: 'google'
   },
   aiConfidence: { 
     type: Number,

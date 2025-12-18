@@ -1,40 +1,65 @@
-const mongoose = require('mongoose');   // ← THÊM DÒNG NÀY
+const mongoose = require('mongoose');
 const Schema = mongoose.Schema;
 
-const categorySchema = new mongoose.Schema({
+const productSchema = new mongoose.Schema({
   slug: { type: String, required: true, unique: true },
-  name: { type: String, required: true },
-  description: String,
-
-  // THÊM 3 FIELD SIÊU QUAN TRỌNG:
-  parent: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: "Category",
-    default: null
+  
+  // ✅ MULTILINGUAL: Name
+  name: {
+    vi: { type: String, required: true },
+    zh: { type: String, default: "" }
   },
-  // (Tùy chọn) để query nhanh hơn, có thể thêm:
-  ancestors: [{
+  
+  sku: { type: String, required: true, unique: true },
+  images: { type: [String], required: true },
+  
+  // ✅ MULTILINGUAL: Description
+  description: {
+    vi: { type: String, default: "" },
+    zh: { type: String, default: "" }
+  },
+  
+  priceOriginal: { type: Number, required: true },
+  priceSale: { type: Number, required: true },
+
+  // ✅ MULTILINGUAL: Attributes (thuộc tính động)
+  attributes: [{
+    name: {
+      vi: { type: String, required: true }, // "Chất liệu"
+      zh: { type: String, default: "" }     // "材料"
+    },
+    options: [{
+      label: {
+        vi: { type: String, required: true }, // "MDF EC | Duy chuẩn"
+        zh: { type: String, default: "" }     // "MDF EC | 标准"
+      },
+      value: { type: String, required: true }, // "mdf-ec-duy-chuan" (không dịch)
+      image: { type: String },
+      isDefault: { type: Boolean, default: false }
+    }]
+  }],
+
+  // Các field cũ (giữ lại cho backward compatibility)
+  material: { type: String, default: "" },
+  color: { type: String, default: "" },
+  size: { type: String, default: "" },
+
+  quantity: { type: Number, required: true },
+  categories: [{
     type: mongoose.Schema.Types.ObjectId,
     ref: "Category"
-  }], // ví dụ: ["nội thất", "phòng khách", "sofa"]
-  level: { type: Number, default: 0 }, // 0 = gốc, 1 = con, 2 = cháu...
-
-  image: String,        // ảnh danh mục
-  sortOrder: { type: Number, default: 0 },
-  isActive: { type: Boolean, default: true },
-
+  }],
+  hot: { type: Boolean, default: false },
+  onSale: { type: Boolean, default: false },
+  sold: { type: Number, default: 0 },
+  view: { type: Number, default: 0 },
   created_at: { type: Date, default: Date.now },
   updated_at: { type: Date, default: Date.now }
 });
 
-// Index để tìm nhanh theo parent
-categorySchema.index({ parent: 1 });
-categorySchema.index({ slug: 1 });
-
-// Tự động cập nhật updated_at
-categorySchema.pre("save", function (next) {
+productSchema.pre("save", function (next) {
   this.updated_at = new Date();
   next();
 });
 
-module.exports = mongoose.model('Category', categorySchema);
+module.exports = mongoose.model("Product", productSchema);
