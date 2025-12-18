@@ -3,7 +3,8 @@ import { Outlet, Link, useLocation } from "react-router-dom";
 import "@/styles/layouts/admin.layout.scss";
 import { 
   LayoutDashboard, 
-  Languages,
+  PanelsTopLeft,
+  Database,
   MessageSquareMore,
   Boxes, 
   LibraryBig,
@@ -34,13 +35,22 @@ export default function AdminLayout() {
             <span>Dashboard</span>
           </Link>
 
-          {/* Quản lý ngôn ngữ */}
+          {/* Quản lý ngôn ngữ UI*/}
           <Link 
-            to="/admin/quan-ly-ngon-ngu" 
-            className={`menu-item ${location.pathname.startsWith('/admin/quan-ly-ngon-ngu') ? 'active' : ''}`}
+            to="/admin/quan-ly-ngon-ngu-ui" 
+            className={`menu-item ${location.pathname.startsWith('/admin/quan-ly-ngon-ngu-ui') ? 'active' : ''}`}
           >
-            <Languages className="icon" />
-            <span>Quản lý ngôn ngữ</span>
+            <PanelsTopLeft className="icon" />
+            <span>Quản lý ngôn ngữ (UI)</span>
+          </Link>
+
+          {/* Quản lý ngôn ngữ Database */}
+          <Link 
+            to="/admin/quan-ly-ngon-ngu-db" 
+            className={`menu-item ${location.pathname.startsWith('/admin/quan-ly-ngon-ngu-db') ? 'active' : ''}`}
+          >
+            <Database className="icon" />
+            <span>Quản lý ngôn ngữ (DB)</span>
           </Link>
 
           {/* Chat khách hàng */}

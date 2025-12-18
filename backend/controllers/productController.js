@@ -1,9 +1,55 @@
-// controllers/productController.js
 const ProductService = require("../services/productService");
 const Product = require("../models/Product");
 const Category = require("../models/Category");
 const Joi = require("joi");
 const mongoose = require("mongoose");
+
+/**
+ * Helper: Transform product data theo language
+ */
+function transformProduct(prod, lang = 'vi') {
+  const product = prod.toObject ? prod.toObject() : prod;
+  
+  return {
+    ...product,
+    // ✅ Xử lý name
+    name: typeof product.name === 'object' && product.name[lang]
+      ? product.name[lang]
+      : (product.name?.vi || product.name || ''),
+    
+    // ✅ Xử lý description
+    description: typeof product.description === 'object' && product.description[lang]
+      ? product.description[lang]
+      : (product.description?.vi || product.description || ''),
+    
+    // ✅ Xử lý attributes (nếu có)
+    attributes: product.attributes?.map(attr => ({
+      ...attr,
+      name: typeof attr.name === 'object' && attr.name[lang]
+        ? attr.name[lang]
+        : (attr.name?.vi || attr.name || ''),
+      options: attr.options?.map(opt => ({
+        ...opt,
+        label: typeof opt.label === 'object' && opt.label[lang]
+          ? opt.label[lang]
+          : (opt.label?.vi || opt.label || '')
+      }))
+    })) || []
+  };
+}
+
+/**
+ * Helper: Transform category name theo language
+ */
+function transformCategoryName(cat, lang = 'vi') {
+  if (!cat) return cat;
+  return {
+    ...cat,
+    name: typeof cat.name === 'object' && cat.name[lang]
+      ? cat.name[lang]
+      : (cat.name?.vi || cat.name || '')
+  };
+}
 
 // Helper escape regex
 const escapeRegex = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
@@ -14,28 +60,26 @@ const normalizeString = (s) => {
   return s
     .toString()
     .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "") // remove diacritics
+    .replace(/[\u0300-\u036f]/g, "")
     .toLowerCase();
 };
 
-// GET /api/products – ĐÃ FIX: THÊM POPULATE CATEGORIES
+// GET /api/products
 exports.getProducts = async (req, res) => {
   try {
+    const { lang = 'vi' } = req.query;
     let filters = {};
 
-    // === LỌC THEO DANH MỤC (slug) ===
+    // Lọc theo danh mục
     if (req.query.category) {
       const category = await Category.findOne({
         slug: req.query.category,
         isActive: true,
       });
-      if (!category) return res.json([]); // không tìm thấy → trả rỗng
+      if (!category) return res.json([]);
 
-      // Lấy tất cả con cháu (đệ quy)
       const getChildIds = async (parentId) => {
-        const children = await Category.find({ parent: parentId }).select(
-          "_id"
-        );
+        const children = await Category.find({ parent: parentId }).select("_id");
         let ids = children.map((c) => c._id);
         for (const child of children) {
           ids = ids.concat(await getChildIds(child._id));
@@ -47,28 +91,35 @@ exports.getProducts = async (req, res) => {
       filters.categories = { $in: [category._id, ...childIds] };
     }
 
-    // === LỌC GIÁ ===
+    // Lọc giá
     if (req.query.minPrice || req.query.maxPrice) {
       filters.priceSale = {};
-      if (req.query.minPrice)
-        filters.priceSale.$gte = Number(req.query.minPrice);
-      if (req.query.maxPrice)
-        filters.priceSale.$lte = Number(req.query.maxPrice);
+      if (req.query.minPrice) filters.priceSale.$gte = Number(req.query.minPrice);
+      if (req.query.maxPrice) filters.priceSale.$lte = Number(req.query.maxPrice);
     }
 
-    // === SẮP XẾP ===
+    // Sắp xếp
     let sort = { created_at: -1 };
     if (req.query.sort === "price-asc") sort = { priceSale: 1 };
     if (req.query.sort === "price-desc") sort = { priceSale: -1 };
     if (req.query.sort === "-sold") sort = { sold: -1 };
 
-    // FIX: THÊM .populate('categories') 
     const products = await Product.find(filters)
-      .populate('categories') // ← POPULATE ĐẦY ĐỦ
+      .populate('categories')
       .sort(sort)
-      .lean(); // ← THÊM .lean() để trả về plain object
+      .lean();
 
-    res.json(products);
+    // ✅ Transform theo language
+    const transformed = products.map(prod => {
+      const p = transformProduct(prod, lang);
+      // Transform categories
+      if (p.categories) {
+        p.categories = p.categories.map(cat => transformCategoryName(cat, lang));
+      }
+      return p;
+    });
+
+    res.json(transformed);
   } catch (err) {
     console.error("Lỗi getProducts:", err);
     res.status(500).json({ message: "Lỗi server" });
@@ -78,20 +129,17 @@ exports.getProducts = async (req, res) => {
 // GET /api/products/search
 exports.searchProducts = async (req, res) => {
   try {
+    const { lang = 'vi' } = req.query;
     const raw = (req.query.query || req.query.q || "").toString().trim();
     if (!raw) return res.json([]);
 
     const limit = Math.max(0, parseInt(req.query.limit, 10) || 0);
 
-    // regex for original input
     const normalRegex = new RegExp(escapeRegex(raw), "i");
-
-    // fuzzy for original input (chars with .* between)
     const chars = raw.split("").filter(Boolean).map(escapeRegex);
     const fuzzyPattern = chars.join(".*");
     const fuzzyRegex = new RegExp(fuzzyPattern, "i");
 
-    // normalized (no diacritics)
     const rawNormalized = normalizeString(raw);
     const normalNormalizedRegex = new RegExp(escapeRegex(rawNormalized), "i");
     const fuzzyNormalizedRegex = new RegExp(
@@ -99,51 +147,44 @@ exports.searchProducts = async (req, res) => {
       "i"
     );
 
-    // search conditions: original fields AND normalized fields (if you have name_normalized/slug_normalized)
+    // ✅ Tìm kiếm trong cả name.vi và name.zh
     const orConditions = [
-      { name: { $regex: normalRegex } },
+      { 'name.vi': { $regex: normalRegex } },
+      { 'name.zh': { $regex: normalRegex } },
       { slug: { $regex: normalRegex } },
-      { name: { $regex: fuzzyRegex } },
+      { 'name.vi': { $regex: fuzzyRegex } },
+      { 'name.zh': { $regex: fuzzyRegex } },
       { slug: { $regex: fuzzyRegex } },
-      // normalized fields (ensure you add/populate these in DB)
-      { name_normalized: { $regex: normalNormalizedRegex } },
-      { slug_normalized: { $regex: normalNormalizedRegex } },
-      { name_normalized: { $regex: fuzzyNormalizedRegex } },
-      { slug_normalized: { $regex: fuzzyNormalizedRegex } },
-      { description: { $regex: normalRegex } },
+      { 'description.vi': { $regex: normalRegex } },
+      { 'description.zh': { $regex: normalRegex } },
+      { sku: { $regex: normalRegex } },
     ];
 
-    // Remove conditions that reference fields you don't have (optional)
-    const finalConditions = orConditions.filter((cond) => {
-      const key = Object.keys(cond)[0];
-      // if normalized fields not present in schema it's OK – Mongo ignores non-existing fields
-      return true;
-    });
-
-    let query = Product.find({ $or: finalConditions });
-
+    let query = Product.find({ $or: orConditions });
     if (limit > 0) query = query.limit(limit);
-
-    // use collation for case/accents where supported (still keep normalized checks)
     query = query.collation({ locale: "vi", strength: 1 });
 
     const products = await query.lean();
 
-    return res.json(Array.isArray(products) ? products : []);
+    // ✅ Transform theo language
+    const transformed = products.map(prod => transformProduct(prod, lang));
+
+    return res.json(Array.isArray(transformed) ? transformed : []);
   } catch (err) {
     console.error("searchProducts error:", err);
-    return res
-      .status(500)
-      .json({ message: err.message || "Error searching products" });
+    return res.status(500).json({ message: err.message || "Error searching products" });
   }
 };
 
 // GET /api/products/:id
 exports.getProductById = async (req, res) => {
   try {
+    const { lang = 'vi' } = req.query;
     const p = await ProductService.getById(req.params.id);
     if (!p) return res.status(404).json({ message: "Product not found" });
-    return res.json(p);
+    
+    const transformed = transformProduct(p, lang);
+    return res.json(transformed);
   } catch (err) {
     console.error("getProductById error:", err);
     return res.status(500).json({ message: err.message || "Server error" });
@@ -153,34 +194,36 @@ exports.getProductById = async (req, res) => {
 // GET /api/products/slug/:slug
 exports.getProductBySlug = async (req, res) => {
   try {
+    const { lang = 'vi' } = req.query;
+    
+    let p;
     if (typeof ProductService.getByIdOrSlug === "function") {
-      const p = await ProductService.getByIdOrSlug(req.params.slug);
-      if (!p) return res.status(404).json({ message: "Product not found" });
-      return res.json(p);
+      p = await ProductService.getByIdOrSlug(req.params.slug);
+    } else {
+      p = await Product.findOne({ slug: req.params.slug }).lean();
     }
-    // fallback: try find by slug via model
-    const p = await Product.findOne({ slug: req.params.slug }).lean();
+    
     if (!p) return res.status(404).json({ message: "Product not found" });
-    return res.json(p);
+    
+    const transformed = transformProduct(p, lang);
+    return res.json(transformed);
   } catch (err) {
     console.error("getProductBySlug error:", err);
     return res.status(500).json({ message: err.message || "Server error" });
   }
 };
 
-// ✅ THÊM API TĂNG LƯỢT XEM
+// Tăng lượt xem
 exports.incrementView = async (req, res) => {
   try {
     const { id, slug } = req.params;
-    
     let product;
     
-    // Tìm theo ID hoặc slug
     if (id) {
       product = await Product.findByIdAndUpdate(
         id,
-        { $inc: { view: 1 } }, // Tăng view lên 1
-        { new: true } // Trả về document sau khi update
+        { $inc: { view: 1 } },
+        { new: true }
       );
     } else if (slug) {
       product = await Product.findOneAndUpdate(
@@ -194,7 +237,6 @@ exports.incrementView = async (req, res) => {
       return res.status(404).json({ message: "Product not found" });
     }
 
-    // Chỉ trả về view count, không cần trả toàn bộ product
     return res.json({ 
       success: true, 
       view: product.view 
@@ -208,17 +250,16 @@ exports.incrementView = async (req, res) => {
   }
 };
 
-// GET /api/products/search-suggestions?q=xxx → SIÊU THÔNG MINH (ĐÃ SỬA LỖI)
+// GET /api/products/search-suggestions
 exports.searchSuggestions = async (req, res) => {
   try {
+    const { lang = 'vi' } = req.query;
     let q = (req.query.q || "").toString().trim();
 
-    // Cho phép tìm ngay từ 1 ký tự
     if (!q || q.length < 1) {
       return res.json([]);
     }
 
-    // Hàm chuẩn hóa: bỏ dấu tiếng Việt
     const normalize = (str) =>
       str
         .normalize("NFD")
@@ -228,29 +269,33 @@ exports.searchSuggestions = async (req, res) => {
     const normalizedQ = normalize(q);
     const escapedQ = q.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
-    // Tạo các pattern tìm kiếm linh hoạt
     const searchPatterns = [
-      new RegExp(escapedQ, "i"), // tìm chính xác có dấu
-      new RegExp(normalizedQ, "i"), // tìm chính xác không dấu
-      new RegExp(normalizedQ.split("").join(".*"), "i"), // gõ thiếu: "btra" → "bàn trà"
-      new RegExp(escapedQ.split("").join(".*"), "i"), // gõ thiếu có dấu: "ghsfa" → "ghế sofa"
+      new RegExp(escapedQ, "i"),
+      new RegExp(normalizedQ, "i"),
+      new RegExp(normalizedQ.split("").join(".*"), "i"),
+      new RegExp(escapedQ.split("").join(".*"), "i"),
     ];
 
-    // Tìm sản phẩm theo tên HOẶC mô tả
+    // ✅ Tìm trong cả name.vi và name.zh
     const products = await Product.find({
       $or: [
-        { name: { $in: searchPatterns } },
-        { description: { $in: searchPatterns } },
-        { sku: { $in: searchPatterns } }, // THÊM DÒNG NÀY: TÌMI THEO SKU
-        { sku: { $regex: escapedQ, $options: "i" } }, // Bonus: tìm chính xác SKU
+        { 'name.vi': { $in: searchPatterns } },
+        { 'name.zh': { $in: searchPatterns } },
+        { 'description.vi': { $in: searchPatterns } },
+        { 'description.zh': { $in: searchPatterns } },
+        { sku: { $in: searchPatterns } },
+        { sku: { $regex: escapedQ, $options: "i" } },
       ],
     })
       .select("name slug priceSale priceOriginal images sku")
       .limit(10)
       .lean();
 
-    // Sắp xếp ưu tiên sản phẩm có từ khóa trong tên (ưu tiên cao hơn)
-    products.sort((a, b) => {
+    // ✅ Transform theo language
+    const transformed = products.map(prod => transformProduct(prod, lang));
+
+    // Sắp xếp theo độ ưu tiên
+    transformed.sort((a, b) => {
       const aSku = (a.sku || "").toString().toLowerCase();
       const bSku = (b.sku || "").toString().toLowerCase();
       const lowerQ = q.toLowerCase();
@@ -260,38 +305,33 @@ exports.searchSuggestions = async (req, res) => {
 
       const aName = normalize(a.name);
       const bName = normalize(b.name);
-      if (aName.includes(normalizedQ) && !bName.includes(normalizedQ))
-        return -1;
+      if (aName.includes(normalizedQ) && !bName.includes(normalizedQ)) return -1;
       if (!aName.includes(normalizedQ) && bName.includes(normalizedQ)) return 1;
 
       return 0;
     });
 
-    res.json(products);
+    res.json(transformed);
   } catch (err) {
     console.error("searchSuggestions error:", err);
     res.status(500).json([]);
   }
 };
 
-// POST /api/admin/products/bulk-categories – GÁN DANH MỤC HÀNG LOẠT
+// === ADMIN FUNCTIONS ===
+
 exports.bulkUpdateCategories = async (req, res) => {
   try {
     const { productIds, categoryIds } = req.body;
 
     if (!Array.isArray(productIds) || !Array.isArray(categoryIds)) {
-      return res
-        .status(400)
-        .json({ message: "productIds và categoryIds phải là mảng" });
+      return res.status(400).json({ message: "productIds và categoryIds phải là mảng" });
     }
 
     if (productIds.length === 0 || categoryIds.length === 0) {
-      return res
-        .status(400)
-        .json({ message: "Chọn ít nhất 1 sản phẩm và 1 danh mục" });
+      return res.status(400).json({ message: "Chọn ít nhất 1 sản phẩm và 1 danh mục" });
     }
 
-    // ÉP KIỂU CHUỖI THÀNH ObjectId – ĐÂY LÀ CHỖ CHẾT NGƯỜI!!!
     const validCategoryObjectIds = categoryIds.map((id) => {
       if (!mongoose.Types.ObjectId.isValid(id)) {
         throw new Error(`Category ID không hợp lệ: ${id}`);
@@ -299,14 +339,9 @@ exports.bulkUpdateCategories = async (req, res) => {
       return new mongoose.Types.ObjectId(id);
     });
 
-    // FIX: DÙNG $SET THAY VÌ $addToSet ĐỂ GHI ĐÈ HOÀN TOÀN
     const result = await Product.updateMany(
       { _id: { $in: productIds } },
-      {
-        $set: {
-          categories: validCategoryObjectIds, // ← GHI ĐÈ, không merge
-        },
-      }
+      { $set: { categories: validCategoryObjectIds } }
     );
 
     return res.json({
@@ -316,9 +351,7 @@ exports.bulkUpdateCategories = async (req, res) => {
     });
   } catch (error) {
     console.error("Lỗi bulkUpdateCategories:", error);
-    return res.status(500).json({
-      message: error.message || "Lỗi server",
-    });
+    return res.status(500).json({ message: error.message || "Lỗi server" });
   }
 };
 
@@ -328,6 +361,8 @@ exports.getAllProductsAdmin = async (req, res) => {
       .populate("categories", "name slug")
       .sort({ created_at: -1 })
       .lean();
+    
+    // ✅ Admin panel: giữ nguyên format multilingual (không transform)
     res.json(products);
   } catch (err) {
     console.error("getAllProductsAdmin error:", err);
@@ -335,40 +370,28 @@ exports.getAllProductsAdmin = async (req, res) => {
   }
 };
 
-// POST /api/admin/products - Tạo sản phẩm mới (✅ HỖ TRỢ ATTRIBUTES)
+// POST /api/admin/products - Tạo sản phẩm mới
 exports.createProduct = async (req, res) => {
   try {
     const {
-      name,
-      sku,
-      description,
-      priceOriginal,
-      priceSale,
-      quantity,
-      material,
-      color,
-      size,
-      categories,
-      hot,
-      onSale,
-      attributes, // ✅ THÊM
+      name, sku, description, priceOriginal, priceSale, quantity,
+      material, color, size, categories, hot, onSale, attributes
     } = req.body;
 
-    // Validate
     if (!name || !sku || !priceOriginal || !priceSale || !quantity) {
       return res.status(400).json({ 
         message: "Thiếu thông tin bắt buộc: name, sku, priceOriginal, priceSale, quantity" 
       });
     }
 
-    // Kiểm tra SKU trùng
     const existingSku = await Product.findOne({ sku });
     if (existingSku) {
       return res.status(400).json({ message: "SKU đã tồn tại" });
     }
 
-    // Tạo slug
-    const slug = name
+    // Tạo slug từ name.vi hoặc name (nếu là string)
+    const nameForSlug = typeof name === 'object' ? name.vi : name;
+    const slug = nameForSlug
       .toLowerCase()
       .normalize("NFD")
       .replace(/[\u0300-\u036f]/g, "")
@@ -379,10 +402,9 @@ exports.createProduct = async (req, res) => {
       .replace(/\s+/g, "-")
       .replace(/-+/g, "-");
 
-    // ✅ Xử lý images chính của sản phẩm
+    // Xử lý images
     let images = [];
     if (req.files && req.files.length > 0) {
-      // Lọc ra những file không phải attribute images
       const mainImages = req.files.filter(f => !f.fieldname.startsWith('attribute_'));
       images = mainImages.map((file) => `/uploads/products/${file.filename}`);
     }
@@ -400,16 +422,15 @@ exports.createProduct = async (req, res) => {
       }
     }
 
-    // ✅ Xử lý attributes
+    // ✅ Xử lý attributes với multilingual
     let parsedAttributes = [];
     if (attributes) {
       try {
-        // attributes được gửi dạng JSON string từ frontend
         parsedAttributes = typeof attributes === 'string' 
           ? JSON.parse(attributes) 
           : attributes;
 
-        // Xử lý upload ảnh cho từng option
+        // Upload ảnh cho attributes
         if (req.files && req.files.length > 0) {
           parsedAttributes.forEach((attr, attrIdx) => {
             attr.options.forEach((opt, optIdx) => {
@@ -426,11 +447,15 @@ exports.createProduct = async (req, res) => {
       }
     }
 
-    const product = new Product({
-      name,
-      slug,
-      sku,
-      description: description || "",
+    // ✅ Convert name/description sang multilingual format
+    const productData = {
+      slug, sku,
+      name: typeof name === 'string' 
+        ? { vi: name, zh: '' } 
+        : name,
+      description: typeof description === 'string'
+        ? { vi: description || '', zh: '' }
+        : (description || { vi: '', zh: '' }),
       priceOriginal: Number(priceOriginal),
       priceSale: Number(priceSale),
       quantity: Number(quantity),
@@ -441,10 +466,10 @@ exports.createProduct = async (req, res) => {
       hot: hot === "true" || hot === true || false,
       onSale: onSale === "true" || onSale === true || false,
       images: images.length > 0 ? images : [],
-      attributes: parsedAttributes, // ✅ Lưu attributes
-    });
+      attributes: parsedAttributes,
+    };
 
-    await product.save();
+    const product = await Product.create(productData);
     
     const savedProduct = await Product.findById(product._id)
       .populate("categories", "name slug")
@@ -457,7 +482,7 @@ exports.createProduct = async (req, res) => {
   }
 };
 
-// PUT /api/admin/products/:id - Cập nhật sản phẩm (✅ HỖ TRỢ ATTRIBUTES)
+// PUT /api/admin/products/:id - Cập nhật sản phẩm
 exports.updateProduct = async (req, res) => {
   try {
     const product = await Product.findById(req.params.id);
@@ -466,19 +491,8 @@ exports.updateProduct = async (req, res) => {
     }
 
     const {
-      name,
-      sku,
-      description,
-      priceOriginal,
-      priceSale,
-      quantity,
-      material,
-      color,
-      size,
-      categories,
-      hot,
-      onSale,
-      attributes, // ✅ THÊM
+      name, sku, description, priceOriginal, priceSale, quantity,
+      material, color, size, categories, hot, onSale, attributes
     } = req.body;
 
     // Kiểm tra SKU trùng
@@ -490,10 +504,15 @@ exports.updateProduct = async (req, res) => {
       product.sku = sku;
     }
 
-    // Cập nhật
+    // Cập nhật name
     if (name) {
-      product.name = name;
-      product.slug = name
+      product.name = typeof name === 'string' 
+        ? { vi: name, zh: '' } 
+        : name;
+      
+      // Update slug từ name.vi
+      const nameForSlug = typeof name === 'object' ? name.vi : name;
+      product.slug = nameForSlug
         .toLowerCase()
         .normalize("NFD")
         .replace(/[\u0300-\u036f]/g, "")
@@ -505,7 +524,13 @@ exports.updateProduct = async (req, res) => {
         .replace(/-+/g, "-");
     }
 
-    if (description !== undefined) product.description = description;
+    // Cập nhật description
+    if (description !== undefined) {
+      product.description = typeof description === 'string'
+        ? { vi: description || '', zh: '' }
+        : description;
+    }
+
     if (priceOriginal !== undefined) product.priceOriginal = Number(priceOriginal);
     if (priceSale !== undefined) product.priceSale = Number(priceSale);
     if (quantity !== undefined) product.quantity = Number(quantity);
@@ -529,14 +554,13 @@ exports.updateProduct = async (req, res) => {
       product.categories = categoryIds;
     }
 
-    // ✅ Xử lý attributes
+    // Xử lý attributes
     if (attributes !== undefined) {
       try {
         let parsedAttributes = typeof attributes === 'string' 
           ? JSON.parse(attributes) 
           : attributes;
 
-        // Xử lý upload ảnh mới cho attributes
         if (req.files && req.files.length > 0) {
           parsedAttributes.forEach((attr, attrIdx) => {
             attr.options.forEach((opt, optIdx) => {
@@ -545,7 +569,6 @@ exports.updateProduct = async (req, res) => {
               if (file) {
                 opt.image = `/uploads/products/${file.filename}`;
               }
-              // Nếu không có file mới, giữ nguyên ảnh cũ (nếu có)
             });
           });
         }
@@ -556,7 +579,7 @@ exports.updateProduct = async (req, res) => {
       }
     }
 
-    // Xử lý images chính
+    // Xử lý images
     if (req.files && req.files.length > 0) {
       const mainImages = req.files.filter(f => !f.fieldname.startsWith('attribute_'));
       if (mainImages.length > 0) {
@@ -577,7 +600,7 @@ exports.updateProduct = async (req, res) => {
   }
 };
 
-// DELETE /api/admin/products/:id - Xóa sản phẩm
+// DELETE /api/admin/products/:id
 exports.deleteProduct = async (req, res) => {
   try {
     const product = await Product.findById(req.params.id);
