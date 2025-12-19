@@ -2,10 +2,11 @@ import React, { useState, useEffect, useRef, useContext } from "react";
 import { FaSearch } from "react-icons/fa";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useCart } from "@/context/CartContext";
-import "@/styles/components/user/header.scss";
 import { AuthContext } from "@/context/AuthContext";
+import { useLanguage } from "@/context/LanguageContext"; // ✅ THÊM
 import { getImageUrl, getFirstImageUrl } from "@/utils/imageUrl";
-import { triggerUserLogout } from "@/utils/authEvents"; // ← THÊM
+import { triggerUserLogout } from "@/utils/authEvents";
+import "@/styles/components/user/header.scss";
 
 interface Category {
   _id: string;
@@ -23,6 +24,7 @@ interface CurrentUser {
 }
 
 const Header: React.FC = () => {
+  const { t, language } = useLanguage(); // ✅ Lấy cả language
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
   const [isAtTop, setIsAtTop] = useState(true);
@@ -48,7 +50,8 @@ const Header: React.FC = () => {
   useEffect(() => {
     const fetchCategories = async () => {
       try {
-        const response = await fetch("http://localhost:5000/api/categories");
+        // ✅ Thêm ?lang=${language}
+        const response = await fetch(`http://localhost:5000/api/categories?lang=${language}`);
         const data = await response.json();
         setCategories(data);
         setLoading(false);
@@ -74,7 +77,7 @@ const Header: React.FC = () => {
     handleScroll();
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
-  }, []);
+  }, [language]); // ✅ Re-fetch khi language thay đổi
 
   // Cập nhật vị trí dropdown khi scroll/resize
   useEffect(() => {
@@ -118,10 +121,11 @@ const Header: React.FC = () => {
       setShowSuggestions(true);
 
       try {
+        // ✅ Thêm ?lang=${language}
         const res = await fetch(
           `http://localhost:5000/api/products/search-suggestions?q=${encodeURIComponent(
             searchQuery
-          )}`
+          )}&lang=${language}`
         );
         const data = await res.json();
         setSuggestions(data.slice(0, 6));
@@ -136,7 +140,7 @@ const Header: React.FC = () => {
     return () => {
       if (searchTimeoutRef.current) clearTimeout(searchTimeoutRef.current);
     };
-  }, [searchQuery]);
+  }, [searchQuery, language]); // ✅ Thêm language dependency
 
   // ĐÓNG DROPDOWN KHI CLICK RA NGOÀI
   useEffect(() => {
@@ -178,37 +182,30 @@ const Header: React.FC = () => {
     e.preventDefault();
     const query = searchQuery.trim();
     if (query === "") {
-      alert("Vui lòng nhập từ khóa tìm kiếm!");
+      alert(t('header.searchPlaceholder'));
       return;
     }
     navigate(`/tim-kiem?query=${encodeURIComponent(query)}`);
     setSearchQuery("");
   };
 
-  // ✅ HANDLE LOGOUT - TÍCH HỢP CHAT + REFRESH
   const handleLogout = () => {
-    console.log('🔔 User logging out...');
+    console.log('🔓 User logging out...');
     
     try {
-      // 1. Trigger chat logout event TRƯỚC
       triggerUserLogout();
-      console.log('🔔 Chat: User logout event triggered');
-      
-      // 2. AuthContext logout (sẽ reset user state)
+      console.log('🔓 Chat: User logout event triggered');
       logout();
       
-      // 3. Refresh page để reset chat hoàn toàn
       setTimeout(() => {
         window.location.href = '/';
-      }, 100); // Delay 100ms để các cleanup hoàn thành
+      }, 100);
     } catch (e) {
       console.error('Logout error:', e);
-      // Nếu lỗi vẫn refresh
       window.location.href = '/';
     }
   };
 
-  // Lấy tên cuối
   const getLastName = (fullName: string) => {
     if (!fullName) return "";
     const parts = fullName.trim().split(" ");
@@ -218,7 +215,7 @@ const Header: React.FC = () => {
   return (
     <header className={`ddp-header ${isAtTop ? "at-top" : "scrolled"}`}>
       <div className="topbar">
-        Nội Thất Đại Dũng Phát, Uy Tín - Chất Lượng - Chính Hãng
+        {t('header.topbar')}
       </div>
 
       <div className="header-main container">
@@ -235,7 +232,7 @@ const Header: React.FC = () => {
           <form onSubmit={handleSearch}>
             <input
               type="text"
-              placeholder="Tìm kiếm sản phẩm..."
+              placeholder={t('header.searchPlaceholder')}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               onFocus={() =>
@@ -247,7 +244,7 @@ const Header: React.FC = () => {
               <FaSearch className="search-icon" />
             </button>
 
-            {/* DROPDOWN GỢI Ý */}
+            {/* DROPDOWN Gợi ý */}
             {showSuggestions && suggestions.length > 0 && (
               <div className="search-suggestions" ref={suggestionsRef}>
                 {suggestions.map((product) => (
@@ -271,7 +268,7 @@ const Header: React.FC = () => {
                     />
                     <div className="suggestion-info">
                       <div className="suggestion-name">{product.name}</div>
-                      <div className="suggestion-sku">Mã SP: {product.sku}</div>
+                      <div className="suggestion-sku">{t('header.productCode')}: {product.sku}</div>
                       <div className="suggestion-price-info">
                         <span className="price-sale">
                           {new Intl.NumberFormat("vi-VN", {
@@ -305,7 +302,7 @@ const Header: React.FC = () => {
                 ))}
 
                 <div className="suggestion-footer">
-                  Nhấn Enter để tìm "<strong>{searchQuery}</strong>"
+                  {t('header.pressEnter')} "<strong>{searchQuery}</strong>"
                 </div>
               </div>
             )}
@@ -344,7 +341,7 @@ const Header: React.FC = () => {
                 {/* DROPDOWN */}
                 <div className="user-dropdown" ref={dropdownRef}>
                   <div className="dropdown-item phone">
-                    <span>{user?.phone || "Chưa có SĐT"}</span>
+                    <span>{user?.phone || t('header.noPhone')}</span>
                   </div>
                   <div className="dropdown-item email">
                     <span>{user?.email}</span>
@@ -367,18 +364,18 @@ const Header: React.FC = () => {
                       <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-20h-7z" />
                       <path d="M18.5 2.5l3 3L12 15l-4 1 1-4 9.5-9.5z" />
                     </svg>
-                    <span>Chỉnh sửa</span>
+                    <span>{t('header.editProfile')}</span>
                   </Link>
 
                   <div className="dropdown-item logout" onClick={handleLogout}>
-                    <span>Đăng xuất</span>
+                    <span>{t('header.logout')}</span>
                   </div>
                 </div>
               </div>
             ) : (
               <Link to="/tai-khoan-ca-nhan" className="user-link">
                 <span className="user-icon">👤</span>
-                <span className="user-box-text">Đăng ký/Đăng nhập</span>
+                <span className="user-box-text">{t('header.loginRegister')}</span>
               </Link>
             )}
           </div>
@@ -387,7 +384,7 @@ const Header: React.FC = () => {
             className="cart-box"
             onClick={() => navigate("/thanh-toan")}
             role="button"
-            aria-label="Giỏ hàng"
+            aria-label={t('header.cart')}
           >
             <div className="cart-icon">🛒</div>
             <span className="badge">{totalQuantity || 0}</span>
@@ -406,7 +403,7 @@ const Header: React.FC = () => {
           <div className="tree-menu-wrapper">
             <div className="category-trigger">
               <span className="menu-icon">☰</span>
-              DANH MỤC SẢN PHẨM
+              {t('header.categoryMenu')}
             </div>
             <div
               className={`tree-dropdown ${
@@ -501,7 +498,7 @@ const Header: React.FC = () => {
                     </div>
                   ))
                 ) : (
-                  <div className="no-categories">Không có danh mục</div>
+                  <div className="no-categories">{t('header.noCategories')}</div>
                 )}
               </div>
             </div>
@@ -509,13 +506,13 @@ const Header: React.FC = () => {
 
           <div className="main-menu-items">
             <Link to="/theo-doi-don-hang" className="menu-item">
-              Kiểm tra đơn hàng
+              {t('header.trackOrder')}
             </Link>
             <Link to="/posts" className="menu-item">
-              Tin tức
+              {t('header.news')}
             </Link>
             <Link to="/gioi-thieu" className="menu-item">
-              Giới thiệu
+              {t('header.about')}
             </Link>
           </div>
         </div>

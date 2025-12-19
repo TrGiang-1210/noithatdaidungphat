@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
+import { useLanguage } from "@/context/LanguageContext";
 import "@/styles/components/user/footer.scss";
 
 interface Category {
@@ -9,13 +10,15 @@ interface Category {
 }
 
 const Footer: React.FC = () => {
+  const { t, language } = useLanguage(); // ✅ Lấy cả language
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchCategories = async () => {
       try {
-        const response = await fetch("http://localhost:5000/api/categories");
+        // ✅ Thêm ?lang=${language}
+        const response = await fetch(`http://localhost:5000/api/categories?lang=${language}`);
         const data = await response.json();
         setCategories(data);
         setLoading(false);
@@ -25,20 +28,18 @@ const Footer: React.FC = () => {
       }
     };
     fetchCategories();
-  }, []);
+  }, [language]); // ✅ Re-fetch khi language thay đổi
 
   return (
     <footer className="ddp-footer">
       <div className="container footer-grid">
-        {/* Cột 1 — Logo + mô tả */}
+        {/* Cột 1 – Logo + mô tả */}
         <div className="footer-col">
           <div className="footer-logo">
-            <img src="./src/assets/logo-ddp-removebg.png" alt="ddp" />{" "}
-            {/* Giả sử logo mới */}
+            <img src="./src/assets/logo-ddp-removebg.png" alt="ddp" />
           </div>
           <p className="footer-desc">
-            Nội Thất Đại Dũng Phát — cung cấp sản phẩm nội thất chất lượng, bền
-            đẹp, giá tốt cho gia đình, khách sạn, văn phòng.
+            {t('footer.description')}
           </p>
           <div className="footer-hotline">
             <span className="phone-icon">📞</span>
@@ -46,79 +47,76 @@ const Footer: React.FC = () => {
           </div>
         </div>
 
-        {/* Cột 2 — Chính sách */}
+        {/* Cột 2 – Chính sách */}
         <div className="footer-col">
-          <h3 className="footer-title">Chính sách</h3>
+          <h3 className="footer-title">{t('footer.policy')}</h3>
           <ul>
             <li>
-              <Link to="/chinh-sach-bao-hanh">Chính sách bảo hành</Link>
+              <Link to="/chinh-sach-bao-hanh">{t('footer.warrantyPolicy')}</Link>
             </li>
             <li>
-              <Link to="/chinh-sach-van-chuyen">Chính sách vận chuyển</Link>
+              <Link to="/chinh-sach-van-chuyen">{t('footer.shippingPolicy')}</Link>
             </li>
             <li>
-              <Link to="/doi-tra">Chính sách đổi trả</Link>
+              <Link to="/doi-tra">{t('footer.returnPolicy')}</Link>
             </li>
             <li>
-              <Link to="/bao-mat">Bảo mật thông tin</Link>
+              <Link to="/bao-mat">{t('footer.privacyPolicy')}</Link>
             </li>
           </ul>
         </div>
 
-        {/* Cột 3 — Danh mục (làm động) */}
+        {/* Cột 3 – Danh mục (làm động) */}
         <div className="footer-col">
-          <h3 className="footer-title">Danh mục sản phẩm</h3>
+          <h3 className="footer-title">{t('footer.categories')}</h3>
           {loading ? (
-            <p>Đang tải...</p>
+            <p>{t('common.loading')}</p>
           ) : categories.length > 0 ? (
             <ul>
-              {categories.slice(0, 15).map(
-                (
-                  cat // Giới hạn 6 để gọn
-                ) => (
-                  <li key={cat._id}>
-                    <Link to={`/danh-muc/${cat.slug}`} className="tree-link">
-                      <span>{cat.name}</span>
-                      {cat.children && cat.children.length > 0 && (
-                        <span className="tree-arrow">›</span>
-                      )}
-                    </Link>
-                  </li>
-                )
-              )}
+              {categories.slice(0, 15).map((cat) => (
+                <li key={cat._id}>
+                  <Link to={`/danh-muc/${cat.slug}`} className="tree-link">
+                    <span>{cat.name}</span>
+                    {cat.children && cat.children.length > 0 && (
+                      <span className="tree-arrow">›</span>
+                    )}
+                  </Link>
+                </li>
+              ))}
             </ul>
           ) : (
-            <p>Không có danh mục</p>
+            <p>{t('footer.noCategories')}</p>
           )}
         </div>
 
-        {/* Cột 4 — Liên hệ (chỉnh sửa để hỗ trợ 2 cửa hàng) */}
+        {/* Cột 4 – Liên hệ */}
         <div className="footer-col">
-          <h3 className="footer-title">Liên hệ</h3>
+          <h3 className="footer-title">{t('footer.contact')}</h3>
           <div className="store-info">
-            <h4>Nội Thất Đại Dũng Phát - Nội Thất Rẻ Đẹp Long An</h4>
+            <h4>{t('footer.store1Name')}</h4>
             <ul>
               <li>
-                Địa chỉ: 474 ĐT824, Mỹ Hạnh Nam, Đức Hòa, Long An 82703, Việt
-                Nam
+                {t('footer.address')}: 474 ĐT824, Mỹ Hạnh Nam, Đức Hòa, Long An 82703, Việt Nam
               </li>
               <li>Email: noithatdaidungphat@gmail.com</li>
-              <li>Điện thoại: 0941038839 - 0965708839</li>
+              <li>{t('footer.phone')}: 0941038839 - 0965708839</li>
             </ul>
 
-            <h4>Nệm Đại Dũng Phát - Nệm Tốt Long An</h4>
+            <h4>{t('footer.store2Name')}</h4>
             <ul>
-              <li>Địa chỉ: ĐT824, Mỹ Hạnh Nam, Đức Hòa, Long An, Việt Nam</li>
+              <li>
+                {t('footer.address')}: ĐT824, Mỹ Hạnh Nam, Đức Hòa, Long An, Việt Nam
+              </li>
               <li>Email: nemdaidungphat@gmail.com</li>
-              <li>Điện thoại: 0941038839 - 0965708839</li>
+              <li>{t('footer.phone')}: 0941038839 - 0965708839</li>
             </ul>
           </div>
-          <p className="working-hours">Giờ làm việc: 8:00 – 21:00 (T2–CN)</p>
+          <p className="working-hours">{t('footer.workingHours')}</p>
         </div>
       </div>
 
       <div className="footer-bottom">
-        © {new Date().getFullYear()} Đại Dũng Phát — All rights reserved.
+        © {new Date().getFullYear()} {t('footer.copyright')}
       </div>
     </footer>
   );

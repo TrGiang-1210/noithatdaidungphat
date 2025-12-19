@@ -1,17 +1,13 @@
-// src/styles/pages/translation-management.scss
-
 .translation-management {
   padding: 20px;
   font-family: Arial, sans-serif;
 
   h1 {
-    margin-bottom: 30px;
-    font-size: 28px;
-    color: #333;
+    margin-bottom: 20px;
   }
 
-  // Statistics Cards
-  .stats-grid {
+  // Stats Section
+  .stats-container {
     display: flex;
     gap: 20px;
     margin-bottom: 30px;
@@ -21,26 +17,13 @@
       border-radius: 8px;
       flex: 1;
 
-      .stat-label {
-        font-size: 12px;
-        color: #666;
-        margin-bottom: 5px;
-      }
-
-      .stat-value {
-        font-size: 24px;
-        font-weight: bold;
-      }
-
       &.total {
         background: #e3f2fd;
-        .stat-value {
-          color: #1976d2;
-        }
       }
 
       &.ai-translated {
         background: #fff3e0;
+
         .stat-value {
           color: #ff9800;
         }
@@ -48,15 +31,26 @@
 
       &.approved {
         background: #e8f5e9;
+
         .stat-value {
           color: #4caf50;
         }
+      }
+
+      .stat-label {
+        font-size: 12px;
+        color: #666;
+      }
+
+      .stat-value {
+        font-size: 24px;
+        font-weight: bold;
       }
     }
   }
 
   // Filters Section
-  .filters-section {
+  .filters-container {
     display: flex;
     gap: 10px;
     margin-bottom: 20px;
@@ -66,26 +60,12 @@
       padding: 10px;
       border: 1px solid #ddd;
       border-radius: 6px;
-      font-size: 14px;
-
-      &:focus {
-        outline: none;
-        border-color: #2196f3;
-      }
     }
 
     .status-select {
       padding: 10px;
       border: 1px solid #ddd;
       border-radius: 6px;
-      font-size: 14px;
-      background: white;
-      cursor: pointer;
-
-      &:focus {
-        outline: none;
-        border-color: #2196f3;
-      }
     }
 
     .batch-translate-btn {
@@ -95,24 +75,39 @@
       border: none;
       border-radius: 6px;
       cursor: pointer;
-      font-size: 14px;
-      font-weight: 500;
-      transition: all 0.3s ease;
-
-      &:hover:not(:disabled) {
-        background: #1976d2;
-        transform: translateY(-1px);
-      }
 
       &:disabled {
         cursor: not-allowed;
         opacity: 0.5;
       }
+
+      &:not(:disabled):hover {
+        background: #1976d2;
+      }
+    }
+
+    .batch-approve-btn {
+      padding: 10px 20px;
+      background: #4caf50;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+
+      &:disabled {
+        cursor: not-allowed;
+        opacity: 0.5;
+        background: #9e9e9e;
+      }
+
+      &:not(:disabled):hover {
+        background: #45a049;
+      }
     }
   }
 
   // Loading State
-  .loading-state {
+  .loading-container {
     text-align: center;
     padding: 50px;
 
@@ -142,7 +137,7 @@
   }
 
   // Translation Table
-  .table-wrapper {
+  .table-container {
     overflow-x: auto;
 
     .translation-table {
@@ -157,74 +152,39 @@
         tr {
           background: #f5f5f5;
           border-bottom: 2px solid #ddd;
+        }
 
-          th {
-            padding: 12px;
-            text-align: left;
-            font-weight: 600;
-            font-size: 13px;
-            color: #555;
-
-            input[type="checkbox"] {
-              cursor: pointer;
-              width: 16px;
-              height: 16px;
-            }
-          }
+        th {
+          padding: 12px;
+          text-align: left;
         }
       }
 
       tbody {
         tr {
           border-bottom: 1px solid #eee;
-          transition: background 0.2s ease;
 
           &:hover {
-            background: #f9f9f9;
+            background: #fafafa;
+          }
+        }
+
+        td {
+          padding: 12px;
+
+          &.key-cell {
+            font-size: 12px;
+            color: #666;
+            font-family: monospace;
           }
 
-          td {
-            padding: 12px;
-            vertical-align: middle;
+          &.text-cell {
+            max-width: 200px;
+          }
 
-            &.checkbox-cell {
-              input[type="checkbox"] {
-                cursor: pointer;
-                width: 16px;
-                height: 16px;
-              }
-            }
-
-            &.key-cell {
-              font-size: 12px;
-              color: #666;
-              font-family: 'Courier New', monospace;
-            }
-
-            &.text-cell {
-              max-width: 200px;
-              word-wrap: break-word;
-            }
-
-            &.chinese-cell {
-              max-width: 250px;
-              font-family: 'Noto Sans SC', sans-serif;
-
-              .edit-textarea {
-                width: 100%;
-                padding: 8px;
-                min-height: 60px;
-                font-family: 'Noto Sans SC', sans-serif;
-                border: 1px solid #ddd;
-                border-radius: 4px;
-                font-size: 14px;
-
-                &:focus {
-                  outline: none;
-                  border-color: #2196f3;
-                }
-              }
-            }
+          &.chinese-cell {
+            max-width: 250px;
+            font-family: "Noto Sans SC", sans-serif;
           }
         }
       }
@@ -238,23 +198,33 @@
     font-size: 11px;
     font-weight: bold;
     color: white;
-    display: inline-block;
 
     &.draft {
-      background: #9e9e9e;
+      background-color: #9e9e9e;
     }
 
     &.ai-translated {
-      background: #2196f3;
+      background-color: #2196f3;
     }
 
     &.human-reviewed {
-      background: #ff9800;
+      background-color: #ff9800;
     }
 
     &.approved {
-      background: #4caf50;
+      background-color: #4caf50;
     }
+  }
+
+  // Edit Mode
+  .edit-textarea {
+    width: 100%;
+    padding: 8px;
+    min-height: 60px;
+    font-family: "Noto Sans SC", sans-serif;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    resize: vertical;
   }
 
   // Action Buttons
@@ -265,61 +235,35 @@
 
     button {
       padding: 5px 10px;
+      color: white;
       border: none;
       border-radius: 4px;
       cursor: pointer;
       font-size: 12px;
-      font-weight: 500;
-      transition: all 0.2s ease;
+      transition: opacity 0.2s;
 
       &:hover {
-        transform: translateY(-1px);
-        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        opacity: 0.9;
       }
 
-      &.btn-ai {
+      &.ai-btn {
         background: #2196f3;
-        color: white;
-
-        &:hover {
-          background: #1976d2;
-        }
       }
 
-      &.btn-edit {
+      &.edit-btn {
         background: #ff9800;
-        color: white;
-
-        &:hover {
-          background: #f57c00;
-        }
       }
 
-      &.btn-approve {
+      &.save-btn {
         background: #4caf50;
-        color: white;
-
-        &:hover {
-          background: #388e3c;
-        }
       }
 
-      &.btn-save {
-        background: #4caf50;
-        color: white;
-
-        &:hover {
-          background: #388e3c;
-        }
-      }
-
-      &.btn-cancel {
+      &.cancel-btn {
         background: #f44336;
-        color: white;
+      }
 
-        &:hover {
-          background: #d32f2f;
-        }
+      &.approve-btn {
+        background: #4caf50;
       }
     }
   }
