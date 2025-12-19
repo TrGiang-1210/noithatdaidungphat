@@ -1,7 +1,3 @@
-// frontend/src/pages/admin/DatabaseTranslation.tsx
-// ✅ TRANG NÀY DÙNG ĐỂ DỊCH DATABASE (Products & Categories)
-// ❌ KHÁC VỚI trang Translation Management (dịch UI texts)
-
 import React, { useState, useEffect } from 'react';
 import { toast } from 'react-hot-toast';
 import "@/styles/pages/admin/databaseTranslation.scss";
@@ -161,7 +157,7 @@ const DatabaseTranslation: React.FC = () => {
       <div className="page-header">
         <div className="header-content">
           <h1>Dịch Database</h1>
-          <p>Dịch tự động dữ liệu Products và Categories sang tiếng Trung</p>
+          <p> Chuyển đổi cấu trúc dữ liệu trong DB từ string → Object đa ngôn ngữ</p>
         </div>
         <button 
           className="btn-refresh" 
@@ -170,21 +166,6 @@ const DatabaseTranslation: React.FC = () => {
         >
           🔄 Làm mới
         </button>
-      </div>
-
-      {/* Phân biệt 2 loại dịch */}
-      <div className="info-box">
-        <h3>📌 Lưu ý quan trọng:</h3>
-        <div className="info-grid">
-          <div className="info-item">
-            <strong>🗄️ Trang này (Database Translation):</strong>
-            <p>Dịch dữ liệu trong MongoDB (tên sản phẩm, mô tả, thuộc tính, danh mục)</p>
-          </div>
-          <div className="info-item">
-            <strong>🌐 Trang Quản lý Ngôn ngữ (UI Translation):</strong>
-            <p>Dịch các text hiển thị giao diện (nút "Mua ngay", "Thêm vào giỏ", v.v.)</p>
-          </div>
-        </div>
       </div>
 
       {/* Statistics */}
@@ -344,7 +325,7 @@ const DatabaseTranslation: React.FC = () => {
         </div>
 
         <div className="tips-box">
-          <h4>💡 Tips:</h4>
+          <h4>💡 Chú ý:</h4>
           <ul>
             <li><strong>Google Translate Free:</strong> Chất lượng dịch ổn nhưng không hoàn hảo, nên review lại</li>
             <li><strong>Delay 1.5s:</strong> Mỗi item có delay để tránh bị block bởi Google</li>

@@ -7,7 +7,7 @@ import {
   Database,
   MessageSquareMore,
   Boxes, 
-  LibraryBig,
+  Folders,
   Combine, 
   Newspaper,
   ShoppingCart,
@@ -35,6 +35,24 @@ export default function AdminLayout() {
             <span>Dashboard</span>
           </Link>
 
+          {/* Đơn hàng */}
+          <Link 
+            to="/admin/quan-ly-don-hang"
+            className={`menu-item ${location.pathname.startsWith('/admin/quan-ly-don-hang') ? 'active' : ''}`}
+          >
+            <ShoppingCart className="icon" />
+            <span>Tất cả đơn hàng</span>
+          </Link>
+
+          {/* Chat khách hàng */}
+          <Link 
+            to="/admin/chat-khach-hang" 
+            className={`menu-item ${location.pathname.startsWith('/admin/chat-khach-hang') ? 'active' : ''}`}
+          >
+            <MessageSquareMore className="icon" />
+            <span>Nhắn tin khách hàng</span>
+          </Link>
+
           {/* Quản lý ngôn ngữ UI*/}
           <Link 
             to="/admin/quan-ly-ngon-ngu-ui" 
@@ -53,15 +71,6 @@ export default function AdminLayout() {
             <span>Quản lý ngôn ngữ (DB)</span>
           </Link>
 
-          {/* Chat khách hàng */}
-          <Link 
-            to="/admin/chat-khach-hang" 
-            className={`menu-item ${location.pathname.startsWith('/admin/chat-khach-hang') ? 'active' : ''}`}
-          >
-            <MessageSquareMore className="icon" />
-            <span>Nhắn tin khách hàng</span>
-          </Link>
-
           {/* Gán danh mục */}
           <Link 
             to="/admin/gan-danh-muc" 
@@ -76,7 +85,7 @@ export default function AdminLayout() {
             to="/admin/quan-ly-danh-muc" 
             className={`menu-item ${location.pathname.startsWith('/admin/quan-ly-danh-muc') ? 'active' : ''}`}
           >
-            <LibraryBig className="icon" />
+            <Folders className="icon" />
             <span>Tất cả danh mục</span>
           </Link>
 
@@ -98,14 +107,6 @@ export default function AdminLayout() {
             <span>Tất cả bài viết</span>
           </Link>
 
-          {/* Đơn hàng */}
-          <Link 
-            to="/admin/quan-ly-don-hang"
-            className={`menu-item ${location.pathname.startsWith('/admin/quan-ly-don-hang') ? 'active' : ''}`}
-          >
-            <ShoppingCart className="icon" />
-            <span>Tất cả đơn hàng</span>
-          </Link>
         </nav>
 
         <div className="sidebar-footer">
