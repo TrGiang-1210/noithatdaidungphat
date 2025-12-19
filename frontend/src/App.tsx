@@ -37,7 +37,7 @@ const AppContent: React.FC = () => {
   return (
     <>
       {/* Language Switcher - Fixed position */}
-      <LanguageSwitcher />
+      {/* <LanguageSwitcher /> */}
       
       <MainRouter />
       <ToastContainer position="top-right" autoClose={3000} />

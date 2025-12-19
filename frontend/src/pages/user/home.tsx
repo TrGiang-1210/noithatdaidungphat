@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-import { getFirstImageUrl } from "@/utils/imageUrl";
-import { useLanguage } from "@/context/LanguageContext";
+import { getFirstImageUrl } from "../../utils/imageUrl";
+import { useLanguage } from "../../context/LanguageContext";
 import "@/styles/pages/user/home.scss";
 import { ChevronRight, ChevronLeft } from "lucide-react";
 

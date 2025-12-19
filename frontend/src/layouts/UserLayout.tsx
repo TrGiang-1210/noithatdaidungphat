@@ -1,8 +1,10 @@
+// UserLayout.tsx
 import { useState, useEffect } from "react";
 import { Outlet } from "react-router-dom";
 import Footer from "@/components/user/Footer";
 import Header from "@/components/user/Header";
 import ChatWidget from "@/components/user/ChatWidget";
+import LanguageSwitcher from "@/components/user/LanguageSwitcher"; // ← THÊM
 
 const UserLayout = () => {
   const [userInfo, setUserInfo] = useState<{
@@ -12,10 +14,8 @@ const UserLayout = () => {
   }>({});
 
   useEffect(() => {
-    // ✅ LẤY THÔNG TIN USER TỪ LOCALSTORAGE/CONTEXT
     const checkUserInfo = () => {
       try {
-        // Lấy từ localStorage (hoặc từ Context/Redux của bạn)
         const token = localStorage.getItem('token');
         const userStr = localStorage.getItem('user');
         
@@ -28,7 +28,6 @@ const UserLayout = () => {
           });
           console.log('✅ User logged in:', user.name);
         } else {
-          // Guest - không có user info
           setUserInfo({});
           console.log('👤 Guest user');
         }
@@ -40,14 +39,11 @@ const UserLayout = () => {
 
     checkUserInfo();
 
-    // ✅ LISTEN STORAGE CHANGES (khi login/logout từ tab khác)
     const handleStorageChange = () => {
       checkUserInfo();
     };
 
     window.addEventListener('storage', handleStorageChange);
-    
-    // ✅ LISTEN CUSTOM EVENT (khi login/logout trong cùng tab)
     window.addEventListener('user-login', checkUserInfo);
     window.addEventListener('user-logout', checkUserInfo);
 
@@ -60,6 +56,9 @@ const UserLayout = () => {
 
   return (
     <div className="user-layout">
+      {/* ✅ THÊM LanguageSwitcher VÀO ĐÂY */}
+      <LanguageSwitcher />
+      
       <Header />
 
       <main className="user-content">
@@ -68,7 +67,6 @@ const UserLayout = () => {
 
       <Footer />
 
-      {/* ✅ CHAT WIDGET với user info */}
       <ChatWidget 
         userId={userInfo.userId}
         userName={userInfo.userName}

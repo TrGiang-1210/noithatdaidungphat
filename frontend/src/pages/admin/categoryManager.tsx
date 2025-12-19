@@ -1,11 +1,10 @@
 // src/admin/pages/CategoryManager.tsx
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import {
   Plus,
   Edit2,
   Trash2,
   GripVertical,
-  ChevronDown,
   ChevronRight,
   Loader2,
 } from "lucide-react";
@@ -14,7 +13,7 @@ import "@/styles/pages/admin/categoryManager.scss";
 
 interface Category {
   _id: string;
-  name: string;
+  name: string | { vi: string; zh: string };
   slug: string;
   parent?: string | null;
   level: number;
@@ -33,6 +32,14 @@ export default function CategoryManager() {
   const [formData, setFormData] = useState({ name: "", parent: "" });
   const [parentName, setParentName] = useState("");
 
+  // ✅ Helper: Safely get category name (multilingual support)
+  const getCategoryName = (name: any): string => {
+    if (typeof name === 'object' && name !== null && name.vi) {
+      return name.vi;
+    }
+    return String(name || '');
+  };
+
   // Load danh mục dạng cây từ backend
   const fetchCategories = async () => {
     try {
@@ -48,10 +55,11 @@ export default function CategoryManager() {
       ): Category[] => {
         let list: Category[] = [];
         cats.forEach((cat) => {
-          list.push({ ...cat, level, path: [...path, cat.name] });
+          const catName = getCategoryName(cat.name);
+          list.push({ ...cat, level, path: [...path, catName] });
           if (cat.children?.length) {
             list = list.concat(
-              flatten(cat.children, level + 1, [...path, cat.name])
+              flatten(cat.children, level + 1, [...path, catName])
             );
           }
         });
@@ -75,16 +83,19 @@ export default function CategoryManager() {
     );
   };
 
-  const openAddModal = (parentId: string = "") => {
+  const openAddModal = (parentId: string = "", parentNameParam: string = "") => {
     setEditingCat(null);
-    setFormData({ name: "", parentId });
-    setParentName(parentName || "");
+    setFormData({ name: "", parent: parentId });
+    setParentName(parentNameParam || "");
     setShowModal(true);
   };
 
   const openEditModal = (cat: Category) => {
     setEditingCat(cat);
-    setFormData({ name: cat.name, parentId: cat.parent || "" });
+    setFormData({ 
+      name: getCategoryName(cat.name), 
+      parent: cat.parent || "" 
+    });
     setShowModal(true);
   };
 
@@ -92,20 +103,20 @@ export default function CategoryManager() {
     e.preventDefault();
     if (!formData.name.trim()) return;
 
-    const slug = generateSlug(formData.name); // TẠO SLUG TỰ ĐỘNG
+    const slug = generateSlug(formData.name);
 
     try {
       if (editingCat) {
         await axiosInstance.put(`/admin/categories/${editingCat._id}`, {
           name: formData.name,
-          slug, // GỬI SLUG LUÔN
-          parent: formData.parentId || null,
+          slug,
+          parent: formData.parent || null,
         });
       } else {
         await axiosInstance.post("/admin/categories", {
           name: formData.name,
-          slug, // GỬI SLUG LUÔN
-          parent: formData.parentId || null,
+          slug,
+          parent: formData.parent || null,
         });
       }
       setShowModal(false);
@@ -117,7 +128,8 @@ export default function CategoryManager() {
 
   const handleDelete = async () => {
     if (!deletingCat) return;
-    if (!confirm(`Xóa danh mục "${deletingCat.name}" và tất cả danh mục con?`))
+    const catName = getCategoryName(deletingCat.name);
+    if (!confirm(`Xóa danh mục "${catName}" và tất cả danh mục con?`))
       return;
 
     try {
@@ -133,6 +145,7 @@ export default function CategoryManager() {
     return nodes.map((cat) => {
       const hasChildren = cat.children && cat.children.length > 0;
       const isExpanded = expanded.includes(cat._id);
+      const catName = getCategoryName(cat.name);
 
       return (
         <div key={cat._id} className="category-tree-node">
@@ -158,12 +171,12 @@ export default function CategoryManager() {
               <span className="toggle-placeholder" />
             )}
 
-            <span className="category-name">{cat.name}</span>
+            <span className="category-name">{catName}</span>
             <span className="category-slug">/{cat.slug}</span>
 
             <div className="category-actions">
               <button
-                onClick={() => openAddModal(cat._id, cat.name)}
+                onClick={() => openAddModal(cat._id, catName)}
                 className="btn-small"
               >
                 <Plus size={16} /> Thêm con
@@ -194,11 +207,11 @@ export default function CategoryManager() {
     return name
       .toLowerCase()
       .normalize("NFD")
-      .replace(/[\u0300-\u036f]/g, "") // Xóa dấu tiếng Việt
+      .replace(/[\u0300-\u036f]/g, "")
       .replace(/đ/g, "d")
       .replace(/Đ/g, "d")
       .trim()
-      .replace(/[^a-z0-9\s-]/g, "") // Xóa ký tự đặc biệt
+      .replace(/[^a-z0-9\s-]/g, "")
       .replace(/\s+/g, "-")
       .replace(/-+/g, "-");
   };
@@ -238,7 +251,6 @@ export default function CategoryManager() {
           <div className="modal" onClick={(e) => e.stopPropagation()}>
             <h3>{editingCat ? "Sửa" : "Thêm"} danh mục</h3>
 
-            {/* THÊM DÒNG NÀY – HIỂN THỊ DANH MỤC CHA */}
             {parentName && !editingCat && (
               <div className="parent-info">
                 <strong>Thuộc danh mục:</strong> {parentName}
@@ -256,7 +268,6 @@ export default function CategoryManager() {
                 required
               />
 
-              {/* Slug preview (bonus đẹp) */}
               {formData.name && (
                 <div className="slug-preview">
                   Slug: <strong>{generateSlug(formData.name)}</strong>
@@ -297,8 +308,7 @@ export default function CategoryManager() {
           <div className="modal" onClick={(e) => e.stopPropagation()}>
             <h3>Xác nhận xóa</h3>
             <p>
-              Xóa danh mục <strong>{deletingCat.name}</strong> và tất cả danh
-              mục con?
+              Xóa danh mục <strong>{getCategoryName(deletingCat.name)}</strong> và tất cả danh mục con?
             </p>
             <div className="modal-actions">
               <button type="button" onClick={() => setDeletingCat(null)}>

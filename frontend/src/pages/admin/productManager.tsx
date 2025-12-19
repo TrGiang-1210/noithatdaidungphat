@@ -1,4 +1,4 @@
-// src/admin/pages/ProductManager.tsx - FULL CODE ENHANCED
+// src/admin/pages/ProductManager.tsx - FIXED MULTILINGUAL
 import { useState, useEffect } from "react";
 import { Plus, Edit2, Trash2, Loader2, X } from "lucide-react";
 import axiosInstance from "../../axios";
@@ -19,15 +19,15 @@ interface Attribute {
 
 interface Product {
   _id: string;
-  name: string;
+  name: string | { vi: string; zh: string };
   slug: string;
   sku: string;
   images: string[];
-  description: string;
+  description: string | { vi: string; zh: string };
   priceOriginal: number;
   priceSale: number;
   quantity: number;
-  categories: { _id: string; name: string }[];
+  categories: { _id: string; name: string | { vi: string; zh: string } }[];
   hot: boolean;
   onSale: boolean;
   sold: number;
@@ -36,7 +36,7 @@ interface Product {
 
 interface Category {
   _id: string;
-  name: string;
+  name: string | { vi: string; zh: string };
   level: number;
   path: string[];
   children?: Category[];
@@ -69,6 +69,14 @@ export default function ProductManager() {
   const [successMessage, setSuccessMessage] = useState("");
   const [previewImage, setPreviewImage] = useState<string | null>(null);
 
+  // ✅ Helper: Safely get name (multilingual support)
+  const getName = (name: any): string => {
+    if (typeof name === 'object' && name !== null && name.vi) {
+      return name.vi;
+    }
+    return String(name || '');
+  };
+
   const fetchProducts = async () => {
     try {
       setLoading(true);
@@ -91,10 +99,11 @@ export default function ProductManager() {
       ): Category[] => {
         let list: Category[] = [];
         cats.forEach((cat) => {
-          list.push({ ...cat, level, path: [...path, cat.name] });
+          const catName = getName(cat.name);
+          list.push({ ...cat, level, path: [...path, catName] });
           if (cat.children?.length) {
             list = list.concat(
-              flatten(cat.children, level + 1, [...path, cat.name])
+              flatten(cat.children, level + 1, [...path, catName])
             );
           }
         });
@@ -144,12 +153,12 @@ export default function ProductManager() {
   const openEditModal = (prod: Product) => {
     setEditingProd(prod);
     setFormData({
-      name: prod.name,
+      name: getName(prod.name),
       sku: prod.sku,
       priceOriginal: prod.priceOriginal.toString(),
       priceSale: prod.priceSale.toString(),
       quantity: prod.quantity.toString(),
-      description: prod.description || "",
+      description: getName(prod.description),
       categories: prod.categories.map((c) => c._id),
       hot: prod.hot || false,
       onSale: prod.onSale || false,
@@ -158,7 +167,6 @@ export default function ProductManager() {
     });
     setImagePreviews(prod.images);
     
-    // Load existing attribute images
     const newAttrImgMap = new Map<string, File | string>();
     prod.attributes?.forEach((attr, attrIdx) => {
       attr.options?.forEach((opt, optIdx) => {
@@ -252,7 +260,6 @@ export default function ProductManager() {
     }
   };
 
-  // Format number with thousand separator
   const formatCurrency = (value: string) => {
     const num = value.replace(/\D/g, "");
     return num.replace(/\B(?=(\d{3})+(?!\d))/g, ".");
@@ -263,7 +270,6 @@ export default function ProductManager() {
     setFormData({ ...formData, [field]: numericValue });
   };
 
-  // Calculate discount percentage
   const calculateDiscount = () => {
     const original = parseFloat(formData.priceOriginal) || 0;
     const sale = parseFloat(formData.priceSale) || 0;
@@ -300,7 +306,6 @@ export default function ProductManager() {
       formData.images.forEach((file) => data.append("images", file));
     }
 
-    // Only append new attribute images (File objects)
     attributeImages.forEach((file, key) => {
       if (file instanceof File) {
         data.append(`attribute_${key}`, file);
@@ -394,7 +399,7 @@ export default function ProductManager() {
                   <td>
                     <img
                       src={getFirstImageUrl(prod.images)}
-                      alt={prod.name}
+                      alt={getName(prod.name)}
                       className="thumbnail"
                       onError={(e) => {
                         e.currentTarget.src =
@@ -402,12 +407,12 @@ export default function ProductManager() {
                       }}
                     />
                   </td>
-                  <td>{prod.name}</td>
+                  <td>{getName(prod.name)}</td>
                   <td>{prod.sku}</td>
                   <td>{prod.priceOriginal.toLocaleString()} ₫</td>
                   <td>{prod.priceSale.toLocaleString()} ₫</td>
                   <td>{prod.quantity}</td>
-                  <td>{prod.categories.map((c) => c.name).join(", ")}</td>
+                  <td>{prod.categories.map((c) => getName(c.name)).join(", ")}</td>
                   <td className="actions">
                     <button
                       onClick={() => openEditModal(prod)}
@@ -515,7 +520,7 @@ export default function ProductManager() {
                     <option key={cat._id} value={cat._id}>
                       {"  ".repeat(cat.level)}
                       {cat.level > 0 && "└─ "}
-                      {cat.name}
+                      {getName(cat.name)}
                     </option>
                   ))}
                 </select>
@@ -578,7 +583,6 @@ export default function ProductManager() {
                 </div>
               )}
 
-              {/* PHẦN ATTRIBUTES */}
               <div className="attributes-section">
                 <div className="attributes-header">
                   <label className="section-label">Thuộc tính sản phẩm</label>
@@ -751,7 +755,7 @@ export default function ProductManager() {
           <div className="modal" onClick={(e) => e.stopPropagation()}>
             <h3>Xác nhận xóa</h3>
             <p>
-              Xóa sản phẩm <strong>{deletingProd.name}</strong>?
+              Xóa sản phẩm <strong>{getName(deletingProd.name)}</strong>?
             </p>
             <div className="modal-actions">
               <button type="button" onClick={() => setDeletingProd(null)}>
@@ -769,7 +773,6 @@ export default function ProductManager() {
         </div>
       )}
 
-      {/* Image Preview Modal */}
       {previewImage && (
         <div className="image-preview-modal" onClick={() => setPreviewImage(null)}>
           <div className="preview-content" onClick={(e) => e.stopPropagation()}>
