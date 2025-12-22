@@ -1,4 +1,4 @@
-// src/admin/pages/OrderManager.tsx - WITH SEARCH FUNCTIONALITY
+// src/admin/pages/OrderManager.tsx - WITH SEARCH AND PAGINATION
 import { useState, useEffect, useMemo } from "react";
 import {
   Package,
@@ -56,6 +56,8 @@ export default function OrderManager() {
   const [filterStatus, setFilterStatus] = useState<string>("all");
   const [processingOrderId, setProcessingOrderId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
 
   const getPaymentMethodLabel = (method: string) => {
     const labels: Record<string, string> = {
@@ -265,6 +267,27 @@ export default function OrderManager() {
     });
   }, [statusFilteredOrders, searchQuery]);
 
+  // Pagination
+  const totalPages = Math.ceil(filteredOrders.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const currentOrders = filteredOrders.slice(startIndex, endIndex);
+
+  // Reset to page 1 when search query, filter or items per page changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, filterStatus, itemsPerPage]);
+
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleItemsPerPageChange = (value: number) => {
+    setItemsPerPage(value);
+    setCurrentPage(1);
+  };
+
   const stats = {
     pending: orders.filter((o) => o.status === "Pending").length,
     confirmed: orders.filter((o) => o.status === "Confirmed").length,
@@ -381,7 +404,7 @@ export default function OrderManager() {
 
       {/* Orders Table */}
       <div className="orders-table">
-        {filteredOrders.length === 0 ? (
+        {currentOrders.length === 0 ? (
           <p className="empty">
             {searchQuery 
               ? `Không tìm thấy đơn hàng nào với từ khóa "${searchQuery}"`
@@ -409,7 +432,7 @@ export default function OrderManager() {
                 </tr>
               </thead>
               <tbody>
-                {filteredOrders.map((order) => {
+                {currentOrders.map((order) => {
                   const statusInfo = getStatusInfo(order.status);
                   const StatusIcon = statusInfo.icon;
                   const timeLeft = getReserveTimeLeft(order.reservedUntil);
@@ -580,6 +603,78 @@ export default function OrderManager() {
           </>
         )}
       </div>
+
+      {/* Pagination */}
+      {filteredOrders.length > 0 && (
+        <div className="pagination">
+          <div className="pagination-left">
+            <div className="items-per-page">
+              <span>Hiển thị:</span>
+              <select 
+                value={itemsPerPage} 
+                onChange={(e) => handleItemsPerPageChange(Number(e.target.value))}
+              >
+                <option value={5}>5</option>
+                <option value={10}>10</option>
+                <option value={15}>15</option>
+                <option value={20}>20</option>
+                <option value={50}>50</option>
+                <option value={100}>100</option>
+              </select>
+              <span>đơn hàng/trang</span>
+            </div>
+            <div className="page-info">
+              Hiển thị {startIndex + 1}-{Math.min(endIndex, filteredOrders.length)} trong tổng số {filteredOrders.length} đơn hàng
+            </div>
+          </div>
+
+          {totalPages > 1 && (
+            <div className="pagination-center">
+              <button 
+                onClick={() => handlePageChange(currentPage - 1)}
+                disabled={currentPage === 1}
+                className="pagination-btn"
+              >
+                ← Trước
+              </button>
+              
+              <div className="pagination-numbers">
+                {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => {
+                  if (
+                    page === 1 ||
+                    page === totalPages ||
+                    (page >= currentPage - 1 && page <= currentPage + 1)
+                  ) {
+                    return (
+                      <button
+                        key={page}
+                        onClick={() => handlePageChange(page)}
+                        className={`pagination-number ${currentPage === page ? 'active' : ''}`}
+                      >
+                        {page}
+                      </button>
+                    );
+                  } else if (
+                    page === currentPage - 2 ||
+                    page === currentPage + 2
+                  ) {
+                    return <span key={page} className="pagination-ellipsis">...</span>;
+                  }
+                  return null;
+                })}
+              </div>
+
+              <button 
+                onClick={() => handlePageChange(currentPage + 1)}
+                disabled={currentPage === totalPages}
+                className="pagination-btn"
+              >
+                Sau →
+              </button>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Modal chi tiết */}
       {showDetailModal && selectedOrder && (

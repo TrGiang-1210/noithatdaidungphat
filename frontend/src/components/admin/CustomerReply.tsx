@@ -43,10 +43,13 @@ const CustomerReply = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [messageSearchQuery, setMessageSearchQuery] = useState('');
   const [isSearchExpanded, setIsSearchExpanded] = useState(false);
+  const [currentMatchIndex, setCurrentMatchIndex] = useState(0);
+  const [matchedMessageIds, setMatchedMessageIds] = useState<string[]>([]);
   
   const socketRef = useRef<Socket | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
+  const messageRefs = useRef<{ [key: string]: HTMLDivElement | null }>({});
 
   const getDisplayName = (room: ChatRoom): string => {
     if (room.displayName) return room.displayName;
@@ -57,8 +60,8 @@ const CustomerReply = () => {
       return 'User';
     }
     
-    const guestSuffix = room.guestId ? ` (${room.guestId.substring(0, 8)})` : '';
-    return `Khách${guestSuffix}`;
+    // Hiển thị toàn bộ guestId (không cắt ngắn)
+    return room.guestId || 'Khách';
   };
 
   const getSubtitle = (room: ChatRoom): string => {
@@ -80,36 +83,64 @@ const CustomerReply = () => {
     const query = searchQuery.toLowerCase().trim();
     
     return rooms.filter((room) => {
-      // Search in display name
       if (getDisplayName(room).toLowerCase().includes(query)) return true;
-      
-      // Search in email
       if (room.user?.email?.toLowerCase().includes(query)) return true;
       if (room.userEmail?.toLowerCase().includes(query)) return true;
-      
-      // Search in phone
       if (room.user?.phone?.includes(query)) return true;
-      
-      // Search in last message
       if (room.lastMessage?.toLowerCase().includes(query)) return true;
-      
-      // Search in guest ID
       if (room.guestId?.toLowerCase().includes(query)) return true;
-      
       return false;
     });
   }, [rooms, searchQuery]);
 
-  // Filter messages based on search query
-  const filteredMessages = useMemo(() => {
-    if (!messageSearchQuery.trim()) return messages;
+  // Find matched messages and update refs
+  useEffect(() => {
+    if (!messageSearchQuery.trim()) {
+      setMatchedMessageIds([]);
+      setCurrentMatchIndex(0);
+      return;
+    }
     
     const query = messageSearchQuery.toLowerCase().trim();
+    const matches = messages
+      .filter(msg => msg.content?.toLowerCase().includes(query))
+      .map(msg => msg._id);
     
-    return messages.filter((msg) => {
-      return msg.content?.toLowerCase().includes(query);
-    });
-  }, [messages, messageSearchQuery]);
+    setMatchedMessageIds(matches);
+    setCurrentMatchIndex(matches.length > 0 ? 0 : -1);
+  }, [messageSearchQuery, messages]);
+
+  // Scroll to current match
+  useEffect(() => {
+    if (matchedMessageIds.length > 0 && currentMatchIndex >= 0) {
+      const messageId = matchedMessageIds[currentMatchIndex];
+      const element = messageRefs.current[messageId];
+      
+      if (element) {
+        element.scrollIntoView({ 
+          behavior: 'smooth', 
+          block: 'center' 
+        });
+      }
+    }
+  }, [currentMatchIndex, matchedMessageIds]);
+
+  // Navigation functions
+  const goToNextMatch = () => {
+    if (matchedMessageIds.length > 0) {
+      setCurrentMatchIndex((prev) => 
+        prev < matchedMessageIds.length - 1 ? prev + 1 : 0
+      );
+    }
+  };
+
+  const goToPrevMatch = () => {
+    if (matchedMessageIds.length > 0) {
+      setCurrentMatchIndex((prev) => 
+        prev > 0 ? prev - 1 : matchedMessageIds.length - 1
+      );
+    }
+  };
 
   // Toggle search and focus input
   const handleToggleSearch = () => {
@@ -120,7 +151,18 @@ const CustomerReply = () => {
       }, 100);
     } else {
       setMessageSearchQuery('');
+      setMatchedMessageIds([]);
+      setCurrentMatchIndex(0);
     }
+  };
+
+  // Check if message is highlighted
+  const isMessageHighlighted = (messageId: string) => {
+    return matchedMessageIds.includes(messageId);
+  };
+
+  const isCurrentMatch = (messageId: string) => {
+    return matchedMessageIds[currentMatchIndex] === messageId;
   };
 
   useEffect(() => {
@@ -414,14 +456,41 @@ const CustomerReply = () => {
                 {/* Message Search */}
                 <div className={`message-search-wrapper ${isSearchExpanded ? 'expanded' : ''}`}>
                   {isSearchExpanded && (
-                    <input
-                      ref={searchInputRef}
-                      type="text"
-                      placeholder="Tìm trong đoạn chat..."
-                      value={messageSearchQuery}
-                      onChange={(e) => setMessageSearchQuery(e.target.value)}
-                      className="message-search-input"
-                    />
+                    <>
+                      <input
+                        ref={searchInputRef}
+                        type="text"
+                        placeholder="Tìm trong đoạn chat..."
+                        value={messageSearchQuery}
+                        onChange={(e) => setMessageSearchQuery(e.target.value)}
+                        className="message-search-input"
+                      />
+                      {matchedMessageIds.length > 0 && (
+                        <div className="search-navigation">
+                          <span className="match-counter">
+                            {currentMatchIndex + 1}/{matchedMessageIds.length}
+                          </span>
+                          <button 
+                            className="nav-btn"
+                            onClick={goToPrevMatch}
+                            title="Kết quả trước"
+                          >
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                              <polyline points="18 15 12 9 6 15"></polyline>
+                            </svg>
+                          </button>
+                          <button 
+                            className="nav-btn"
+                            onClick={goToNextMatch}
+                            title="Kết quả sau"
+                          >
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                              <polyline points="6 9 12 15 18 9"></polyline>
+                            </svg>
+                          </button>
+                        </div>
+                      )}
+                    </>
                   )}
                   <button 
                     className="action-btn search-btn"
@@ -457,16 +526,15 @@ const CustomerReply = () => {
             </div>
 
             <div className="messages-container">
-              {messageSearchQuery && (
-                <div className="search-result-banner">
-                  Tìm thấy <strong>{filteredMessages.length}</strong> tin nhắn
-                </div>
-              )}
-              
-              {filteredMessages.map(msg => (
+              {messages.map(msg => (
                 <div
                   key={msg._id}
-                  className={`message-item ${msg.sender === 'admin' ? 'sent' : 'received'}`}
+                  ref={(el) => { messageRefs.current[msg._id] = el; }}
+                  className={`message-item ${msg.sender === 'admin' ? 'sent' : 'received'} ${
+                    isMessageHighlighted(msg._id) ? 'search-match' : ''
+                  } ${
+                    isCurrentMatch(msg._id) ? 'current-match' : ''
+                  }`}
                 >
                   {msg.sender !== 'admin' && (
                     <div className="message-avatar">

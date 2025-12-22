@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { toast } from 'react-toastify';
 import "@/styles/pages/admin/translateManager.scss";
 
@@ -12,6 +12,8 @@ const TranslationManagement = () => {
   const [selectedKeys, setSelectedKeys] = useState([]);
   const [editingId, setEditingId] = useState(null);
   const [editValue, setEditValue] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
 
   useEffect(() => {
     fetchTranslations();
@@ -164,7 +166,6 @@ const TranslationManagement = () => {
       return;
     }
     
-    // Lọc các key có translation để approve
     const approvableKeys = selectedKeys.filter(id => {
       const trans = translations.find(t => t._id === id);
       return trans?.translations?.zh?.value && trans.translations.zh.status !== 'approved';
@@ -182,7 +183,6 @@ const TranslationManagement = () => {
       const token = localStorage.getItem('token');
       toast.info(`✓ Đang approve ${approvableKeys.length} keys...`);
       
-      // Gọi API approve từng key
       let successCount = 0;
       let failCount = 0;
       
@@ -330,7 +330,32 @@ const TranslationManagement = () => {
     );
   };
 
-  // Đếm số key có thể approve trong selection
+  // Filtered translations
+  const filteredTranslations = useMemo(() => {
+    return translations;
+  }, [translations]);
+
+  // Pagination calculations
+  const totalPages = Math.ceil(filteredTranslations.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const currentTranslations = filteredTranslations.slice(startIndex, endIndex);
+
+  // Reset to page 1 when filter changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [filter, itemsPerPage]);
+
+  const handlePageChange = (page) => {
+    setCurrentPage(page);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleItemsPerPageChange = (value) => {
+    setItemsPerPage(value);
+    setCurrentPage(1);
+  };
+
   const approvableCount = selectedKeys.filter(id => {
     const trans = translations.find(t => t._id === id);
     return trans?.translations?.zh?.value && trans.translations.zh.status !== 'approved';
@@ -408,7 +433,7 @@ const TranslationManagement = () => {
           <div className="loading-icon">⏳</div>
           <div>Đang tải...</div>
         </div>
-      ) : translations.length === 0 ? (
+      ) : filteredTranslations.length === 0 ? (
         <div className="empty-state">
           <div className="empty-icon">🔭</div>
           <div>Không có dữ liệu</div>
@@ -417,109 +442,183 @@ const TranslationManagement = () => {
           </div>
         </div>
       ) : (
-        <div className="table-container">
-          <table className="translation-table">
-            <thead>
-              <tr>
-                <th>
-                  <input 
-                    type="checkbox"
-                    checked={selectedKeys.length === translations.length && translations.length > 0}
-                    onChange={(e) => setSelectedKeys(e.target.checked ? translations.map(t => t._id) : [])}
-                  />
-                </th>
-                <th>Key</th>
-                <th>Vietnamese</th>
-                <th>Chinese</th>
-                <th>Status</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {translations.map((trans) => (
-                <tr key={trans._id}>
-                  <td>
-                    <input
+        <>
+          <div className="table-container">
+            <table className="translation-table">
+              <thead>
+                <tr>
+                  <th>
+                    <input 
                       type="checkbox"
-                      checked={selectedKeys.includes(trans._id)}
-                      onChange={() => toggleSelect(trans._id)}
+                      checked={selectedKeys.length === currentTranslations.length && currentTranslations.length > 0}
+                      onChange={(e) => setSelectedKeys(e.target.checked ? currentTranslations.map(t => t._id) : [])}
                     />
-                  </td>
-                  <td className="key-cell">
-                    {trans.key}
-                  </td>
-                  <td className="text-cell">
-                    {trans.translations?.vi?.value || '—'}
-                  </td>
-                  <td className="chinese-cell">
-                    {editingId === trans._id ? (
-                      <textarea
-                        value={editValue}
-                        onChange={(e) => setEditValue(e.target.value)}
-                        className="edit-textarea"
-                      />
-                    ) : (
-                      <div>
-                        {trans.translations?.zh?.value || '—'}
-                      </div>
-                    )}
-                  </td>
-                  <td>
-                    {getStatusBadge(trans.translations?.zh?.status || 'draft')}
-                  </td>
-                  <td>
-                    <div className="action-buttons">
-                      {editingId === trans._id ? (
-                        <>
-                          <button
-                            onClick={() => handleSaveEdit(trans._id)}
-                            className="save-btn"
-                          >
-                            💾 Save
-                          </button>
-                          <button
-                            onClick={() => setEditingId(null)}
-                            className="cancel-btn"
-                          >
-                            ✖ Cancel
-                          </button>
-                        </>
-                      ) : (
-                        <>
-                          {(!trans.translations?.zh?.value || trans.translations.zh.status === 'draft') && (
-                            <button
-                              onClick={() => handleAITranslate(trans._id)}
-                              className="ai-btn"
-                            >
-                              🤖 AI
-                            </button>
-                          )}
-                          <button
-                            onClick={() => {
-                              setEditingId(trans._id);
-                              setEditValue(trans.translations?.zh?.value || '');
-                            }}
-                            className="edit-btn"
-                          >
-                            ✏️ Edit
-                          </button>
-                          {trans.translations?.zh?.value && trans.translations.zh.status !== 'approved' && (
-                            <button
-                              onClick={() => handleApprove(trans._id)}
-                              className="approve-btn"
-                            >
-                              ✓ Approve
-                            </button>
-                          )}
-                        </>
-                      )}
-                    </div>
-                  </td>
+                  </th>
+                  <th>Key</th>
+                  <th>Vietnamese</th>
+                  <th>Chinese</th>
+                  <th>Status</th>
+                  <th>Actions</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+              </thead>
+              <tbody>
+                {currentTranslations.map((trans) => (
+                  <tr key={trans._id}>
+                    <td>
+                      <input
+                        type="checkbox"
+                        checked={selectedKeys.includes(trans._id)}
+                        onChange={() => toggleSelect(trans._id)}
+                      />
+                    </td>
+                    <td className="key-cell">
+                      {trans.key}
+                    </td>
+                    <td className="text-cell">
+                      {trans.translations?.vi?.value || '—'}
+                    </td>
+                    <td className="chinese-cell">
+                      {editingId === trans._id ? (
+                        <textarea
+                          value={editValue}
+                          onChange={(e) => setEditValue(e.target.value)}
+                          className="edit-textarea"
+                        />
+                      ) : (
+                        <div>
+                          {trans.translations?.zh?.value || '—'}
+                        </div>
+                      )}
+                    </td>
+                    <td>
+                      {getStatusBadge(trans.translations?.zh?.status || 'draft')}
+                    </td>
+                    <td>
+                      <div className="action-buttons">
+                        {editingId === trans._id ? (
+                          <>
+                            <button
+                              onClick={() => handleSaveEdit(trans._id)}
+                              className="save-btn"
+                            >
+                              💾 Save
+                            </button>
+                            <button
+                              onClick={() => setEditingId(null)}
+                              className="cancel-btn"
+                            >
+                              ✖ Cancel
+                            </button>
+                          </>
+                        ) : (
+                          <>
+                            {(!trans.translations?.zh?.value || trans.translations.zh.status === 'draft') && (
+                              <button
+                                onClick={() => handleAITranslate(trans._id)}
+                                className="ai-btn"
+                              >
+                                🤖 AI
+                              </button>
+                            )}
+                            <button
+                              onClick={() => {
+                                setEditingId(trans._id);
+                                setEditValue(trans.translations?.zh?.value || '');
+                              }}
+                              className="edit-btn"
+                            >
+                              ✏️ Edit
+                            </button>
+                            {trans.translations?.zh?.value && trans.translations.zh.status !== 'approved' && (
+                              <button
+                                onClick={() => handleApprove(trans._id)}
+                                className="approve-btn"
+                              >
+                                ✓ Approve
+                              </button>
+                            )}
+                          </>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Pagination */}
+          {filteredTranslations.length > 0 && (
+            <div className="pagination">
+              <div className="pagination-left">
+                <div className="items-per-page">
+                  <span>Hiển thị:</span>
+                  <select 
+                    value={itemsPerPage} 
+                    onChange={(e) => handleItemsPerPageChange(Number(e.target.value))}
+                  >
+                    <option value={5}>5</option>
+                    <option value={10}>10</option>
+                    <option value={15}>15</option>
+                    <option value={20}>20</option>
+                    <option value={50}>50</option>
+                    <option value={100}>100</option>
+                  </select>
+                  <span>keys/trang</span>
+                </div>
+                <div className="page-info">
+                  Hiển thị {startIndex + 1}-{Math.min(endIndex, filteredTranslations.length)} trong tổng số {filteredTranslations.length} keys
+                </div>
+              </div>
+
+              {totalPages > 1 && (
+                <div className="pagination-center">
+                  <button 
+                    onClick={() => handlePageChange(currentPage - 1)}
+                    disabled={currentPage === 1}
+                    className="pagination-btn"
+                  >
+                    ← Trước
+                  </button>
+                  
+                  <div className="pagination-numbers">
+                    {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => {
+                      if (
+                        page === 1 ||
+                        page === totalPages ||
+                        (page >= currentPage - 1 && page <= currentPage + 1)
+                      ) {
+                        return (
+                          <button
+                            key={page}
+                            onClick={() => handlePageChange(page)}
+                            className={`pagination-number ${currentPage === page ? 'active' : ''}`}
+                          >
+                            {page}
+                          </button>
+                        );
+                      } else if (
+                        page === currentPage - 2 ||
+                        page === currentPage + 2
+                      ) {
+                        return <span key={page} className="pagination-ellipsis">...</span>;
+                      }
+                      return null;
+                    })}
+                  </div>
+
+                  <button 
+                    onClick={() => handlePageChange(currentPage + 1)}
+                    disabled={currentPage === totalPages}
+                    className="pagination-btn"
+                  >
+                    Sau →
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
+        </>
       )}
     </div>
   );
