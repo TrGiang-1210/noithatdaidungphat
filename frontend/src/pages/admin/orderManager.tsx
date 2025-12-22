@@ -1,5 +1,5 @@
-// src/admin/pages/OrderManager.tsx - FIXED VERSION WITH VIETNAMESE PAYMENT LABELS
-import { useState, useEffect } from "react";
+// src/admin/pages/OrderManager.tsx - WITH SEARCH FUNCTIONALITY
+import { useState, useEffect, useMemo } from "react";
 import {
   Package,
   Clock,
@@ -13,6 +13,7 @@ import {
   MapPin,
   User,
   Calendar,
+  Search,
 } from "lucide-react";
 import axiosInstance from "../../axios";
 import { getFirstImageUrl } from "@/utils/imageUrl";
@@ -53,11 +54,9 @@ export default function OrderManager() {
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [showDetailModal, setShowDetailModal] = useState(false);
   const [filterStatus, setFilterStatus] = useState<string>("all");
-  const [processingOrderId, setProcessingOrderId] = useState<string | null>(
-    null
-  );
+  const [processingOrderId, setProcessingOrderId] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
 
-  // ✅ THÊM FUNCTION CHUYỂN ĐỔI PAYMENT METHOD SANG TIẾNG VIỆT
   const getPaymentMethodLabel = (method: string) => {
     const labels: Record<string, string> = {
       'cod': 'Thanh toán khi nhận hàng (COD)',
@@ -75,18 +74,10 @@ export default function OrderManager() {
       setLoading(true);
       const res = await axiosInstance.get("/admin/orders");
 
-      console.log("📦 RAW ORDERS DATA:", res.data);
-
       const validOrders = (res.data || [])
         .filter((order: any) => {
-          if (!order) {
-            console.warn("⚠️ Order is null/undefined:", order);
-            return false;
-          }
-          if (!order.items || !Array.isArray(order.items)) {
-            console.warn("⚠️ Order has invalid items:", order);
-            return false;
-          }
+          if (!order) return false;
+          if (!order.items || !Array.isArray(order.items)) return false;
           return true;
         })
         .map((order: any) => ({
@@ -104,7 +95,6 @@ export default function OrderManager() {
             })),
         }));
 
-      console.log("✅ VALID ORDERS:", validOrders);
       setOrders(validOrders);
     } catch (err) {
       alert("Lỗi tải đơn hàng");
@@ -240,10 +230,40 @@ export default function OrderManager() {
     return `${minutes}m`;
   };
 
-  const filteredOrders =
-    filterStatus === "all"
-      ? orders
-      : orders.filter((o) => o.status === filterStatus);
+  // Filter by status first
+  const statusFilteredOrders = useMemo(() => {
+    if (filterStatus === "all") return orders;
+    return orders.filter((o) => o.status === filterStatus);
+  }, [orders, filterStatus]);
+
+  // Then filter by search query
+  const filteredOrders = useMemo(() => {
+    if (!searchQuery.trim()) return statusFilteredOrders;
+    
+    const query = searchQuery.toLowerCase().trim();
+    
+    return statusFilteredOrders.filter((order) => {
+      // Search in order number
+      if (order.orderNumber?.toLowerCase().includes(query)) return true;
+      
+      // Search in customer name
+      if (order.customer?.name?.toLowerCase().includes(query)) return true;
+      
+      // Search in customer phone
+      if (order.customer?.phone?.includes(query)) return true;
+      
+      // Search in customer address
+      if (order.customer?.address?.toLowerCase().includes(query)) return true;
+      
+      // Search in product names
+      const hasMatchingProduct = order.items?.some((item) =>
+        item?.product?.name?.toLowerCase().includes(query)
+      );
+      if (hasMatchingProduct) return true;
+      
+      return false;
+    });
+  }, [statusFilteredOrders, searchQuery]);
 
   const stats = {
     pending: orders.filter((o) => o.status === "Pending").length,
@@ -339,136 +359,210 @@ export default function OrderManager() {
         </button>
       </div>
 
+      {/* Search Box */}
+      <div className="search-box">
+        <Search size={18} />
+        <input
+          type="text"
+          placeholder="Tìm kiếm theo mã đơn, tên khách hàng, SĐT, địa chỉ, tên sản phẩm..."
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+        />
+        {searchQuery && (
+          <button 
+            className="clear-search"
+            onClick={() => setSearchQuery("")}
+            title="Xóa tìm kiếm"
+          >
+            ✕
+          </button>
+        )}
+      </div>
+
       {/* Orders Table */}
       <div className="orders-table">
         {filteredOrders.length === 0 ? (
-          <p className="empty">Không có đơn hàng nào</p>
+          <p className="empty">
+            {searchQuery 
+              ? `Không tìm thấy đơn hàng nào với từ khóa "${searchQuery}"`
+              : "Không có đơn hàng nào"
+            }
+          </p>
         ) : (
-          <table>
-            <thead>
-              <tr>
-                <th>Mã đơn</th>
-                <th>Khách hàng</th>
-                <th>Sản phẩm</th>
-                <th>Tổng tiền</th>
-                <th>Trạng thái</th>
-                <th>Reserve</th>
-                <th>Ngày đặt</th>
-                <th>Hành động</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredOrders.map((order) => {
-                const statusInfo = getStatusInfo(order.status);
-                const StatusIcon = statusInfo.icon;
-                const timeLeft = getReserveTimeLeft(order.reservedUntil);
+          <>
+            {searchQuery && (
+              <div className="search-result-info">
+                Tìm thấy <strong>{filteredOrders.length}</strong> đơn hàng
+              </div>
+            )}
+            <table>
+              <thead>
+                <tr>
+                  <th>Mã đơn</th>
+                  <th>Khách hàng</th>
+                  <th>Sản phẩm</th>
+                  <th>Tổng tiền</th>
+                  <th>Trạng thái</th>
+                  <th>Reserve</th>
+                  <th>Ngày đặt</th>
+                  <th>Hành động</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredOrders.map((order) => {
+                  const statusInfo = getStatusInfo(order.status);
+                  const StatusIcon = statusInfo.icon;
+                  const timeLeft = getReserveTimeLeft(order.reservedUntil);
 
-                return (
-                  <tr key={order._id}>
-                    <td>
-                      <strong>{order.orderNumber}</strong>
-                    </td>
-                    <td>
-                      <div className="customer-info">
-                        <div className="name">{order.customer.name}</div>
-                        <div className="phone">{order.customer.phone}</div>
-                      </div>
-                    </td>
-                    <td>
-                      <div className="items-preview">
-                        {order.items
-                          .filter((item) => {
-                            return (
-                              item &&
-                              item.product &&
-                              typeof item.product === "object" &&
-                              item.quantity > 0
-                            );
-                          })
-                          .slice(0, 2)
-                          .map((item, idx) => {
-                            const product = item.product || {};
-                            const images = Array.isArray(product.images)
-                              ? product.images
-                              : [];
+                  return (
+                    <tr key={order._id}>
+                      <td>
+                        <strong>{order.orderNumber}</strong>
+                      </td>
+                      <td>
+                        <div className="customer-info">
+                          <div className="name">{order.customer.name}</div>
+                          <div className="phone">{order.customer.phone}</div>
+                        </div>
+                      </td>
+                      <td>
+                        <div className="items-preview">
+                          {order.items
+                            .filter((item) => {
+                              return (
+                                item &&
+                                item.product &&
+                                typeof item.product === "object" &&
+                                item.quantity > 0
+                              );
+                            })
+                            .slice(0, 2)
+                            .map((item, idx) => {
+                              const product = item.product || {};
+                              const images = Array.isArray(product.images)
+                                ? product.images
+                                : [];
 
-                            return (
-                              <div key={idx} className="item-mini">
-                                <img
-                                  src={getFirstImageUrl(images)}
-                                  alt={product.name || "Sản phẩm"}
-                                  onError={(e) => {
-                                    e.currentTarget.src =
-                                      "https://via.placeholder.com/40?text=?";
-                                  }}
-                                />
-                                <span>x{item.quantity}</span>
-                              </div>
-                            );
-                          })}
-                        {order.items.length > 2 && (
-                          <span className="more">
-                            +{order.items.length - 2}
-                          </span>
+                              return (
+                                <div key={idx} className="item-mini">
+                                  <img
+                                    src={getFirstImageUrl(images)}
+                                    alt={product.name || "Sản phẩm"}
+                                    onError={(e) => {
+                                      e.currentTarget.src =
+                                        "https://via.placeholder.com/40?text=?";
+                                    }}
+                                  />
+                                  <span>x{item.quantity}</span>
+                                </div>
+                              );
+                            })}
+                          {order.items.length > 2 && (
+                            <span className="more">
+                              +{order.items.length - 2}
+                            </span>
+                          )}
+                        </div>
+                      </td>
+                      <td>
+                        <strong>{order.totalAmount.toLocaleString()} ₫</strong>
+                      </td>
+                      <td>
+                        <div
+                          className="status-badge"
+                          style={{
+                            backgroundColor: statusInfo.bgColor,
+                            color: statusInfo.color,
+                          }}
+                        >
+                          <StatusIcon size={14} />
+                          {statusInfo.label}
+                        </div>
+                      </td>
+                      <td>
+                        {order.status === "Pending" && timeLeft && (
+                          <div className="reserve-time">
+                            <Clock size={12} />
+                            {timeLeft}
+                          </div>
                         )}
-                      </div>
-                    </td>
-                    <td>
-                      <strong>{order.totalAmount.toLocaleString()} ₫</strong>
-                    </td>
-                    <td>
-                      <div
-                        className="status-badge"
-                        style={{
-                          backgroundColor: statusInfo.bgColor,
-                          color: statusInfo.color,
-                        }}
-                      >
-                        <StatusIcon size={14} />
-                        {statusInfo.label}
-                      </div>
-                    </td>
-                    <td>
-                      {order.status === "Pending" && timeLeft && (
-                        <div className="reserve-time">
-                          <Clock size={12} />
-                          {timeLeft}
-                        </div>
-                      )}
-                      {order.status === "Pending" && !timeLeft && (
-                        <div className="reserve-expired">
-                          <AlertCircle size={12} />
-                          Hết hạn
-                        </div>
-                      )}
-                    </td>
-                    <td>
-                      {new Date(order.createdAt).toLocaleDateString("vi-VN", {
-                        day: "2-digit",
-                        month: "2-digit",
-                        year: "numeric",
-                        hour: "2-digit",
-                        minute: "2-digit",
-                      })}
-                    </td>
-                    <td className="actions">
-                      <button
-                        onClick={() => openDetailModal(order)}
-                        className="btn-small btn-view"
-                        title="Xem chi tiết"
-                      >
-                        <Eye size={16} />
-                      </button>
+                        {order.status === "Pending" && !timeLeft && (
+                          <div className="reserve-expired">
+                            <AlertCircle size={12} />
+                            Hết hạn
+                          </div>
+                        )}
+                      </td>
+                      <td>
+                        {new Date(order.createdAt).toLocaleDateString("vi-VN", {
+                          day: "2-digit",
+                          month: "2-digit",
+                          year: "numeric",
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        })}
+                      </td>
+                      <td className="actions">
+                        <button
+                          onClick={() => openDetailModal(order)}
+                          className="btn-small btn-view"
+                          title="Xem chi tiết"
+                        >
+                          <Eye size={16} />
+                        </button>
 
-                      {order.status === "Pending" && (
-                        <>
+                        {order.status === "Pending" && (
+                          <>
+                            <button
+                              onClick={() =>
+                                handleStatusChange(order._id, "Confirmed")
+                              }
+                              className="btn-small btn-confirm"
+                              disabled={processingOrderId === order._id}
+                              title="Xác nhận đơn"
+                            >
+                              {processingOrderId === order._id ? (
+                                <Loader2 size={16} className="spin" />
+                              ) : (
+                                <CheckCircle size={16} />
+                              )}
+                            </button>
+                            <button
+                              onClick={() => handleCancelOrder(order._id)}
+                              className="btn-small btn-cancel"
+                              disabled={processingOrderId === order._id}
+                              title="Hủy đơn"
+                            >
+                              <XCircle size={16} />
+                            </button>
+                          </>
+                        )}
+
+                        {order.status === "Confirmed" && (
                           <button
                             onClick={() =>
-                              handleStatusChange(order._id, "Confirmed")
+                              handleStatusChange(order._id, "Shipping")
                             }
-                            className="btn-small btn-confirm"
+                            className="btn-small btn-ship"
                             disabled={processingOrderId === order._id}
-                            title="Xác nhận đơn"
+                            title="Chuyển sang đang giao"
+                          >
+                            {processingOrderId === order._id ? (
+                              <Loader2 size={16} className="spin" />
+                            ) : (
+                              <Truck size={16} />
+                            )}
+                          </button>
+                        )}
+
+                        {order.status === "Shipping" && (
+                          <button
+                            onClick={() =>
+                              handleStatusChange(order._id, "Completed")
+                            }
+                            className="btn-small btn-complete"
+                            disabled={processingOrderId === order._id}
+                            title="Hoàn thành"
                           >
                             {processingOrderId === order._id ? (
                               <Loader2 size={16} className="spin" />
@@ -476,56 +570,14 @@ export default function OrderManager() {
                               <CheckCircle size={16} />
                             )}
                           </button>
-                          <button
-                            onClick={() => handleCancelOrder(order._id)}
-                            className="btn-small btn-cancel"
-                            disabled={processingOrderId === order._id}
-                            title="Hủy đơn"
-                          >
-                            <XCircle size={16} />
-                          </button>
-                        </>
-                      )}
-
-                      {order.status === "Confirmed" && (
-                        <button
-                          onClick={() =>
-                            handleStatusChange(order._id, "Shipping")
-                          }
-                          className="btn-small btn-ship"
-                          disabled={processingOrderId === order._id}
-                          title="Chuyển sang đang giao"
-                        >
-                          {processingOrderId === order._id ? (
-                            <Loader2 size={16} className="spin" />
-                          ) : (
-                            <Truck size={16} />
-                          )}
-                        </button>
-                      )}
-
-                      {order.status === "Shipping" && (
-                        <button
-                          onClick={() =>
-                            handleStatusChange(order._id, "Completed")
-                          }
-                          className="btn-small btn-complete"
-                          disabled={processingOrderId === order._id}
-                          title="Hoàn thành"
-                        >
-                          {processingOrderId === order._id ? (
-                            <Loader2 size={16} className="spin" />
-                          ) : (
-                            <CheckCircle size={16} />
-                          )}
-                        </button>
-                      )}
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </>
         )}
       </div>
 
@@ -588,7 +640,6 @@ export default function OrderManager() {
                   </div>
                   <div className="info-item">
                     <strong>Thanh toán:</strong>
-                    {/* ✅ SỬ DỤNG getPaymentMethodLabel */}
                     <span>{getPaymentMethodLabel(selectedOrder.paymentMethod)}</span>
                   </div>
                 </div>

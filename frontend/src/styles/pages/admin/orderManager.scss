@@ -1,4 +1,4 @@
-// src/styles/pages/admin/orderManager.scss
+// src/styles/pages/admin/orderManager.scss - WITH SEARCH BOX
 .order-manager {
   padding: 24px;
   background: #f8f9fa;
@@ -136,6 +136,71 @@
     }
   }
 
+  // Search box
+  .search-box {
+    position: relative;
+    background: white;
+    border-radius: 12px;
+    padding: 16px 16px;
+    margin-bottom: 20px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+    border: 1px solid #e5e7eb;
+
+    svg {
+      position: absolute;
+      left: 28px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: #94a3b8;
+      pointer-events: none;
+    }
+
+    input {
+      width: 91.5%;
+      padding: 12px 50px 12px 48px;
+      border: 1.5px solid #e2e8f0;
+      border-radius: 8px;
+      font-size: 15px;
+      transition: all 0.2s;
+      background: #f8fafc;
+
+      &:focus {
+        outline: none;
+        border-color: #3b82f6;
+        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        background: white;
+      }
+
+      &::placeholder {
+        color: #94a3b8;
+      }
+    }
+
+    .clear-search {
+      position: absolute;
+      right: 28px;
+      top: 50%;
+      transform: translateY(-50%);
+      background: #e2e8f0;
+      border: none;
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      color: #64748b;
+      font-size: 14px;
+      transition: all 0.2s;
+
+      &:hover {
+        background: #cbd5e1;
+        color: #334155;
+      }
+    }
+  }
+
   // Orders table
   .orders-table {
     background: white;
@@ -143,6 +208,20 @@
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
     border: 1px solid #e5e7eb;
     overflow-x: auto;
+
+    .search-result-info {
+      padding: 12px 20px;
+      background: #f0f9ff;
+      border-bottom: 1px solid #e0f2fe;
+      color: #0369a1;
+      font-size: 14px;
+      font-weight: 500;
+
+      strong {
+        color: #0c4a6e;
+        font-weight: 700;
+      }
+    }
 
     .empty {
       text-align: center;
@@ -761,6 +840,23 @@
         min-width: 0;
         font-size: 13px;
         padding: 6px 12px;
+      }
+    }
+
+    .search-box {
+      // padding: 12px;
+
+      input {
+        padding: 10px 40px 10px 40px;
+        font-size: 14px;
+      }
+
+      svg {
+        left: 20px;
+      }
+
+      .clear-search {
+        right: 20px;
       }
     }
 
