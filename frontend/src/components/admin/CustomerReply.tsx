@@ -1,5 +1,5 @@
-// frontend/components/admin/CustomerReply.tsx - FIXED
-import { useState, useEffect, useRef } from 'react';
+// frontend/components/admin/CustomerReply.tsx - WITH SEARCH
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { io, Socket } from 'socket.io-client';
 import "@/styles/components/admin/customerReply.scss";
 
@@ -20,16 +20,16 @@ interface User {
 
 interface ChatRoom {
   _id: string;
-  user?: User; // ✅ Populated user data
-  guestId?: string; // ✅ Guest identifier
+  user?: User;
+  guestId?: string;
   userName: string;
   userEmail?: string;
-  userType: 'registered' | 'guest'; // ✅ Phân biệt user/guest
+  userType: 'registered' | 'guest';
   status: 'active' | 'closed';
   lastMessage?: string;
   lastMessageTime?: Date;
   unreadCount: number;
-  displayName?: string; // ✅ Tên hiển thị từ backend
+  displayName?: string;
 }
 
 const CustomerReply = () => {
@@ -40,30 +40,27 @@ const CustomerReply = () => {
   const [isConnected, setIsConnected] = useState(false);
   const [isTyping, setIsTyping] = useState(false);
   const [adminName] = useState('Admin Support');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [messageSearchQuery, setMessageSearchQuery] = useState('');
+  const [isSearchExpanded, setIsSearchExpanded] = useState(false);
   
   const socketRef = useRef<Socket | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const searchInputRef = useRef<HTMLInputElement>(null);
 
-  // ✅ HÀM LẤY TÊN HIỂN THỊ
   const getDisplayName = (room: ChatRoom): string => {
-    // Ưu tiên displayName từ backend
     if (room.displayName) return room.displayName;
     
-    // Nếu là registered user
     if (room.userType === 'registered') {
-      // Ưu tiên tên từ User model
       if (room.user?.name) return room.user.name;
-      // Fallback: tên trong ChatRoom
       if (room.userName && room.userName !== 'Khách') return room.userName;
       return 'User';
     }
     
-    // Nếu là guest
     const guestSuffix = room.guestId ? ` (${room.guestId.substring(0, 8)})` : '';
     return `Khách${guestSuffix}`;
   };
 
-  // ✅ HÀM LẤY SUBTITLE (email hoặc guest label)
   const getSubtitle = (room: ChatRoom): string => {
     if (room.userType === 'registered') {
       return room.user?.email || room.userEmail || 'Khách hàng';
@@ -71,10 +68,59 @@ const CustomerReply = () => {
     return '👤 Khách chưa đăng ký';
   };
 
-  // ✅ HÀM LẤY AVATAR
   const getAvatar = (room: ChatRoom): string => {
     const displayName = getDisplayName(room);
     return displayName.charAt(0).toUpperCase();
+  };
+
+  // Filter rooms based on search query
+  const filteredRooms = useMemo(() => {
+    if (!searchQuery.trim()) return rooms;
+    
+    const query = searchQuery.toLowerCase().trim();
+    
+    return rooms.filter((room) => {
+      // Search in display name
+      if (getDisplayName(room).toLowerCase().includes(query)) return true;
+      
+      // Search in email
+      if (room.user?.email?.toLowerCase().includes(query)) return true;
+      if (room.userEmail?.toLowerCase().includes(query)) return true;
+      
+      // Search in phone
+      if (room.user?.phone?.includes(query)) return true;
+      
+      // Search in last message
+      if (room.lastMessage?.toLowerCase().includes(query)) return true;
+      
+      // Search in guest ID
+      if (room.guestId?.toLowerCase().includes(query)) return true;
+      
+      return false;
+    });
+  }, [rooms, searchQuery]);
+
+  // Filter messages based on search query
+  const filteredMessages = useMemo(() => {
+    if (!messageSearchQuery.trim()) return messages;
+    
+    const query = messageSearchQuery.toLowerCase().trim();
+    
+    return messages.filter((msg) => {
+      return msg.content?.toLowerCase().includes(query);
+    });
+  }, [messages, messageSearchQuery]);
+
+  // Toggle search and focus input
+  const handleToggleSearch = () => {
+    setIsSearchExpanded(!isSearchExpanded);
+    if (!isSearchExpanded) {
+      setTimeout(() => {
+        searchInputRef.current?.focus();
+      }, 100);
+    } else {
+      setMessageSearchQuery('');
+    }
   };
 
   useEffect(() => {
@@ -94,7 +140,6 @@ const CustomerReply = () => {
     socketRef.current.on('rooms:list', (roomsList: ChatRoom[]) => {
       console.log('📋 Rooms list received:', roomsList);
       
-      // ✅ Loại bỏ duplicate theo userId/guestId
       const uniqueRooms = roomsList.reduce((acc: ChatRoom[], current) => {
         const identifier = current.userType === 'registered' 
           ? current.user?._id 
@@ -142,7 +187,6 @@ const CustomerReply = () => {
       console.log('📜 Chat history received:', data.messages);
       setMessages(data.messages);
       
-      // ✅ Cập nhật selected room với data mới nhất
       if (data.room && selectedRoom?._id === data.room._id) {
         setSelectedRoom(data.room);
       }
@@ -278,13 +322,41 @@ const CustomerReply = () => {
           </div>
         </div>
 
+        {/* Search Box */}
+        <div className="rooms-search">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <circle cx="11" cy="11" r="8"/>
+            <path d="m21 21-4.35-4.35"/>
+          </svg>
+          <input
+            type="text"
+            placeholder="Tìm khách hàng..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+          />
+          {searchQuery && (
+            <button 
+              className="clear-search"
+              onClick={() => setSearchQuery('')}
+              title="Xóa"
+            >
+              ✕
+            </button>
+          )}
+        </div>
+
         <div className="rooms-list">
-          {rooms.length === 0 ? (
+          {filteredRooms.length === 0 ? (
             <div className="empty-rooms">
-              <p>Chưa có cuộc trò chuyện nào</p>
+              <p>
+                {searchQuery 
+                  ? `Không tìm thấy "${searchQuery}"`
+                  : 'Chưa có cuộc trò chuyện nào'
+                }
+              </p>
             </div>
           ) : (
-            rooms.map(room => (
+            filteredRooms.map(room => (
               <div
                 key={room._id}
                 className={`room-item ${selectedRoom?._id === room._id ? 'active' : ''} ${room.userType === 'guest' ? 'guest-room' : ''}`}
@@ -339,6 +411,37 @@ const CustomerReply = () => {
                 </div>
               </div>
               <div className="chat-actions">
+                {/* Message Search */}
+                <div className={`message-search-wrapper ${isSearchExpanded ? 'expanded' : ''}`}>
+                  {isSearchExpanded && (
+                    <input
+                      ref={searchInputRef}
+                      type="text"
+                      placeholder="Tìm trong đoạn chat..."
+                      value={messageSearchQuery}
+                      onChange={(e) => setMessageSearchQuery(e.target.value)}
+                      className="message-search-input"
+                    />
+                  )}
+                  <button 
+                    className="action-btn search-btn"
+                    onClick={handleToggleSearch}
+                    title={isSearchExpanded ? "Đóng tìm kiếm" : "Tìm kiếm tin nhắn"}
+                  >
+                    {isSearchExpanded ? (
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                      </svg>
+                    ) : (
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <circle cx="11" cy="11" r="8"/>
+                        <path d="m21 21-4.35-4.35"/>
+                      </svg>
+                    )}
+                  </button>
+                </div>
+                
                 {selectedRoom.user?.phone && (
                   <a 
                     href={`tel:${selectedRoom.user.phone}`}
@@ -354,7 +457,13 @@ const CustomerReply = () => {
             </div>
 
             <div className="messages-container">
-              {messages.map(msg => (
+              {messageSearchQuery && (
+                <div className="search-result-banner">
+                  Tìm thấy <strong>{filteredMessages.length}</strong> tin nhắn
+                </div>
+              )}
+              
+              {filteredMessages.map(msg => (
                 <div
                   key={msg._id}
                   className={`message-item ${msg.sender === 'admin' ? 'sent' : 'received'}`}

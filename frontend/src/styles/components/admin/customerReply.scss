@@ -1,4 +1,3 @@
-
 .admin-layout,
 .admin-main-content,
 .admin-page-wrapper {
@@ -20,7 +19,7 @@
   left: 0;
   right: 0;
   bottom: 0;
-  padding-left: 280px; // Điều chỉnh theo sidebar của bạn
+  padding-left: 280px;
 
   // ==================== SIDEBAR - DANH SÁCH ROOMS ====================
   .chat-rooms-sidebar {
@@ -105,6 +104,66 @@
       }
     }
 
+    // ✅ SEARCH BOX
+    .rooms-search {
+      position: relative;
+      padding: 12px 1rem;
+      border-bottom: 1px solid #e2e8f0;
+      background: white;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-shrink: 0;
+
+      svg {
+        color: #94a3b8;
+        flex-shrink: 0;
+      }
+
+      input {
+        flex: 1;
+        padding: 8px 10px;
+        border: 1.5px solid #e2e8f0;
+        border-radius: 8px;
+        font-size: 13.5px;
+        transition: all 0.2s;
+        background: #f8fafc;
+        font-family: inherit;
+
+        &:focus {
+          outline: none;
+          border-color: #3b82f6;
+          box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+          background: white;
+        }
+
+        &::placeholder {
+          color: #94a3b8;
+        }
+      }
+
+      .clear-search {
+        background: #e2e8f0;
+        border: none;
+        width: 22px;
+        height: 22px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        color: #64748b;
+        font-size: 12px;
+        transition: all 0.2s;
+        flex-shrink: 0;
+
+        &:hover {
+          background: #cbd5e1;
+          color: #334155;
+        }
+      }
+    }
+
     // ✅ DANH SÁCH ROOMS - CHỖ DUY NHẤT CUỘN
     .rooms-list {
       flex: 1;
@@ -157,7 +216,6 @@
           border-left: 3px solid #3b82f6;
         }
 
-        // ✅ GUEST ROOM STYLING
         &.guest-room {
           border-left: 3px solid transparent;
 
@@ -189,7 +247,6 @@
           font-size: 1.125rem;
           flex-shrink: 0;
 
-          // ✅ GUEST BADGE trong avatar
           .guest-badge {
             position: absolute;
             bottom: -2px;
@@ -234,7 +291,6 @@
             }
           }
 
-          // ✅ SUBTITLE (email hoặc guest label)
           .room-subtitle {
             font-size: 0.75rem;
             color: #94a3b8;
@@ -321,7 +377,6 @@
           position: relative;
           flex-shrink: 0;
 
-          // ✅ GUEST BADGE trong header
           .guest-badge-header {
             position: absolute;
             bottom: -2px;
@@ -361,7 +416,6 @@
             white-space: nowrap;
           }
 
-          // ✅ PHONE NUMBER
           .user-phone {
             font-size: 0.85rem;
             color: #10b981;
@@ -377,6 +431,49 @@
       .chat-actions {
         display: flex;
         gap: 8px;
+        align-items: center;
+
+        .message-search-wrapper {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          transition: all 0.3s ease;
+
+          &.expanded {
+            .message-search-input {
+              width: 200px;
+              opacity: 1;
+              padding: 0 12px;
+            }
+          }
+
+          .message-search-input {
+            width: 0;
+            opacity: 0;
+            height: 40px;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: all 0.3s ease;
+            font-family: inherit;
+            overflow: hidden;
+
+            &:focus {
+              outline: none;
+              border-color: #3b82f6;
+              box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+            }
+
+            &::placeholder {
+              color: #94a3b8;
+            }
+          }
+
+          .search-btn {
+            position: relative;
+            z-index: 1;
+          }
+        }
 
         .action-btn {
           width: 40px;
@@ -391,17 +488,23 @@
           justify-content: center;
           transition: all 0.2s;
           text-decoration: none;
+          flex-shrink: 0;
 
           &:hover {
             background: #f8fafc;
             color: #3b82f6;
             border-color: #3b82f6;
           }
+
+          &.search-btn.active {
+            background: #3b82f6;
+            color: white;
+            border-color: #3b82f6;
+          }
         }
       }
     }
 
-    // ✅ MESSAGES CONTAINER - CHỖ DUY NHẤT CUỘN
     .messages-container {
       flex: 1;
       overflow-y: auto;
@@ -423,6 +526,22 @@
 
         &:hover {
           background: #94a3b8;
+        }
+      }
+
+      .search-result-banner {
+        background: #f0f9ff;
+        padding: 10px 16px;
+        border-radius: 8px;
+        margin-bottom: 16px;
+        color: #0369a1;
+        font-size: 14px;
+        text-align: center;
+        border: 1px solid #bae6fd;
+
+        strong {
+          color: #0c4a6e;
+          font-weight: 700;
         }
       }
 
@@ -473,7 +592,6 @@
           border-radius: 12px;
           position: relative;
 
-          // ✅ BOT BADGE
           .bot-badge {
             font-size: 0.75rem;
             font-weight: 600;
@@ -511,7 +629,6 @@
         }
       }
 
-      // ✅ TYPING INDICATOR
       .typing-indicator-wrapper {
         display: flex;
         gap: 12px;
@@ -571,7 +688,6 @@
       }
     }
 
-    // ✅ QUICK REPLIES
     .quick-replies {
       padding: 12px 1.5rem;
       display: flex;
@@ -611,7 +727,6 @@
       }
     }
 
-    // ✅ MESSAGE INPUT
     .message-input-area {
       padding: 1.5rem;
       background: white;
@@ -668,7 +783,6 @@
       }
     }
 
-    // ✅ EMPTY STATE
     .empty-chat {
       flex: 1;
       display: flex;
@@ -717,10 +831,53 @@
       height: 40vh;
       border-right: none;
       border-bottom: 1px solid #e2e8f0;
+
+      .rooms-search {
+        padding: 10px 12px;
+
+        input {
+          padding: 6px 8px;
+          font-size: 13px;
+        }
+
+        svg {
+          width: 14px;
+          height: 14px;
+        }
+
+        .clear-search {
+          width: 20px;
+          height: 20px;
+          font-size: 11px;
+        }
+      }
     }
 
     .chat-main-area {
       height: 60vh;
+
+      .chat-area-header {
+        .chat-actions {
+          .message-search-wrapper {
+            &.expanded {
+              .message-search-input {
+                width: 150px;
+                font-size: 13px;
+              }
+            }
+          }
+
+          .action-btn {
+            width: 36px;
+            height: 36px;
+
+            svg {
+              width: 18px;
+              height: 18px;
+            }
+          }
+        }
+      }
 
       .message-item .message-bubble {
         max-width: 80%;
