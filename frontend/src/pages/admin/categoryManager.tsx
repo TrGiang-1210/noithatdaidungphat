@@ -7,6 +7,7 @@ import {
   GripVertical,
   ChevronRight,
   Loader2,
+  Search,
 } from "lucide-react";
 import axiosInstance from "../../axios";
 import "@/styles/pages/admin/categoryManager.scss";
@@ -31,6 +32,7 @@ export default function CategoryManager() {
   const [showModal, setShowModal] = useState(false);
   const [formData, setFormData] = useState({ name: "", parent: "" });
   const [parentName, setParentName] = useState("");
+  const [searchQuery, setSearchQuery] = useState("");
 
   // ✅ Helper: Safely get category name (multilingual support)
   const getCategoryName = (name: any): string => {
@@ -76,6 +78,42 @@ export default function CategoryManager() {
   useEffect(() => {
     fetchCategories();
   }, []);
+
+  // Tự động expand các danh mục cha khi search
+  useEffect(() => {
+    if (searchQuery.trim()) {
+      const idsToExpand: string[] = [];
+      
+      const findMatchingParents = (nodes: Category[]): void => {
+        nodes.forEach((node) => {
+          const nodeName = getCategoryName(node.name).toLowerCase();
+          const hasMatch = nodeName.includes(searchQuery.toLowerCase());
+          
+          if (node.children && node.children.length > 0) {
+            const childHasMatch = hasChildMatch(node.children);
+            
+            if (hasMatch || childHasMatch) {
+              idsToExpand.push(node._id);
+            }
+            
+            findMatchingParents(node.children);
+          }
+        });
+      };
+      
+      const hasChildMatch = (nodes: Category[]): boolean => {
+        return nodes.some((node) => {
+          const nodeName = getCategoryName(node.name).toLowerCase();
+          if (nodeName.includes(searchQuery.toLowerCase())) return true;
+          if (node.children) return hasChildMatch(node.children);
+          return false;
+        });
+      };
+      
+      findMatchingParents(categories);
+      setExpanded(idsToExpand);
+    }
+  }, [searchQuery, categories]);
 
   const toggleExpand = (id: string) => {
     setExpanded((prev) =>
@@ -142,7 +180,44 @@ export default function CategoryManager() {
   };
 
   const renderTree = (nodes: Category[], level = 0) => {
-    return nodes.map((cat) => {
+    // Lọc categories theo search query
+    const filterCategories = (cats: Category[]): Category[] => {
+      if (!searchQuery.trim()) return cats;
+      
+      const searchLower = searchQuery.toLowerCase();
+      
+      const filterNode = (cat: Category): Category | null => {
+        const catName = getCategoryName(cat.name).toLowerCase();
+        const currentMatches = catName.includes(searchLower);
+        
+        let filteredChildren: Category[] = [];
+        if (cat.children && cat.children.length > 0) {
+          filteredChildren = cat.children
+            .map(child => filterNode(child))
+            .filter((child): child is Category => child !== null);
+        }
+        
+        // Nếu danh mục hiện tại match hoặc có con match thì giữ lại
+        if (currentMatches || filteredChildren.length > 0) {
+          return {
+            ...cat,
+            // Nếu danh mục hiện tại match -> giữ nguyên TẤT CẢ children gốc
+            // Nếu không match -> chỉ giữ children đã được filter
+            children: currentMatches ? cat.children : filteredChildren
+          };
+        }
+        
+        return null;
+      };
+      
+      return cats
+        .map(cat => filterNode(cat))
+        .filter((cat): cat is Category => cat !== null);
+    };
+
+    const filteredNodes = filterCategories(nodes);
+
+    return filteredNodes.map((cat) => {
       const hasChildren = cat.children && cat.children.length > 0;
       const isExpanded = expanded.includes(cat._id);
       const catName = getCategoryName(cat.name);
@@ -233,6 +308,16 @@ export default function CategoryManager() {
         <button onClick={() => openAddModal()} className="btn-primary">
           <Plus size={20} /> Thêm danh mục gốc
         </button>
+      </div>
+
+      <div className="search-box">
+        <Search size={18} />
+        <input
+          type="text"
+          placeholder="Tìm kiếm danh mục..."
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+        />
       </div>
 
       <div className="category-tree">

@@ -441,9 +441,13 @@
 
           &.expanded {
             .message-search-input {
-              width: 200px;
+              width: 180px;
               opacity: 1;
               padding: 0 12px;
+            }
+
+            .search-navigation {
+              display: flex;
             }
           }
 
@@ -466,6 +470,54 @@
 
             &::placeholder {
               color: #94a3b8;
+            }
+          }
+
+          .search-navigation {
+            display: none;
+            align-items: center;
+            gap: 6px;
+            padding: 0 8px;
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            height: 40px;
+
+            .match-counter {
+              font-size: 13px;
+              color: #64748b;
+              font-weight: 600;
+              min-width: 45px;
+              text-align: center;
+            }
+
+            .nav-btn {
+              width: 28px;
+              height: 28px;
+              border: 1px solid #e2e8f0;
+              background: white;
+              border-radius: 6px;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              cursor: pointer;
+              color: #64748b;
+              transition: all 0.2s;
+
+              &:hover {
+                background: #f8fafc;
+                color: #3b82f6;
+                border-color: #3b82f6;
+              }
+
+              &:active {
+                transform: scale(0.95);
+              }
+
+              svg {
+                width: 16px;
+                height: 16px;
+              }
             }
           }
 
@@ -550,6 +602,29 @@
         gap: 12px;
         margin-bottom: 1rem;
         animation: fadeInMessage 0.3s ease-out;
+        transition: all 0.3s ease;
+        padding: 8px;
+        margin-left: -8px;
+        margin-right: -8px;
+        border-radius: 8px;
+
+        // ✅ HIGHLIGHT STYLES
+        &.search-match {
+          background: rgba(251, 191, 36, 0.1);
+          
+          .message-bubble {
+            box-shadow: 0 0 0 2px rgba(251, 191, 36, 0.3);
+          }
+        }
+
+        &.current-match {
+          background: rgba(59, 130, 246, 0.15);
+          animation: pulseHighlight 1.5s ease-in-out infinite;
+          
+          .message-bubble {
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.5);
+          }
+        }
 
         &.sent {
           justify-content: flex-end;
@@ -591,6 +666,7 @@
           padding: 12px 16px;
           border-radius: 12px;
           position: relative;
+          transition: all 0.3s ease;
 
           .bot-badge {
             font-size: 0.75rem;
@@ -626,6 +702,15 @@
         to {
           opacity: 1;
           transform: translateY(0);
+        }
+      }
+
+      @keyframes pulseHighlight {
+        0%, 100% {
+          background: rgba(59, 130, 246, 0.15);
+        }
+        50% {
+          background: rgba(59, 130, 246, 0.25);
         }
       }
 
@@ -861,8 +946,25 @@
           .message-search-wrapper {
             &.expanded {
               .message-search-input {
-                width: 150px;
+                width: 120px;
                 font-size: 13px;
+              }
+
+              .search-navigation {
+                .match-counter {
+                  font-size: 12px;
+                  min-width: 40px;
+                }
+
+                .nav-btn {
+                  width: 24px;
+                  height: 24px;
+
+                  svg {
+                    width: 14px;
+                    height: 14px;
+                  }
+                }
               }
             }
           }

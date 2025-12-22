@@ -1,6 +1,6 @@
-// src/admin/pages/ProductManager.tsx - FIXED MULTILINGUAL
-import { useState, useEffect } from "react";
-import { Plus, Edit2, Trash2, Loader2, X } from "lucide-react";
+// src/admin/pages/ProductManager.tsx - WITH INTEGRATED PAGINATION
+import { useState, useEffect, useMemo } from "react";
+import { Plus, Edit2, Trash2, Loader2, X, Search } from "lucide-react";
 import axiosInstance from "../../axios";
 import { getImageUrl, getFirstImageUrl } from "@/utils/imageUrl";
 import "@/styles/pages/admin/productManager.scss";
@@ -49,6 +49,7 @@ export default function ProductManager() {
   const [editingProd, setEditingProd] = useState<Product | null>(null);
   const [deletingProd, setDeletingProd] = useState<Product | null>(null);
   const [showModal, setShowModal] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
   const [formData, setFormData] = useState({
     name: "",
     sku: "",
@@ -68,6 +69,8 @@ export default function ProductManager() {
   );
   const [successMessage, setSuccessMessage] = useState("");
   const [previewImage, setPreviewImage] = useState<string | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(5);
 
   // ✅ Helper: Safely get name (multilingual support)
   const getName = (name: any): string => {
@@ -129,6 +132,47 @@ export default function ProductManager() {
       });
     };
   }, [imagePreviews]);
+
+  // Filter products based on search query
+  const filteredProducts = useMemo(() => {
+    if (!searchQuery.trim()) return products;
+    
+    const searchLower = searchQuery.toLowerCase();
+    return products.filter((prod) => {
+      const name = getName(prod.name).toLowerCase();
+      const sku = prod.sku.toLowerCase();
+      const categories = prod.categories
+        .map((c) => getName(c.name).toLowerCase())
+        .join(" ");
+      
+      return (
+        name.includes(searchLower) ||
+        sku.includes(searchLower) ||
+        categories.includes(searchLower)
+      );
+    });
+  }, [products, searchQuery]);
+
+  // Pagination
+  const totalPages = Math.ceil(filteredProducts.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const currentProducts = filteredProducts.slice(startIndex, endIndex);
+
+  // Reset to page 1 when search query or items per page changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, itemsPerPage]);
+
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleItemsPerPageChange = (value: number) => {
+    setItemsPerPage(value);
+    setCurrentPage(1);
+  };
 
   const openAddModal = () => {
     setEditingProd(null);
@@ -374,10 +418,28 @@ export default function ProductManager() {
         </button>
       </div>
 
+      <div className="search-box">
+        <Search size={18} />
+        <input
+          type="text"
+          placeholder="Tìm kiếm sản phẩm theo tên, SKU, danh mục..."
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+        />
+        {searchQuery && (
+          <span className="search-result-count">
+            Tìm thấy {filteredProducts.length} sản phẩm
+          </span>
+        )}
+      </div>
+
       <div className="product-table">
-        {products.length === 0 ? (
+        {currentProducts.length === 0 ? (
           <p className="empty">
-            Chưa có sản phẩm nào. Hãy thêm sản phẩm đầu tiên!
+            {searchQuery 
+              ? `Không tìm thấy sản phẩm nào với từ khóa "${searchQuery}"`
+              : "Chưa có sản phẩm nào. Hãy thêm sản phẩm đầu tiên!"
+            }
           </p>
         ) : (
           <table>
@@ -394,7 +456,7 @@ export default function ProductManager() {
               </tr>
             </thead>
             <tbody>
-              {products.map((prod) => (
+              {currentProducts.map((prod) => (
                 <tr key={prod._id}>
                   <td>
                     <img
@@ -433,6 +495,77 @@ export default function ProductManager() {
           </table>
         )}
       </div>
+
+      {filteredProducts.length > 0 && (
+        <div className="pagination">
+          <div className="pagination-left">
+            <div className="items-per-page">
+              <span>Hiển thị:</span>
+              <select 
+                value={itemsPerPage} 
+                onChange={(e) => handleItemsPerPageChange(Number(e.target.value))}
+              >
+                <option value={5}>5</option>
+                <option value={10}>10</option>
+                <option value={15}>15</option>
+                <option value={20}>20</option>
+                <option value={100}>100</option>
+              </select>
+              <span>sản phẩm/trang</span>
+            </div>
+            <div className="page-info">
+              Hiển thị {startIndex + 1}-{Math.min(endIndex, filteredProducts.length)} trong tổng số {filteredProducts.length} sản phẩm
+            </div>
+          </div>
+
+          {totalPages > 1 && (
+            <div className="pagination-center">
+              <button 
+                onClick={() => handlePageChange(currentPage - 1)}
+                disabled={currentPage === 1}
+                className="pagination-btn"
+              >
+                ← Trước
+              </button>
+              
+              <div className="pagination-numbers">
+                {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => {
+                  // Show first page, last page, current page, and pages around current
+                  if (
+                    page === 1 ||
+                    page === totalPages ||
+                    (page >= currentPage - 1 && page <= currentPage + 1)
+                  ) {
+                    return (
+                      <button
+                        key={page}
+                        onClick={() => handlePageChange(page)}
+                        className={`pagination-number ${currentPage === page ? 'active' : ''}`}
+                      >
+                        {page}
+                      </button>
+                    );
+                  } else if (
+                    page === currentPage - 2 ||
+                    page === currentPage + 2
+                  ) {
+                    return <span key={page} className="pagination-ellipsis">...</span>;
+                  }
+                  return null;
+                })}
+              </div>
+
+              <button 
+                onClick={() => handlePageChange(currentPage + 1)}
+                disabled={currentPage === totalPages}
+                className="pagination-btn"
+              >
+                Sau →
+              </button>
+            </div>
+          )}
+        </div>
+      )}
 
       {showModal && (
         <div className="modal-overlay" onClick={() => setShowModal(false)}>
