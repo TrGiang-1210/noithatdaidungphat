@@ -12,6 +12,7 @@ const sampleTranslations = [
   // ========== COMMON ==========
   { key: 'common.viewAll', namespace: 'common', viText: 'Xem tất cả', category: 'UI' },
   { key: 'common.loading', namespace: 'common', viText: 'Đang tải dữ liệu...', category: 'UI' },
+  { key: 'common.error', namespace: 'common', viText: 'Lỗi', category: 'UI' },
   { key: 'common.welcome', namespace: 'common', viText: 'Chào mừng', category: 'UI' },
   { key: 'common.home', namespace: 'common', viText: 'Trang chủ', category: 'UI' },
   { key: 'common.products', namespace: 'common', viText: 'Sản phẩm', category: 'UI' },
@@ -37,7 +38,7 @@ const sampleTranslations = [
   { key: 'header.about', namespace: 'header', viText: 'Giới thiệu', category: 'UI' },
   
   // ========== FOOTER ==========
-  { key: 'footer.description', namespace: 'footer', viText: 'Nội Thất Đại Dũng Phát – cung cấp sản phẩm nội thất chất lượng, bền đẹp, giá tốt cho gia đình, khách sạn, văn phòng.', category: 'UI' },
+  { key: 'footer.description', namespace: 'footer', viText: 'Nội Thất Đại Dũng Phát — cung cấp sản phẩm nội thất chất lượng, bền đẹp, giá tốt cho gia đình, khách sạn, văn phòng.', category: 'UI' },
   { key: 'footer.policy', namespace: 'footer', viText: 'Chính sách', category: 'UI' },
   { key: 'footer.warrantyPolicy', namespace: 'footer', viText: 'Chính sách bảo hành', category: 'UI' },
   { key: 'footer.shippingPolicy', namespace: 'footer', viText: 'Chính sách vận chuyển', category: 'UI' },
@@ -50,10 +51,10 @@ const sampleTranslations = [
   { key: 'footer.store2Name', namespace: 'footer', viText: 'Nệm Đại Dũng Phát - Nệm Tốt Long An', category: 'UI' },
   { key: 'footer.address', namespace: 'footer', viText: 'Địa chỉ', category: 'UI' },
   { key: 'footer.phone', namespace: 'footer', viText: 'Điện thoại', category: 'UI' },
-  { key: 'footer.workingHours', namespace: 'footer', viText: 'Giờ làm việc: 8:00 – 21:00 (T2–CN)', category: 'UI' },
-  { key: 'footer.copyright', namespace: 'footer', viText: 'Đại Dũng Phát – All rights reserved.', category: 'UI' },
+  { key: 'footer.workingHours', namespace: 'footer', viText: 'Giờ làm việc: 8:00 — 21:00 (T2—CN)', category: 'UI' },
+  { key: 'footer.copyright', namespace: 'footer', viText: 'Đại Dũng Phát — All rights reserved.', category: 'UI' },
   
-  // ========== PRODUCT ==========
+  // ========== PRODUCT (GENERAL) ==========
   { key: 'product.buyNow', namespace: 'products', viText: 'Mua ngay', category: 'UI' },
   { key: 'product.addToCart', namespace: 'products', viText: 'Thêm vào giỏ', category: 'UI' },
   { key: 'product.viewDetails', namespace: 'products', viText: 'Xem chi tiết', category: 'UI' },
@@ -62,6 +63,27 @@ const sampleTranslations = [
   { key: 'product.inStock', namespace: 'products', viText: 'Còn hàng', category: 'UI' },
   { key: 'product.outOfStock', namespace: 'products', viText: 'Hết hàng', category: 'UI' },
   { key: 'product.description', namespace: 'products', viText: 'Mô tả sản phẩm', category: 'UI' },
+  
+  // ========== PRODUCT DETAIL PAGE ==========
+  { key: 'product.sku', namespace: 'products', viText: 'Mã hàng', category: 'UI' },
+  { key: 'product.material', namespace: 'products', viText: 'Chất liệu', category: 'UI' },
+  { key: 'product.color', namespace: 'products', viText: 'Màu sắc', category: 'UI' },
+  { key: 'product.size', namespace: 'products', viText: 'Kích thước (cm)', category: 'UI' },
+  { key: 'product.condition', namespace: 'products', viText: 'Tình trạng', category: 'UI' },
+  { key: 'product.status', namespace: 'products', viText: 'Trạng thái', category: 'UI' },
+  { key: 'product.brandNew', namespace: 'products', viText: 'Hàng mới 100%', category: 'UI' },
+  { key: 'product.deliveryCost', namespace: 'products', viText: 'Chi phí giao hàng', category: 'UI' },
+  { key: 'product.freeDeliveryHCMC', namespace: 'products', viText: 'Giao lắp miễn phí tại các quận nội thành tại TPHCM.', category: 'UI' },
+  { key: 'product.deliverySuburbs', namespace: 'products', viText: 'Quận 9, Hóc Môn, Thủ Đức, Củ Chi, Nhà Bè: 200.000 vnđ/đơn hàng', category: 'UI' },
+  { key: 'product.deliveryOtherProvinces', namespace: 'products', viText: 'Các tỉnh thành khác: 400.000 vnđ/đơn hàng', category: 'UI' },
+  { key: 'product.deliveryTime', namespace: 'products', viText: 'Thời gian giao hàng', category: 'UI' },
+  { key: 'product.deliveryTimeRange', namespace: 'products', viText: 'Từ 6 giờ đến 10 ngày làm việc.', category: 'UI' },
+  { key: 'product.installment0Percent', namespace: 'products', viText: 'MUA TRẢ GÓP 0% Thủ tục đơn giản', category: 'UI' },
+  { key: 'product.installmentCard', namespace: 'products', viText: 'TRẢ GÓP 0% QUA THẺ Visa, Master, JCB', category: 'UI' },
+  { key: 'product.relatedProducts', namespace: 'products', viText: 'CÁC SẢN PHẨM LIÊN QUAN', category: 'UI' },
+  { key: 'product.noProductId', namespace: 'products', viText: 'Không có product id/slug trong URL', category: 'UI' },
+  { key: 'product.notFound', namespace: 'products', viText: 'Không tìm thấy sản phẩm (kiểm tra backend route).', category: 'UI' },
+  { key: 'product.noData', namespace: 'products', viText: 'Không có dữ liệu sản phẩm', category: 'UI' },
   
   // ========== CART & CHECKOUT ==========
   { key: 'cart.title', namespace: 'cart', viText: 'Giỏ hàng', category: 'UI' },
