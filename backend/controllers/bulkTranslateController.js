@@ -61,7 +61,7 @@ exports.translateAllProducts = async (req, res) => {
     let failed = 0;
     const errors = [];
     
-    console.log(`🔄 Starting translation for ${products.length} products...`);
+    console.log(`📄 Starting translation for ${products.length} products...`);
     
     for (const product of products) {
       try {
@@ -93,7 +93,8 @@ exports.translateAllProducts = async (req, res) => {
         product.description = ensureMultilingualObject(product.description, sourceLang);
         const sourceDesc = product.description[sourceLang];
         
-        if (sourceDesc && (!product.description[targetLang] || force)) {
+        // ✅ FIX: Chỉ dịch nếu có nội dung VÀ chưa dịch
+        if (sourceDesc && sourceDesc.trim() && (!product.description[targetLang] || force)) {
           const result = await aiTranslationService.translateWithClaude(
             sourceDesc, 
             sourceLang, 
@@ -102,16 +103,18 @@ exports.translateAllProducts = async (req, res) => {
           
           product.description[targetLang] = result.translation;
           needSave = true;
+          console.log(`✅ Description translated`);
         }
         
-        // Dịch attributes (nếu có)
-        if (product.attributes && product.attributes.length > 0) {
+        // ✅ FIX: Dịch attributes (nếu có)
+        if (product.attributes && Array.isArray(product.attributes) && product.attributes.length > 0) {
           for (const attr of product.attributes) {
             // ✅ Ensure attr.name là object
             attr.name = ensureMultilingualObject(attr.name, sourceLang);
             const attrName = attr.name[sourceLang];
             
-            if (attrName && (!attr.name[targetLang] || force)) {
+            // ✅ FIX: Kiểm tra có nội dung
+            if (attrName && attrName.trim() && (!attr.name[targetLang] || force)) {
               const result = await aiTranslationService.translateWithClaude(
                 attrName,
                 sourceLang,
@@ -120,16 +123,18 @@ exports.translateAllProducts = async (req, res) => {
               
               attr.name[targetLang] = result.translation;
               needSave = true;
+              console.log(`  ✅ Attr: ${attrName} → ${result.translation}`);
             }
             
-            // Dịch attribute options
-            if (attr.options && attr.options.length > 0) {
+            // ✅ FIX: Dịch attribute options
+            if (attr.options && Array.isArray(attr.options) && attr.options.length > 0) {
               for (const option of attr.options) {
                 // ✅ Ensure option.label là object
                 option.label = ensureMultilingualObject(option.label, sourceLang);
                 const optionLabel = option.label[sourceLang];
                 
-                if (optionLabel && (!option.label[targetLang] || force)) {
+                // ✅ FIX: Kiểm tra có nội dung
+                if (optionLabel && optionLabel.trim() && (!option.label[targetLang] || force)) {
                   const result = await aiTranslationService.translateWithClaude(
                     optionLabel,
                     sourceLang,
@@ -138,6 +143,7 @@ exports.translateAllProducts = async (req, res) => {
                   
                   option.label[targetLang] = result.translation;
                   needSave = true;
+                  console.log(`    ✅ Option: ${optionLabel} → ${result.translation}`);
                 }
               }
             }
@@ -145,8 +151,19 @@ exports.translateAllProducts = async (req, res) => {
         }
         
         if (needSave) {
-          await product.save();
+          // ✅ FIX: Dùng updateOne thay vì save() để tránh validation issues
+          await Product.updateOne(
+            { _id: product._id },
+            { 
+              $set: { 
+                name: product.name,
+                description: product.description,
+                attributes: product.attributes
+              } 
+            }
+          );
           translated++;
+          console.log(`✅ Saved product ${product._id}\n`);
         }
         
         // Delay để tránh rate limit
@@ -210,7 +227,7 @@ exports.translateAllCategories = async (req, res) => {
     let failed = 0;
     const errors = [];
     
-    console.log(`🔄 Starting translation for ${categories.length} categories...`);
+    console.log(`📄 Starting translation for ${categories.length} categories...`);
     
     for (const category of categories) {
       try {
@@ -242,7 +259,8 @@ exports.translateAllCategories = async (req, res) => {
         category.description = ensureMultilingualObject(category.description, sourceLang);
         const sourceDesc = category.description[sourceLang];
         
-        if (sourceDesc && (!category.description[targetLang] || force)) {
+        // ✅ FIX: Chỉ dịch nếu có nội dung
+        if (sourceDesc && sourceDesc.trim() && (!category.description[targetLang] || force)) {
           const result = await aiTranslationService.translateWithClaude(
             sourceDesc, 
             sourceLang, 
@@ -251,11 +269,21 @@ exports.translateAllCategories = async (req, res) => {
           
           category.description[targetLang] = result.translation;
           needSave = true;
+          console.log(`✅ Description translated`);
         }
         
         if (needSave) {
-          await category.save();
+          await Category.updateOne(
+            { _id: category._id },
+            { 
+              $set: { 
+                name: category.name,
+                description: category.description
+              } 
+            }
+          );
           translated++;
+          console.log(`✅ Saved category ${category._id}\n`);
         }
         
         await new Promise(resolve => setTimeout(resolve, 1500));

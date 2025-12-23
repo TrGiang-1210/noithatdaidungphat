@@ -1,4 +1,4 @@
-// src/pages/productDetail.tsx - FULL CODE WITH ATTRIBUTES
+// src/pages/productDetail.tsx - FIXED VERSION WITH PROPER MULTILINGUAL SUPPORT
 import React, { useEffect, useState, useContext, useRef } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { useCart } from "@/context/CartContext";
@@ -6,6 +6,7 @@ import "@/styles/pages/user/productDetail.scss";
 import { AuthContext } from "@/context/AuthContext";
 import { getImageUrls, getFirstImageUrl, getImageUrl } from "@/utils/imageUrl";
 import { ChevronRight } from "lucide-react";
+import { useLanguage } from "@/context/LanguageContext";
 
 type Product = {
   _id: string;
@@ -24,7 +25,6 @@ type Product = {
   material?: string;
   color?: string;
   size?: string;
-  // ✅ THÊM ATTRIBUTES
   attributes?: Array<{
     name: string;
     options: Array<{
@@ -36,13 +36,14 @@ type Product = {
   }>;
 };
 
-const endpointCandidates = (param: string) => [
-  `http://localhost:5000/api/products/slug/${encodeURIComponent(param)}`,
-  `http://localhost:5000/api/products/${encodeURIComponent(param)}`,
-  `http://localhost:5000/api/product/${encodeURIComponent(param)}`,
+const endpointCandidates = (param: string, lang: string) => [
+  `http://localhost:5000/api/products/slug/${encodeURIComponent(param)}?lang=${lang}`,
+  `http://localhost:5000/api/products/${encodeURIComponent(param)}?lang=${lang}`,
+  `http://localhost:5000/api/product/${encodeURIComponent(param)}?lang=${lang}`,
 ];
 
 const ProductDetail: React.FC = () => {
+  const { t, language } = useLanguage();
   const { slug, id } = useParams();
   const param = slug || id || "";
   const [product, setProduct] = useState<Product | null>(null);
@@ -58,17 +59,51 @@ const ProductDetail: React.FC = () => {
   const viewIncrementedRef = useRef(false);
   const [showLightbox, setShowLightbox] = useState(false);
   const [lightboxIndex, setLightboxIndex] = useState(0);
-  // ✅ THÊM STATE CHO ATTRIBUTES
-  const [selectedAttributes, setSelectedAttributes] = useState<
-    Record<string, string>
-  >({});
+  const [selectedAttributes, setSelectedAttributes] = useState<Record<string, string>>({});
 
-  const incrementProductView = async (
-    productId: string,
-    productSlug: string
-  ) => {
+  // ✅ FIXED: Helper function to safely extract text from multilingual fields
+  const safeGetText = (field: any, lang: string = "vi"): string => {
+    if (!field) return "";
+    
+    // If already a string, return it
+    if (typeof field === "string") return field;
+    
+    // If object, extract by language priority
+    if (typeof field === "object" && field !== null) {
+      // Try requested language
+      if (field[lang] && field[lang].trim()) {
+        return field[lang];
+      }
+      
+      // Fallback to Vietnamese
+      if (field.vi && field.vi.trim()) {
+        return field.vi;
+      }
+      
+      // Fallback to English
+      if (field.en && field.en.trim()) {
+        return field.en;
+      }
+      
+      // Fallback to first non-empty value
+      const values = Object.values(field).filter(v => 
+        typeof v === 'string' && v.trim()
+      );
+      if (values.length > 0) {
+        return values[0] as string;
+      }
+      
+      // No valid translation found
+      console.warn(`⚠️ No translation found for lang="${lang}":`, field);
+      return '';
+    }
+    
+    // Unknown type → stringify
+    return String(field);
+  };
+
+  const incrementProductView = async (productId: string, productSlug: string) => {
     if (viewIncrementedRef.current) {
-      console.log("View already incremented (ref check), skipping...");
       return;
     }
 
@@ -85,8 +120,6 @@ const ProductDetail: React.FC = () => {
           "Content-Type": "application/json",
         },
       });
-
-      console.log("View incremented successfully - only once!");
     } catch (error) {
       viewIncrementedRef.current = false;
       console.error("Error incrementing view:", error);
@@ -95,7 +128,7 @@ const ProductDetail: React.FC = () => {
 
   useEffect(() => {
     if (!param) {
-      setError("Không có product id/slug trong URL");
+      setError(t("product.noProductId") || "Không có product id/slug trong URL");
       setLoading(false);
       return;
     }
@@ -103,39 +136,27 @@ const ProductDetail: React.FC = () => {
     const fetchProduct = async () => {
       setLoading(true);
       setError(null);
-      const candidates = endpointCandidates(param);
+      const candidates = endpointCandidates(param, language);
+      
       for (const url of candidates) {
         try {
           const res = await fetch(url);
-          if (!res.ok) {
-            const txt = await res.text();
-            console.warn(
-              `[ProductDetail] ${url} -> ${res.status}`,
-              txt.slice(0, 200)
-            );
-            continue;
-          }
+          if (!res.ok) continue;
+          
           const ct = res.headers.get("content-type") || "";
-          if (!ct.includes("application/json")) {
-            const txt = await res.text();
-            console.warn(
-              `[ProductDetail] ${url} returned non-json:`,
-              txt.slice(0, 200)
-            );
-            continue;
-          }
+          if (!ct.includes("application/json")) continue;
+          
           const data = await res.json();
           setProduct(data);
           setLoading(false);
-
           incrementProductView(data._id, data.slug);
-
           return;
         } catch (e) {
           console.warn(`[ProductDetail] fetch failed ${url}`, e);
         }
       }
-      setError("Không tìm thấy sản phẩm (kiểm tra backend route).");
+      
+      setError(t("product.notFound") || "Không tìm thấy sản phẩm");
       setLoading(false);
     };
 
@@ -145,25 +166,17 @@ const ProductDetail: React.FC = () => {
     return () => {
       viewIncrementedRef.current = false;
     };
-  }, [param]);
+  }, [param, language]);
 
   useEffect(() => {
     if (!product) return;
 
     const fetchRelatedProducts = async () => {
       try {
-        console.log("Product data:", product);
-        console.log("Product categories:", product.categories);
-
         let productCategoryIds: string[] = [];
 
-        if (
-          !product.categories ||
-          !Array.isArray(product.categories) ||
-          product.categories.length === 0
-        ) {
-          console.log("No categories found, loading random products");
-          const res = await fetch("http://localhost:5000/api/products");
+        if (!product.categories || !Array.isArray(product.categories) || product.categories.length === 0) {
+          const res = await fetch(`http://localhost:5000/api/products?lang=${language}`);
           const allProducts = await res.json();
           const filtered = allProducts
             .filter((p: Product) => p._id !== product._id)
@@ -181,31 +194,16 @@ const ProductDetail: React.FC = () => {
           .filter(Boolean);
 
         const firstCategory = product.categories[0];
-        if (
-          firstCategory &&
-          typeof firstCategory === "object" &&
-          firstCategory.slug
-        ) {
+        if (firstCategory && typeof firstCategory === "object" && firstCategory.slug) {
           setCategorySlug(firstCategory.slug);
         }
 
-        console.log("Product category IDs:", productCategoryIds);
-
-        const res = await fetch("http://localhost:5000/api/products");
+        const res = await fetch(`http://localhost:5000/api/products?lang=${language}`);
         const allProducts = await res.json();
-
-        console.log("Total products:", allProducts.length);
 
         const sameCategory = allProducts.filter((p: Product) => {
           if (p._id === product._id) return false;
-
-          if (
-            !p.categories ||
-            !Array.isArray(p.categories) ||
-            p.categories.length === 0
-          ) {
-            return false;
-          }
+          if (!p.categories || !Array.isArray(p.categories) || p.categories.length === 0) return false;
 
           const pCategoryIds = p.categories
             .map((cat: any) => {
@@ -215,20 +213,8 @@ const ProductDetail: React.FC = () => {
             })
             .filter(Boolean);
 
-          const hasCommonCategory = pCategoryIds.some((catId: string) =>
-            productCategoryIds.includes(catId)
-          );
-
-          if (hasCommonCategory) {
-            console.log(
-              `Product "${p.name}" has common category with current product`
-            );
-          }
-
-          return hasCommonCategory;
+          return pCategoryIds.some((catId: string) => productCategoryIds.includes(catId));
         });
-
-        console.log("Products in same category:", sameCategory.length);
 
         const filtered = sameCategory.slice(0, 8);
         setRelatedProducts(filtered);
@@ -239,7 +225,7 @@ const ProductDetail: React.FC = () => {
     };
 
     fetchRelatedProducts();
-  }, [product]);
+  }, [product, language]);
 
   useEffect(() => {
     if (!showLightbox || !product) return;
@@ -253,9 +239,7 @@ const ProductDetail: React.FC = () => {
       } else if (e.key === "ArrowRight") {
         setLightboxIndex((prev) => (prev + 1) % productImages.length);
       } else if (e.key === "ArrowLeft") {
-        setLightboxIndex(
-          (prev) => (prev - 1 + productImages.length) % productImages.length
-        );
+        setLightboxIndex((prev) => (prev - 1 + productImages.length) % productImages.length);
       }
     };
 
@@ -263,24 +247,25 @@ const ProductDetail: React.FC = () => {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [showLightbox, product]);
 
-  // ✅ KHỞI TẠO GIÁ TRỊ MẶC ĐỊNH CHO ATTRIBUTES
   useEffect(() => {
     if (!product?.attributes) return;
 
     const defaults: Record<string, string> = {};
     product.attributes.forEach((attr) => {
+      // ✅ FIXED: Use safeGetText to get attribute name
+      const attrName = safeGetText(attr.name, language);
       const defaultOption = attr.options.find((opt) => opt.isDefault);
+      
       if (defaultOption) {
-        defaults[attr.name] = defaultOption.value;
+        defaults[attrName] = defaultOption.value;
       } else if (attr.options.length > 0) {
-        defaults[attr.name] = attr.options[0].value;
+        defaults[attrName] = attr.options[0].value;
       }
     });
 
     setSelectedAttributes(defaults);
-  }, [product]);
+  }, [product, language]);
 
-  // ✅ HÀM XỬ LÝ CHỌN ATTRIBUTE
   const handleAttributeSelect = (attrName: string, optionValue: string) => {
     setSelectedAttributes((prev) => ({
       ...prev,
@@ -288,20 +273,18 @@ const ProductDetail: React.FC = () => {
     }));
   };
 
-  if (loading) return <div>Đang tải sản phẩm...</div>;
-  if (error) return <div style={{ color: "red" }}>Lỗi: {error}</div>;
-  if (!product) return <div>Không có dữ liệu sản phẩm</div>;
+  if (loading) return <div>{t("common.loading") || "Đang tải sản phẩm..."}</div>;
+  if (error) return <div style={{ color: "red" }}>{t("common.error") || "Lỗi"}: {error}</div>;
+  if (!product) return <div>{t("product.noData") || "Không có dữ liệu sản phẩm"}</div>;
 
   const productImages = getImageUrls(product.images);
   const currentImage = productImages[selectedImageIndex];
-  const discount =
-    product.priceOriginal > product.priceSale
-      ? Math.round(
-          ((product.priceOriginal - product.priceSale) /
-            product.priceOriginal) *
-            100
-        )
-      : 0;
+  const discount = product.priceOriginal > product.priceSale
+    ? Math.round(((product.priceOriginal - product.priceSale) / product.priceOriginal) * 100)
+    : 0;
+
+  // ✅ FIXED: Extract description as plain text
+  const productDescription = safeGetText(product.description, language);
 
   const openLightbox = (index: number) => {
     setLightboxIndex(index);
@@ -319,16 +302,12 @@ const ProductDetail: React.FC = () => {
   };
 
   const prevImage = () => {
-    setLightboxIndex(
-      (prev) => (prev - 1 + productImages.length) % productImages.length
-    );
+    setLightboxIndex((prev) => (prev - 1 + productImages.length) % productImages.length);
   };
 
   const handleAdd = async (qty: number = 1, buyNow: boolean = false) => {
     if (!product) return;
-
     await addToCart(product, qty);
-
     if (buyNow) {
       setTimeout(() => {
         navigate("/thanh-toan");
@@ -347,7 +326,7 @@ const ProductDetail: React.FC = () => {
           cursor: product.quantity <= 0 ? "not-allowed" : "pointer",
         }}
       >
-        {product.quantity <= 0 ? "HẾT HÀNG" : "MUA NGAY"}
+        {product.quantity <= 0 ? t("product.outOfStock") : t("product.buyNow")}
       </button>
 
       <button
@@ -359,60 +338,44 @@ const ProductDetail: React.FC = () => {
           cursor: product.quantity <= 0 ? "not-allowed" : "pointer",
         }}
       >
-        {product.quantity <= 0 ? "HẾT HÀNG" : "THÊM VÀO GIỎ"}
+        {product.quantity <= 0 ? t("product.outOfStock") : t("product.addToCart")}
       </button>
     </div>
   );
 
   const ProductCard: React.FC<{ product: Product }> = ({ product }) => {
-    const isOutOfStock = product.quantity <= 0; // ✅ THÊM DÒNG NÀY
-
-    const discount =
-      product.priceOriginal > product.priceSale
-        ? Math.round(
-            ((product.priceOriginal - product.priceSale) /
-              product.priceOriginal) *
-              100
-          )
-        : 0;
+    const isOutOfStock = product.quantity <= 0;
+    const discount = product.priceOriginal > product.priceSale
+      ? Math.round(((product.priceOriginal - product.priceSale) / product.priceOriginal) * 100)
+      : 0;
 
     return (
       <Link
         to={`/san-pham/${product.slug}`}
-        className={`product-card ${isOutOfStock ? "out-of-stock" : ""}`} // ✅ SỬA CLASS
+        className={`product-card ${isOutOfStock ? "out-of-stock" : ""}`}
       >
         <div className="product-image">
-          {/* ✅ THÊM BADGE HẾT HÀNG */}
           {isOutOfStock && (
-            <span className="badge out-of-stock-badge">Hết hàng</span>
+            <span className="badge out-of-stock-badge">{t("product.outOfStock")}</span>
           )}
-
           <img
             src={getFirstImageUrl(product.images)}
-            alt={product.name}
+            alt={safeGetText(product.name, language)}
             onError={(e) => {
-              e.currentTarget.src =
-                "https://via.placeholder.com/300x300?text=No+Image";
+              e.currentTarget.src = "https://via.placeholder.com/300x300?text=No+Image";
             }}
           />
         </div>
         <div className="product-info">
-          <h3 className="product-name">{product.name}</h3>
-
+          <h3 className="product-name">{safeGetText(product.name, language)}</h3>
           <div className="product-price">
             <div className="price-left">
-              <span className="price-sale">
-                {product.priceSale.toLocaleString()}₫
-              </span>
+              <span className="price-sale">{product.priceSale.toLocaleString()}₫</span>
               {discount > 0 && (
-                <span className="price-original">
-                  {product.priceOriginal.toLocaleString()}₫
-                </span>
+                <span className="price-original">{product.priceOriginal.toLocaleString()}₫</span>
               )}
             </div>
-            {discount > 0 && (
-              <span className="discount-percent">-{discount}%</span>
-            )}
+            {discount > 0 && <span className="discount-percent">-{discount}%</span>}
           </div>
         </div>
       </Link>
@@ -428,21 +391,19 @@ const ProductDetail: React.FC = () => {
               {discount > 0 && <div className="sale-badge">-{discount}%</div>}
 
               <div className="main-image">
-                {/* ✅ THÊM BADGE HẾT HÀNG */}
                 {product.quantity <= 0 && (
                   <div className="out-of-stock-overlay">
-                    <span className="out-of-stock-text">HẾT HÀNG</span>
+                    <span className="out-of-stock-text">{t("product.outOfStock")}</span>
                   </div>
                 )}
 
                 <img
                   src={currentImage}
-                  alt={product.name}
+                  alt={safeGetText(product.name, language)}
                   onClick={() => openLightbox(selectedImageIndex)}
                   style={{ cursor: "pointer" }}
                   onError={(e) => {
-                    e.currentTarget.src =
-                      "https://via.placeholder.com/600x600?text=No+Image";
+                    e.currentTarget.src = "https://via.placeholder.com/600x600?text=No+Image";
                   }}
                 />
               </div>
@@ -452,18 +413,15 @@ const ProductDetail: React.FC = () => {
                   {productImages.map((img: string, i: number) => (
                     <div
                       key={i}
-                      className={`thumb ${
-                        selectedImageIndex === i ? "active" : ""
-                      }`}
+                      className={`thumb ${selectedImageIndex === i ? "active" : ""}`}
                       onClick={() => setSelectedImageIndex(i)}
                       style={{ cursor: "pointer" }}
                     >
                       <img
                         src={img}
-                        alt={`${product.name} ${i + 1}`}
+                        alt={`${safeGetText(product.name, language)} ${i + 1}`}
                         onError={(e) => {
-                          e.currentTarget.src =
-                            "https://via.placeholder.com/100x100?text=Error";
+                          e.currentTarget.src = "https://via.placeholder.com/100x100?text=Error";
                         }}
                       />
                     </div>
@@ -472,98 +430,90 @@ const ProductDetail: React.FC = () => {
               )}
             </div>
 
-            {product.description && (
+            {/* ✅ FIXED: Use extracted description text */}
+            {productDescription && (
               <div className="description-under-image">
-                <h3>MÔ TẢ SẢN PHẨM</h3>
-                <div
-                  dangerouslySetInnerHTML={{ __html: product.description }}
-                />
+                <h3>{t("product.description")}</h3>
+                <div dangerouslySetInnerHTML={{ __html: productDescription }} />
               </div>
             )}
           </div>
 
           <div className="right-column">
-            <h1 className="product-title">{product.name}</h1>
+            <h1 className="product-title">{safeGetText(product.name, language)}</h1>
 
             <div className="meta-info">
-              Mã hàng:{" "}
-              <strong>
-                {product.sku || product._id?.slice(-8).toUpperCase()}
-              </strong>
+              {t("product.sku")}: <strong>{product.sku || product._id?.slice(-8).toUpperCase()}</strong>
             </div>
 
             <div className="price-area">
-              <span className="current-price">
-                {product.priceSale?.toLocaleString()}₫
-              </span>
+              <span className="current-price">{product.priceSale?.toLocaleString()}₫</span>
               {discount > 0 && (
                 <>
-                  <span className="old-price">
-                    {product.priceOriginal?.toLocaleString()}₫
-                  </span>
+                  <span className="old-price">{product.priceOriginal?.toLocaleString()}₫</span>
                   <span className="discount-tag">-{discount}%</span>
                 </>
               )}
             </div>
 
-            {/* ✅ HIỂN THỊ ATTRIBUTES ĐỘNG */}
+            {/* ✅ FIXED: Properly extract attribute names and labels */}
             {product.attributes && product.attributes.length > 0 ? (
               <div className="options-group">
-                {product.attributes.map((attr, attrIdx) => (
-                  <div key={attrIdx} className="option-item">
-                    <label>{attr.name}:</label>
-                    <div className="option-buttons">
-                      {attr.options.map((opt, optIdx) => {
-                        const isSelected =
-                          selectedAttributes[attr.name] === opt.value;
+                {product.attributes.map((attr, attrIdx) => {
+                  const attrName = safeGetText(attr.name, language);
+                  
+                  return (
+                    <div key={attrIdx} className="option-item">
+                      <label>{attrName}:</label>
 
-                        return (
-                          <button
-                            key={optIdx}
-                            className={`option-btn ${
-                              isSelected ? "active" : ""
-                            }`}
-                            onClick={() =>
-                              handleAttributeSelect(attr.name, opt.value)
-                            }
-                            type="button"
-                          >
-                            {opt.image && (
-                              <img
-                                src={getImageUrl(opt.image)}
-                                alt={opt.label}
-                                className="option-image"
-                                onError={(e) => {
-                                  e.currentTarget.style.display = "none";
-                                }}
-                              />
-                            )}
-                            <span className="option-label">{opt.label}</span>
-                          </button>
-                        );
-                      })}
+                      <div className="option-buttons">
+                        {attr.options.map((opt, optIdx) => {
+                          const isSelected = selectedAttributes[attrName] === opt.value;
+                          const optionLabel = safeGetText(opt.label, language);
+
+                          return (
+                            <button
+                              key={optIdx}
+                              className={`option-btn ${isSelected ? "active" : ""}`}
+                              onClick={() => handleAttributeSelect(attrName, opt.value)}
+                              type="button"
+                            >
+                              {opt.image && (
+                                <img
+                                  src={getImageUrl(opt.image)}
+                                  alt={optionLabel}
+                                  className="option-image"
+                                  onError={(e) => {
+                                    e.currentTarget.style.display = "none";
+                                  }}
+                                />
+                              )}
+                              <span className="option-label">{optionLabel}</span>
+                            </button>
+                          );
+                        })}
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             ) : (
-              /* ✅ FALLBACK: Hiển thị các field cũ nếu không có attributes */
               <div className="options-group">
                 {product.material && (
                   <div className="option-item">
-                    <label>Chất liệu:</label>
+                    <label>{t("product.material")}:</label>
                     <button className="active">{product.material}</button>
                   </div>
                 )}
                 {product.color && (
                   <div className="option-item">
-                    <label>Màu sắc:</label>
+                    <label>{t("product.color")}:</label>
                     <button className="active">{product.color}</button>
                   </div>
                 )}
                 {product.size && (
                   <div className="option-item">
-                    <label>Kích thước (cm):</label>
+                    <label>{t("product.size")}:</label>
                     <button className="active">{product.size}</button>
                   </div>
                 )}
@@ -578,12 +528,7 @@ const ProductDetail: React.FC = () => {
               >
                 −
               </button>
-              <input
-                type="text"
-                value={quantity}
-                readOnly
-                className="qty-input"
-              />
+              <input type="text" value={quantity} readOnly className="qty-input" />
               <button
                 className="qty-btn"
                 onClick={() => setQuantity(quantity + 1)}
@@ -597,46 +542,38 @@ const ProductDetail: React.FC = () => {
 
             <div className="installment-area">
               <button className="installment-btn primary">
-                MUA TRẢ GÓP 0% Thủ tục đơn giản
+                {t("product.installment0Percent")}
               </button>
               <button className="installment-btn secondary">
-                TRẢ GÓP 0% QUA THẺ Visa, Master, JCB
+                {t("product.installmentCard")}
               </button>
             </div>
 
             <div className="policy-area">
               <div className="status-section">
                 <p>
-                  <strong>Tình trạng:</strong> Hàng mới 100%
+                  <strong>{t("product.condition")}:</strong> {t("product.brandNew")}
                 </p>
                 <p>
-                  <strong>Trạng thái:</strong>{" "}
-                  <span
-                    className={`stock-status ${
-                      product.quantity > 0 ? "in-stock" : "out-of-stock"
-                    }`}
-                  >
-                    {product.quantity > 0 ? "Còn hàng" : "Hết hàng"}
+                  <strong>{t("product.status")}:</strong>{" "}
+                  <span className={`stock-status ${product.quantity > 0 ? "in-stock" : "out-of-stock"}`}>
+                    {product.quantity > 0 ? t("product.inStock") : t("product.outOfStock")}
                   </span>
                 </p>
               </div>
 
               <div className="delivery-section">
-                <h4>Chi phí giao hàng:</h4>
+                <h4>{t("product.deliveryCost")}:</h4>
                 <ul>
-                  <li>Giao lắp miễn phí tại các quận nội thành tại TPHCM.</li>
-                  <li>
-                    Quận 9, Hóc Môn, Thủ Đức, Củ Chi, Nhà Bè: 200.000 vnđ/đơn
-                    hàng
-                  </li>
-                  <li>Các tỉnh thành khác: 400.000 vnđ/đơn hàng</li>
+                  <li>{t("product.freeDeliveryHCMC")}</li>
+                  <li>{t("product.deliverySuburbs")}</li>
+                  <li>{t("product.deliveryOtherProvinces")}</li>
                 </ul>
               </div>
 
               <div className="time-section">
                 <p>
-                  <strong>Thời gian giao hàng:</strong> Từ 6 giờ đến 10 ngày làm
-                  việc.
+                  <strong>{t("product.deliveryTime")}:</strong> {t("product.deliveryTimeRange")}
                 </p>
               </div>
             </div>
@@ -648,12 +585,9 @@ const ProductDetail: React.FC = () => {
         <section className="related-products-section">
           <div className="container">
             <div className="section-header">
-              <h2 className="section-title">CÁC SẢN PHẨM LIÊN QUAN</h2>
-              <Link
-                to={`/danh-muc/${categorySlug || "tat-ca"}`}
-                className="view-all"
-              >
-                Xem tất cả <ChevronRight size={16} />
+              <h2 className="section-title">{t("product.relatedProducts")}</h2>
+              <Link to={`/danh-muc/${categorySlug || "tat-ca"}`} className="view-all">
+                {t("common.viewAll")} <ChevronRight size={16} />
               </Link>
             </div>
             <div className="product-grid">
@@ -667,9 +601,7 @@ const ProductDetail: React.FC = () => {
 
       {showLightbox && (
         <div className="lightbox-overlay" onClick={closeLightbox}>
-          <button className="lightbox-close" onClick={closeLightbox}>
-            ✕
-          </button>
+          <button className="lightbox-close" onClick={closeLightbox}>✕</button>
 
           {productImages.length > 1 && (
             <button
@@ -683,16 +615,12 @@ const ProductDetail: React.FC = () => {
             </button>
           )}
 
-          <div
-            className="lightbox-content"
-            onClick={(e) => e.stopPropagation()}
-          >
+          <div className="lightbox-content" onClick={(e) => e.stopPropagation()}>
             <img
               src={productImages[lightboxIndex]}
-              alt={`${product.name} - ${lightboxIndex + 1}`}
+              alt={`${safeGetText(product.name, language)} - ${lightboxIndex + 1}`}
               className="lightbox-main-image"
             />
-
             <div className="lightbox-counter">
               {lightboxIndex + 1} / {productImages.length}
             </div>
@@ -711,16 +639,11 @@ const ProductDetail: React.FC = () => {
           )}
 
           {productImages.length > 1 && (
-            <div
-              className="lightbox-thumbnails"
-              onClick={(e) => e.stopPropagation()}
-            >
+            <div className="lightbox-thumbnails" onClick={(e) => e.stopPropagation()}>
               {productImages.map((img: string, i: number) => (
                 <div
                   key={i}
-                  className={`lightbox-thumb ${
-                    lightboxIndex === i ? "active" : ""
-                  }`}
+                  className={`lightbox-thumb ${lightboxIndex === i ? "active" : ""}`}
                   onClick={() => setLightboxIndex(i)}
                 >
                   <img src={img} alt={`Thumbnail ${i + 1}`} />

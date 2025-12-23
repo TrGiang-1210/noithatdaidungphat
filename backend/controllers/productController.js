@@ -10,44 +10,87 @@ const mongoose = require("mongoose");
 function transformProduct(prod, lang = 'vi') {
   const product = prod.toObject ? prod.toObject() : prod;
   
+  // ✅ FIX: Helper: Extract string từ multilingual field
+  const getText = (field) => {
+    // Null/undefined → empty string
+    if (!field) return '';
+    
+    // Đã là string → return luôn
+    if (typeof field === 'string') return field;
+    
+    // Object → extract theo priority: lang → vi → en → first available
+    if (typeof field === 'object' && field !== null) {
+      // Try requested language
+      if (field[lang] && typeof field[lang] === 'string' && field[lang].trim()) {
+        return field[lang];
+      }
+      
+      // Fallback to Vietnamese
+      if (field.vi && typeof field.vi === 'string' && field.vi.trim()) {
+        return field.vi;
+      }
+      
+      // Fallback to English
+      if (field.en && typeof field.en === 'string' && field.en.trim()) {
+        return field.en;
+      }
+      
+      // Fallback to first non-empty value
+      const values = Object.values(field).filter(v => 
+        typeof v === 'string' && v.trim()
+      );
+      if (values.length > 0) {
+        return values[0];
+      }
+      
+      // ✅ FIX: No valid translation found - KHÔNG log warning nữa, chỉ return ''
+      return '';
+    }
+    
+    // Unknown type → stringify
+    return String(field);
+  };
+  
   return {
     ...product,
-    // ✅ Xử lý name
-    name: typeof product.name === 'object' && product.name[lang]
-      ? product.name[lang]
-      : (product.name?.vi || product.name || ''),
     
-    // ✅ Xử lý description
-    description: typeof product.description === 'object' && product.description[lang]
-      ? product.description[lang]
-      : (product.description?.vi || product.description || ''),
+    // ✅ CRITICAL: Convert name to string
+    name: getText(product.name),
     
-    // ✅ Xử lý attributes (nếu có)
-    attributes: product.attributes?.map(attr => ({
-      ...attr,
-      name: typeof attr.name === 'object' && attr.name[lang]
-        ? attr.name[lang]
-        : (attr.name?.vi || attr.name || ''),
-      options: attr.options?.map(opt => ({
-        ...opt,
-        label: typeof opt.label === 'object' && opt.label[lang]
-          ? opt.label[lang]
-          : (opt.label?.vi || opt.label || '')
-      }))
-    })) || []
-  };
-}
-
-/**
- * Helper: Transform category name theo language
- */
-function transformCategoryName(cat, lang = 'vi') {
-  if (!cat) return cat;
-  return {
-    ...cat,
-    name: typeof cat.name === 'object' && cat.name[lang]
-      ? cat.name[lang]
-      : (cat.name?.vi || cat.name || '')
+    // ✅ CRITICAL: Convert description to string  
+    description: getText(product.description),
+    
+    // ✅ Transform attributes
+    attributes: Array.isArray(product.attributes) 
+      ? product.attributes.map(attr => ({
+          ...attr,
+          // Convert attribute name to string
+          name: getText(attr.name),
+          
+          // Convert each option label to string
+          options: Array.isArray(attr.options)
+            ? attr.options.map(opt => ({
+                ...opt,
+                label: getText(opt.label)
+              }))
+            : []
+        }))
+      : [],
+    
+    // ✅ Transform categories (if populated)
+    categories: Array.isArray(product.categories)
+      ? product.categories.map(cat => {
+          // If it's just an ObjectId string, keep it
+          if (typeof cat === 'string') return cat;
+          
+          // If it's a populated object, transform it
+          return {
+            ...cat,
+            name: getText(cat.name),
+            description: getText(cat.description)
+          };
+        })
+      : []
   };
 }
 
@@ -110,14 +153,7 @@ exports.getProducts = async (req, res) => {
       .lean();
 
     // ✅ Transform theo language
-    const transformed = products.map(prod => {
-      const p = transformProduct(prod, lang);
-      // Transform categories
-      if (p.categories) {
-        p.categories = p.categories.map(cat => transformCategoryName(cat, lang));
-      }
-      return p;
-    });
+    const transformed = products.map(prod => transformProduct(prod, lang));
 
     res.json(transformed);
   } catch (err) {
@@ -180,7 +216,10 @@ exports.searchProducts = async (req, res) => {
 exports.getProductById = async (req, res) => {
   try {
     const { lang = 'vi' } = req.query;
-    const p = await ProductService.getById(req.params.id);
+    const p = await Product.findById(req.params.id)
+      .populate('categories')
+      .lean();
+    
     if (!p) return res.status(404).json({ message: "Product not found" });
     
     const transformed = transformProduct(p, lang);
@@ -196,12 +235,9 @@ exports.getProductBySlug = async (req, res) => {
   try {
     const { lang = 'vi' } = req.query;
     
-    let p;
-    if (typeof ProductService.getByIdOrSlug === "function") {
-      p = await ProductService.getByIdOrSlug(req.params.slug);
-    } else {
-      p = await Product.findOne({ slug: req.params.slug }).lean();
-    }
+    const p = await Product.findOne({ slug: req.params.slug })
+      .populate('categories')
+      .lean();
     
     if (!p) return res.status(404).json({ message: "Product not found" });
     
