@@ -26,6 +26,7 @@ const TranslationManagement = () => {
       const params = new URLSearchParams();
       if (filter.status !== 'all') params.append('status', filter.status);
       if (filter.search) params.append('search', filter.search);
+      params.append('limit', '1000');
       
       const token = localStorage.getItem('token');
       const res = await fetch(`${API_URL}/translations/keys?${params}`, {
@@ -116,17 +117,23 @@ const TranslationManagement = () => {
   };
 
   const handleBatchAITranslate = async () => {
-    if (selectedKeys.length === 0) {
-      toast.warning('Vui lòng chọn ít nhất 1 key để dịch');
+    // Lọc chỉ những keys chưa được dịch (draft)
+    const untranslatedKeys = selectedKeys.filter(id => {
+      const trans = translations.find(t => t._id === id);
+      return !trans?.translations?.zh?.value || trans.translations.zh.status === 'draft';
+    });
+    
+    if (untranslatedKeys.length === 0) {
+      toast.warning('Không có key nào cần dịch (tất cả đã được dịch rồi)');
       return;
     }
     
-    if (!confirm(`Dịch ${selectedKeys.length} keys bằng AI?`)) return;
+    if (!confirm(`Dịch ${untranslatedKeys.length} keys chưa dịch bằng AI?`)) return;
     
     setLoading(true);
     try {
       const token = localStorage.getItem('token');
-      toast.info(`🤖 Đang dịch ${selectedKeys.length} keys...`);
+      toast.info(`🤖 Đang dịch ${untranslatedKeys.length} keys...`);
       
       const res = await fetch(`${API_URL}/translations/batch-ai-translate`, {
         method: 'POST',
@@ -134,7 +141,7 @@ const TranslationManagement = () => {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
         },
-        body: JSON.stringify({ translationIds: selectedKeys, targetLang: 'zh' })
+        body: JSON.stringify({ translationIds: untranslatedKeys, targetLang: 'zh' })
       });
       
       if (!res.ok) {
@@ -356,9 +363,16 @@ const TranslationManagement = () => {
     setCurrentPage(1);
   };
 
+  // Đếm số keys có thể approve
   const approvableCount = selectedKeys.filter(id => {
     const trans = translations.find(t => t._id === id);
     return trans?.translations?.zh?.value && trans.translations.zh.status !== 'approved';
+  }).length;
+
+  // Đếm số keys chưa được dịch (draft)
+  const untranslatedCount = selectedKeys.filter(id => {
+    const trans = translations.find(t => t._id === id);
+    return !trans?.translations?.zh?.value || trans.translations.zh.status === 'draft';
   }).length;
 
   return (
@@ -411,10 +425,11 @@ const TranslationManagement = () => {
         
         <button
           onClick={handleBatchAITranslate}
-          disabled={selectedKeys.length === 0 || loading}
+          disabled={untranslatedCount === 0 || loading}
           className="batch-translate-btn"
+          title={untranslatedCount === 0 ? 'Không có key nào cần dịch' : `Dịch ${untranslatedCount} keys chưa được dịch`}
         >
-          {loading ? '⏳ Đang dịch...' : `🤖 AI Translate (${selectedKeys.length})`}
+          {loading ? '⏳ Đang dịch...' : `🤖 AI Translate (${untranslatedCount})`}
         </button>
 
         <button

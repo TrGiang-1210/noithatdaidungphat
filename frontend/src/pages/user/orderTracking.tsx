@@ -1,9 +1,10 @@
-// src/pages/orderTracking/OrderTracking.tsx - FIXED WITH VIETNAMESE PAYMENT LABELS
+// src/pages/orderTracking/OrderTracking.tsx - MULTILINGUAL VERSION
 import { useState, useEffect } from 'react';
 import axiosInstance from '@/axios';
 import '@/styles/pages/user/orderTracking.scss';
 import { getImageUrl } from "@/utils/imageUrl";
 import { Package, Clock, CheckCircle, Truck, AlertCircle } from 'lucide-react';
+import { useLanguage } from '@/context/LanguageContext';
 
 interface OrderTrackingResult {
   orderId: string;
@@ -25,43 +26,54 @@ interface OrderTrackingResult {
 }
 
 export default function OrderTrackingPage() {
+  const { t } = useLanguage();
   const [orderNumber, setOrderNumber] = useState('');
-  const [phone, setPhone] = useState('');
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<OrderTrackingResult | null>(null);
   const [error, setError] = useState('');
 
-  // ✅ THÊM FUNCTION CHUYỂN ĐỔI PAYMENT METHOD SANG TIẾNG VIỆT
+  // ✅ PAYMENT METHOD LABELS - Multilingual
   const getPaymentMethodLabel = (method: string) => {
-    const labels: Record<string, string> = {
-      'cod': 'Thanh toán khi nhận hàng (COD)',
-      'bank': 'Chuyển khoản ngân hàng',
-      'momo': 'Ví điện tử MoMo',
-      'COD': 'Thanh toán khi nhận hàng (COD)',
-      'Bank': 'Chuyển khoản ngân hàng',
-      'Momo': 'Ví điện tử MoMo'
+    const methodKey = method.toLowerCase();
+    
+    if (methodKey === 'cod') {
+      return t('orderTracking.paymentCOD') || 'Thanh toán khi nhận hàng (COD)';
+    } else if (methodKey === 'bank') {
+      return t('orderTracking.paymentBank') || 'Chuyển khoản ngân hàng';
+    } else if (methodKey === 'momo') {
+      return t('orderTracking.paymentMomo') || 'Ví điện tử MoMo';
+    }
+    
+    return method;
+  };
+
+  // ✅ ORDER STATUS LABELS - Multilingual
+  const getStatusLabel = (statusKey: string) => {
+    const statusLabels: Record<string, string> = {
+      'Pending': t('orderTracking.statusPending') || 'Chờ xử lý',
+      'Confirmed': t('orderTracking.statusConfirmed') || 'Đã xác nhận',
+      'Shipping': t('orderTracking.statusShipping') || 'Đang giao hàng',
+      'Completed': t('orderTracking.statusCompleted') || 'Hoàn thành',
+      'Cancelled': t('orderTracking.statusCancelled') || 'Đã hủy',
     };
-    return labels[method] || method;
+    return statusLabels[statusKey] || statusKey;
   };
 
   useEffect(() => {
     try {
       const savedOrder = localStorage.getItem('lastTrackedOrder');
       const savedOrderNumber = localStorage.getItem('lastOrderNumber');
-      const savedPhone = localStorage.getItem('lastPhone');
       
       if (savedOrder) {
         const order = JSON.parse(savedOrder);
         setResult(order);
         
         if (savedOrderNumber) setOrderNumber(savedOrderNumber);
-        if (savedPhone) setPhone(savedPhone);
       }
     } catch (err) {
       console.error('Error loading saved order:', err);
       localStorage.removeItem('lastTrackedOrder');
       localStorage.removeItem('lastOrderNumber');
-      localStorage.removeItem('lastPhone');
     }
   }, []);
 
@@ -70,27 +82,26 @@ export default function OrderTrackingPage() {
     setError('');
     setResult(null);
 
-    if (!orderNumber.trim() || !phone.trim()) {
-      setError('Vui lòng nhập đầy đủ thông tin');
+    if (!orderNumber.trim()) {
+      setError(t('orderTracking.fillOrderCode') || 'Vui lòng nhập mã đơn hàng');
       return;
     }
 
     setLoading(true);
     try {
       const res = await axiosInstance.get(
-        `/orders/track/${orderNumber.toUpperCase().trim()}`,
-        { params: { phone: phone.replace(/\D/g, '') } }
+        `/orders/track/${orderNumber.toUpperCase().trim()}`
       );
       
       setResult(res.data);
       localStorage.setItem('lastTrackedOrder', JSON.stringify(res.data));
       localStorage.setItem('lastOrderNumber', orderNumber.toUpperCase().trim());
-      localStorage.setItem('lastPhone', phone);
       
     } catch (err: any) {
       setError(
         err.response?.data?.message || 
-        'Không tìm thấy đơn hàng với thông tin này'
+        t('orderTracking.orderNotFound') || 
+        'Không tìm thấy đơn hàng với mã này'
       );
     } finally {
       setLoading(false);
@@ -134,11 +145,9 @@ export default function OrderTrackingPage() {
   const handleReset = () => {
     setResult(null);
     setOrderNumber('');
-    setPhone('');
     setError('');
     localStorage.removeItem('lastTrackedOrder');
     localStorage.removeItem('lastOrderNumber');
-    localStorage.removeItem('lastPhone');
   };
 
   return (
@@ -146,31 +155,19 @@ export default function OrderTrackingPage() {
       <div className="tracking-container">
         <div className="tracking-header">
           <Package size={40} />
-          <h1>Tra cứu đơn hàng</h1>
-          <p>Nhập mã đơn hàng và số điện thoại để kiểm tra</p>
+          <h1>{t('orderTracking.title') || 'Tra cứu đơn hàng'}</h1>
+          <p>{t('orderTracking.subtitle') || 'Nhập mã đơn hàng để kiểm tra'}</p>
         </div>
 
         {!result ? (
           <form className="tracking-form" onSubmit={handleSearch}>
             <div className="form-group">
-              <label>Mã đơn hàng</label>
+              <label>{t('orderTracking.orderCode') || 'Mã đơn hàng'}</label>
               <input
                 type="text"
-                placeholder="Ví dụ: DH2512150001"
+                placeholder={t('orderTracking.orderCodePlaceholder') || 'Ví dụ: DH2512150001'}
                 value={orderNumber}
                 onChange={(e) => setOrderNumber(e.target.value.toUpperCase())}
-                disabled={loading}
-                required
-              />
-            </div>
-
-            <div className="form-group">
-              <label>Số điện thoại</label>
-              <input
-                type="tel"
-                placeholder="Nhập số điện thoại đặt hàng"
-                value={phone}
-                onChange={(e) => setPhone(e.target.value.replace(/\D/g, '').slice(0, 11))}
                 disabled={loading}
                 required
               />
@@ -184,14 +181,17 @@ export default function OrderTrackingPage() {
             )}
 
             <button type="submit" className="submit-btn" disabled={loading}>
-              {loading ? 'Đang tìm...' : 'Tra cứu đơn hàng'}
+              {loading 
+                ? (t('orderTracking.searching') || 'Đang tìm...') 
+                : (t('orderTracking.searchButton') || 'Tra cứu đơn hàng')
+              }
             </button>
           </form>
         ) : (
           <div className="tracking-result">
             <div className="result-header">
               <div className="order-info">
-                <h2>Đơn hàng #{result.orderId}</h2>
+                <h2>{t('orderTracking.orderLabel') || 'Đơn hàng'} #{result.orderId}</h2>
                 <div 
                   className="status-badge"
                   style={{ 
@@ -200,41 +200,40 @@ export default function OrderTrackingPage() {
                   }}
                 >
                   {getStatusIcon(result.statusKey)}
-                  {result.status}
+                  {getStatusLabel(result.statusKey)}
                 </div>
               </div>
             </div>
 
             <div className="result-details">
               <div className="detail-section">
-                <h3>Thông tin khách hàng</h3>
+                <h3>{t('orderTracking.customerInfo') || 'Thông tin khách hàng'}</h3>
                 <div className="detail-grid">
                   <div className="detail-item">
-                    <strong>Họ tên:</strong>
+                    <strong>{t('orderTracking.fullName') || 'Họ tên'}:</strong>
                     <span>{result.customerName}</span>
                   </div>
                   <div className="detail-item">
-                    <strong>Số điện thoại:</strong>
+                    <strong>{t('orderTracking.phone') || 'Số điện thoại'}:</strong>
                     <span>{result.phone}</span>
                   </div>
                   <div className="detail-item full">
-                    <strong>Địa chỉ:</strong>
+                    <strong>{t('orderTracking.address') || 'Địa chỉ'}:</strong>
                     <span>{result.address}</span>
                   </div>
                   <div className="detail-item">
-                    <strong>Ngày đặt:</strong>
+                    <strong>{t('orderTracking.orderDate') || 'Ngày đặt'}:</strong>
                     <span>{result.orderDate}</span>
                   </div>
                   <div className="detail-item">
-                    <strong>Thanh toán:</strong>
-                    {/* ✅ SỬ DỤNG getPaymentMethodLabel */}
+                    <strong>{t('orderTracking.paymentMethod') || 'Thanh toán'}:</strong>
                     <span>{getPaymentMethodLabel(result.paymentMethod)}</span>
                   </div>
                 </div>
               </div>
 
               <div className="detail-section">
-                <h3>Sản phẩm đã đặt</h3>
+                <h3>{t('orderTracking.orderedProducts') || 'Sản phẩm đã đặt'}</h3>
                 <div className="items-list">
                   {result.items.map((item, idx) => {
                     const imageUrl = item.img_url || 
@@ -256,7 +255,9 @@ export default function OrderTrackingPage() {
                         />
                         <div className="item-info">
                           <div className="item-name">{item.name}</div>
-                          <div className="item-quantity">Số lượng: {item.quantity}</div>
+                          <div className="item-quantity">
+                            {t('orderTracking.quantity') || 'Số lượng'}: {item.quantity}
+                          </div>
                         </div>
                         <div className="item-price">{item.price}</div>
                       </div>
@@ -265,7 +266,7 @@ export default function OrderTrackingPage() {
                 </div>
 
                 <div className="total-row">
-                  <strong>Tổng cộng:</strong>
+                  <strong>{t('cart.total') || 'Tổng cộng'}:</strong>
                   <strong className="total-amount">{result.totalAmount}</strong>
                 </div>
               </div>
@@ -275,13 +276,16 @@ export default function OrderTrackingPage() {
               onClick={handleReset}
               className="back-btn"
             >
-              Tra cứu đơn hàng khác
+              {t('orderTracking.searchAnother') || 'Tra cứu đơn hàng khác'}
             </button>
           </div>
         )}
 
         <div className="tracking-footer">
-          <p>Cần hỗ trợ? Gọi <strong>0941 038 838</strong></p>
+          <p>
+            {t('orderTracking.needSupport') || 'Cần hỗ trợ? Gọi'}{' '}
+            <strong>0941 038 838</strong>
+          </p>
         </div>
       </div>
     </div>
