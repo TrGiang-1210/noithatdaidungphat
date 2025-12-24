@@ -65,6 +65,33 @@ const sampleTranslations = [
   { key: 'product.outOfStock', namespace: 'products', viText: 'Hết hàng', category: 'UI' },
   { key: 'product.description', namespace: 'products', viText: 'Mô tả sản phẩm', category: 'UI' },
   { key: 'product.standard', namespace: 'products', viText: 'Tiêu chuẩn', category: 'UI' },
+
+  // ========== CATEGORY PAGE ==========
+  { key: 'category.allProducts', namespace: 'category', viText: 'Tất cả sản phẩm', category: 'UI' },
+  { key: 'category.all', namespace: 'category', viText: 'Tất cả', category: 'UI' },
+  { key: 'category.sortBy', namespace: 'category', viText: 'Sắp xếp:', category: 'UI' },
+  { key: 'category.sortNewest', namespace: 'category', viText: 'Mới nhất', category: 'UI' },
+  { key: 'category.sortPriceAsc', namespace: 'category', viText: 'Giá tăng dần', category: 'UI' },
+  { key: 'category.sortPriceDesc', namespace: 'category', viText: 'Giá giảm dần', category: 'UI' },
+  { key: 'category.sortBestSelling', namespace: 'category', viText: 'Bán chạy nhất', category: 'UI' },
+  { key: 'category.noProducts', namespace: 'category', viText: 'Không tìm thấy sản phẩm nào trong danh mục này.', category: 'UI' },
+
+  // Price Filter
+  { key: 'category.priceRange', namespace: 'category', viText: 'Khoảng giá', category: 'UI' },
+  { key: 'category.priceUnder2M', namespace: 'category', viText: 'Dưới 2 triệu', category: 'UI' },
+  { key: 'category.price2to5M', namespace: 'category', viText: '2 - 5 triệu', category: 'UI' },
+  { key: 'category.price5to10M', namespace: 'category', viText: '5 - 10 triệu', category: 'UI' },
+  { key: 'category.price10to20M', namespace: 'category', viText: '10 - 20 triệu', category: 'UI' },
+  { key: 'category.priceAbove20M', namespace: 'category', viText: 'Trên 20 triệu', category: 'UI' },
+  { key: 'category.orSelectRange', namespace: 'category', viText: 'Hoặc chọn khoảng giá', category: 'UI' },
+  { key: 'category.priceFrom', namespace: 'category', viText: '₫ Từ', category: 'UI' },
+  { key: 'category.priceTo', namespace: 'category', viText: '₫ ĐẾN', category: 'UI' },
+  { key: 'category.apply', namespace: 'category', viText: 'Áp dụng', category: 'UI' },
+
+  // Product badges
+  { key: 'category.sale', namespace: 'category', viText: 'Sale', category: 'UI' },
+  { key: 'category.hot', namespace: 'category', viText: 'Hot', category: 'UI' },
+  { key: 'category.outOfStock', namespace: 'category', viText: 'Hết hàng', category: 'UI' },
   
   // ========== PRODUCT DETAIL PAGE ==========
   { key: 'product.sku', namespace: 'products', viText: 'Mã hàng', category: 'UI' },
@@ -147,6 +174,55 @@ const sampleTranslations = [
   { key: 'message.error', namespace: 'messages', viText: 'Có lỗi xảy ra', category: 'error' },
   { key: 'message.addedToCart', namespace: 'messages', viText: 'Đã thêm vào giỏ hàng', category: 'notification' },
   { key: 'message.orderPlaced', namespace: 'messages', viText: 'Đặt hàng thành công', category: 'notification' },
+  
+  // ========== ORDER SUCCESS PAGE ==========
+  { key: 'orderSuccess.title', namespace: 'orderSuccess', viText: 'ĐẶT HÀNG THÀNH CÔNG!', category: 'UI' },
+  { key: 'orderSuccess.thankYou', namespace: 'orderSuccess', viText: 'Cảm ơn Quý khách đã tin tưởng mua sắm tại', category: 'UI' },
+  { key: 'orderSuccess.companyName', namespace: 'orderSuccess', viText: 'NỘI THẤT ĐẠI DŨNG PHÁT', category: 'UI' },
+  { key: 'orderSuccess.orderCodeLabel', namespace: 'orderSuccess', viText: 'MÃ ĐƠN HÀNG CỦA QUÝ KHÁCH', category: 'UI' },
+  { key: 'orderSuccess.keepCodeNote', namespace: 'orderSuccess', viText: 'Vui lòng giữ lại mã này để tiện trao đổi với nhân viên tư vấn', category: 'UI' },
+  { key: 'orderSuccess.receivedOrder', namespace: 'orderSuccess', viText: 'Chúng tôi đã nhận được đơn hàng của Quý khách.', category: 'UI' },
+  { key: 'orderSuccess.contactTime1', namespace: 'orderSuccess', viText: 'Nhân viên sẽ liên hệ xác nhận trong vòng', category: 'UI' },
+  { key: 'orderSuccess.contactTime2', namespace: 'orderSuccess', viText: '30 phút - 2 giờ', category: 'UI' },
+  { key: 'orderSuccess.contactTime3', namespace: 'orderSuccess', viText: 'tới.', category: 'UI' },
+  { key: 'orderSuccess.immediateSupport', namespace: 'orderSuccess', viText: 'Nếu cần hỗ trợ ngay, vui lòng gọi Hotline', category: 'UI' },
+  { key: 'orderSuccess.backHome', namespace: 'orderSuccess', viText: 'Về Trang Chủ', category: 'UI' },
+  { key: 'orderSuccess.regards', namespace: 'orderSuccess', viText: 'Trân trọng', category: 'UI' },
+  { key: 'orderSuccess.signature', namespace: 'orderSuccess', viText: 'Nội Thất Đại Dũng Phát - Uy Tín Từ Tâm', category: 'UI' },
+  
+  // ========== ORDER TRACKING PAGE ==========
+  { key: 'orderTracking.title', namespace: 'orderTracking', viText: 'Tra cứu đơn hàng', category: 'UI' },
+  { key: 'orderTracking.subtitle', namespace: 'orderTracking', viText: 'Nhập mã đơn hàng và số điện thoại để kiểm tra', category: 'UI' },
+  { key: 'orderTracking.orderCode', namespace: 'orderTracking', viText: 'Mã đơn hàng', category: 'UI' },
+  { key: 'orderTracking.orderCodePlaceholder', namespace: 'orderTracking', viText: 'Ví dụ: DH2512150001', category: 'UI' },
+  { key: 'orderTracking.phone', namespace: 'orderTracking', viText: 'Số điện thoại', category: 'UI' },
+  { key: 'orderTracking.phonePlaceholder', namespace: 'orderTracking', viText: 'Nhập số điện thoại đặt hàng', category: 'UI' },
+  { key: 'orderTracking.fillAllFields', namespace: 'orderTracking', viText: 'Vui lòng nhập đầy đủ thông tin', category: 'error' },
+  { key: 'orderTracking.orderNotFound', namespace: 'orderTracking', viText: 'Không tìm thấy đơn hàng với thông tin này', category: 'error' },
+  { key: 'orderTracking.searching', namespace: 'orderTracking', viText: 'Đang tìm...', category: 'UI' },
+  { key: 'orderTracking.searchButton', namespace: 'orderTracking', viText: 'Tra cứu đơn hàng', category: 'UI' },
+  { key: 'orderTracking.orderLabel', namespace: 'orderTracking', viText: 'Đơn hàng', category: 'UI' },
+  { key: 'orderTracking.customerInfo', namespace: 'orderTracking', viText: 'Thông tin khách hàng', category: 'UI' },
+  { key: 'orderTracking.fullName', namespace: 'orderTracking', viText: 'Họ tên', category: 'UI' },
+  { key: 'orderTracking.address', namespace: 'orderTracking', viText: 'Địa chỉ', category: 'UI' },
+  { key: 'orderTracking.orderDate', namespace: 'orderTracking', viText: 'Ngày đặt', category: 'UI' },
+  { key: 'orderTracking.paymentMethod', namespace: 'orderTracking', viText: 'Thanh toán', category: 'UI' },
+  { key: 'orderTracking.orderedProducts', namespace: 'orderTracking', viText: 'Sản phẩm đã đặt', category: 'UI' },
+  { key: 'orderTracking.quantity', namespace: 'orderTracking', viText: 'Số lượng', category: 'UI' },
+  { key: 'orderTracking.searchAnother', namespace: 'orderTracking', viText: 'Tra cứu đơn hàng khác', category: 'UI' },
+  { key: 'orderTracking.needSupport', namespace: 'orderTracking', viText: 'Cần hỗ trợ? Gọi', category: 'UI' },
+  
+  // Payment Methods
+  { key: 'orderTracking.paymentCOD', namespace: 'orderTracking', viText: 'Thanh toán khi nhận hàng (COD)', category: 'UI' },
+  { key: 'orderTracking.paymentBank', namespace: 'orderTracking', viText: 'Chuyển khoản ngân hàng', category: 'UI' },
+  { key: 'orderTracking.paymentMomo', namespace: 'orderTracking', viText: 'Ví điện tử MoMo', category: 'UI' },
+  
+  // Order Status
+  { key: 'orderTracking.statusPending', namespace: 'orderTracking', viText: 'Chờ xử lý', category: 'UI' },
+  { key: 'orderTracking.statusConfirmed', namespace: 'orderTracking', viText: 'Đã xác nhận', category: 'UI' },
+  { key: 'orderTracking.statusShipping', namespace: 'orderTracking', viText: 'Đang giao hàng', category: 'UI' },
+  { key: 'orderTracking.statusCompleted', namespace: 'orderTracking', viText: 'Hoàn thành', category: 'UI' },
+  { key: 'orderTracking.statusCancelled', namespace: 'orderTracking', viText: 'Đã hủy', category: 'UI' },
 ];
 
 async function seed() {

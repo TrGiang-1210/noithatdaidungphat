@@ -8,6 +8,7 @@ import {
   parseCurrencyInput,
 } from "../../utils";
 import { getFirstImageUrl } from "@/utils/imageUrl";
+import { useLanguage } from "../../context/LanguageContext"; // ✅ IMPORT
 import "@/styles/pages/user/categoryProduct.scss";
 
 interface Product {
@@ -34,6 +35,7 @@ const MAX_PRICE = 50_000_000;
 
 const CategoryProducts: React.FC = () => {
   const { slug } = useParams<{ slug: string }>();
+  const { t, language } = useLanguage(); // ✅ SỬ DỤNG HOOK
 
   const [products, setProducts] = useState<Product[]>([]);
   const [category, setCategory] = useState<Category | null>(null);
@@ -63,13 +65,14 @@ const CategoryProducts: React.FC = () => {
     return flat;
   }, [allCategories]);
 
-  // Load products - CHỈ GỌI KHI BẤM NÚT "ÁP DỤNG"
+  // ✅ Load products - THÊM language parameter
   const loadProducts = useCallback(() => {
     if (!slug) return;
     setLoading(true);
 
     const params = new URLSearchParams();
     params.append("category", slug);
+    params.append("lang", language); // ✅ THÊM language
     if (sortBy) params.append("sort", sortBy);
     if (priceRange[0] > 0) params.append("minPrice", priceRange[0].toString());
     if (priceRange[1] < MAX_PRICE)
@@ -86,12 +89,12 @@ const CategoryProducts: React.FC = () => {
         setProducts([]);
       })
       .finally(() => setLoading(false));
-  }, [slug, sortBy, priceRange]);
+  }, [slug, sortBy, priceRange, language]); // ✅ THÊM language vào dependencies
 
-  // Load lần đầu + khi thay đổi sortBy hoặc slug
+  // Load lần đầu + khi thay đổi sortBy, slug hoặc language
   useEffect(() => {
     loadProducts();
-  }, [slug, sortBy]); // BỎ priceRange khỏi dependencies
+  }, [slug, sortBy, language]); // ✅ THÊM language
 
   // Lắng nghe event cập nhật danh mục
   useEffect(() => {
@@ -108,18 +111,18 @@ const CategoryProducts: React.FC = () => {
     }
   }, [slug, flatCategories]);
 
-  // Lấy tất cả danh mục
+  // ✅ Lấy tất cả danh mục với language parameter
   useEffect(() => {
     axiosInstance
-      .get<Category[]>("/categories")
+      .get<Category[]>(`/categories?lang=${language}`)
       .then((res) => setAllCategories(res.data))
       .catch(console.error);
-  }, []);
+  }, [language]); // ✅ Re-fetch khi language thay đổi
 
   // Subcategories
   const subCategories = useMemo(() => {
     if (!category || !category.children) return [];
-    return category.children; // Lấy trực tiếp từ children
+    return category.children;
   }, [category]);
 
   // Handle range slider change
@@ -129,13 +132,12 @@ const CategoryProducts: React.FC = () => {
     setMaxInput(formatCurrencyInput((value / 1000).toString()));
   };
 
-  // Handle input change - KHÔNG tự động reload
+  // Handle input change
   const handleMinInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const formatted = formatCurrencyInput(e.target.value);
     setMinInput(formatted);
     const value = parseCurrencyInput(formatted) * 1000;
 
-    // Giới hạn tối đa 50 triệu
     if (value <= MAX_PRICE && value <= priceRange[1]) {
       setPriceRange([value, priceRange[1]]);
     }
@@ -146,7 +148,6 @@ const CategoryProducts: React.FC = () => {
     setMaxInput(formatted);
     const value = parseCurrencyInput(formatted) * 1000;
 
-    // Giới hạn tối đa 50 triệu
     if (value >= priceRange[0] && value <= MAX_PRICE) {
       setPriceRange([priceRange[0], value]);
     }
@@ -170,7 +171,7 @@ const CategoryProducts: React.FC = () => {
               to={`/danh-muc/${category?.slug}`}
               className={!slug || slug === category?.slug ? "active" : ""}
             >
-              Tất cả
+              {t('category.all')} {/* ✅ DỊCH */}
             </Link>
             {subCategories.map((sub) => (
               <Link
@@ -189,7 +190,7 @@ const CategoryProducts: React.FC = () => {
           <aside className="sidebar">
             {/* Lọc giá */}
             <div className="widget price-filter">
-              <h3>Khoảng giá</h3>
+              <h3>{t('category.priceRange')}</h3> {/* ✅ DỊCH */}
 
               <div className="price-options">
                 <button
@@ -204,7 +205,7 @@ const CategoryProducts: React.FC = () => {
                     setMaxInput("2.000.000");
                   }}
                 >
-                  Dưới 2 triệu
+                  {t('category.priceUnder2M')} {/* ✅ DỊCH */}
                 </button>
                 <button
                   className={
@@ -218,7 +219,7 @@ const CategoryProducts: React.FC = () => {
                     setMaxInput("5.000.000");
                   }}
                 >
-                  2 - 5 triệu
+                  {t('category.price2to5M')} {/* ✅ DỊCH */}
                 </button>
                 <button
                   className={
@@ -232,7 +233,7 @@ const CategoryProducts: React.FC = () => {
                     setMaxInput("10.000.000");
                   }}
                 >
-                  5 - 10 triệu
+                  {t('category.price5to10M')} {/* ✅ DỊCH */}
                 </button>
                 <button
                   className={
@@ -246,7 +247,7 @@ const CategoryProducts: React.FC = () => {
                     setMaxInput("20.000.000");
                   }}
                 >
-                  10 - 20 triệu
+                  {t('category.price10to20M')} {/* ✅ DỊCH */}
                 </button>
                 <button
                   className={
@@ -260,32 +261,32 @@ const CategoryProducts: React.FC = () => {
                     setMaxInput("50.000.000");
                   }}
                 >
-                  Trên 20 triệu
+                  {t('category.priceAbove20M')} {/* ✅ DỊCH */}
                 </button>
               </div>
 
               <div className="price-divider">
-                <span>Hoặc chọn khoảng giá</span>
+                <span>{t('category.orSelectRange')}</span> {/* ✅ DỊCH */}
               </div>
 
               <div className="price-inputs">
                 <input
                   type="text"
-                  placeholder="₫ TỪ"
+                  placeholder={t('category.priceFrom')} 
                   value={minInput}
                   onChange={handleMinInputChange}
                 />
-                <span className="separator">↓</span>
+                <span className="separator">↔</span>
                 <input
                   type="text"
-                  placeholder="₫ ĐẾN"
+                  placeholder={t('category.priceTo')} 
                   value={maxInput}
                   onChange={handleMaxInputChange}
                 />
               </div>
 
               <button className="apply-btn" onClick={loadProducts}>
-                Áp dụng
+                {t('category.apply')} {/* ✅ DỊCH */}
               </button>
             </div>
           </aside>
@@ -293,29 +294,29 @@ const CategoryProducts: React.FC = () => {
           {/* Main content */}
           <section className="main-content">
             <div className="page-header">
-              <h1>{category?.name || "Tất cả sản phẩm"}</h1>
+              <h1>{category?.name || t('category.allProducts')}</h1> {/* ✅ DỊCH */}
               <div className="sort-group">
-                <span>Sắp xếp:</span>
+                <span>{t('category.sortBy')}</span> {/* ✅ DỊCH */}
                 <select
                   value={sortBy}
                   onChange={(e) => setSortBy(e.target.value)}
                 >
-                  <option value="">Mới nhất</option>
-                  <option value="price-asc">Giá tăng dần</option>
-                  <option value="price-desc">Giá giảm dần</option>
-                  <option value="-sold">Bán chạy nhất</option>
+                  <option value="">{t('category.sortNewest')}</option> {/* ✅ DỊCH */}
+                  <option value="price-asc">{t('category.sortPriceAsc')}</option> {/* ✅ DỊCH */}
+                  <option value="price-desc">{t('category.sortPriceDesc')}</option> {/* ✅ DỊCH */}
+                  <option value="-sold">{t('category.sortBestSelling')}</option> {/* ✅ DỊCH */}
                 </select>
               </div>
             </div>
 
             {products.length === 0 ? (
               <div className="no-products">
-                Không tìm thấy sản phẩm nào trong danh mục này.
+                {t('category.noProducts')} {/* ✅ DỊCH */}
               </div>
             ) : (
               <div className="products-grid">
                 {products.map((product) => {
-                  const isOutOfStock = product.quantity <= 0; // ✅ THÊM DÒNG NÀY
+                  const isOutOfStock = product.quantity <= 0;
 
                   return (
                     <Link
@@ -323,13 +324,12 @@ const CategoryProducts: React.FC = () => {
                       to={`/san-pham/${product.slug}`}
                       className={`product-card ${
                         isOutOfStock ? "out-of-stock" : ""
-                      }`} // ✅ SỬA CLASS
+                      }`}
                     >
                       <div className="image">
-                        {/* ✅ THÊM BADGE HẾT HÀNG */}
                         {isOutOfStock && (
                           <span className="badge out-of-stock-badge">
-                            Hết hàng
+                            {t('category.outOfStock')} {/* ✅ DỊCH */}
                           </span>
                         )}
 
@@ -342,10 +342,10 @@ const CategoryProducts: React.FC = () => {
                           }}
                         />
                         {product.onSale && !isOutOfStock && (
-                          <span className="badge sale">Sale</span>
+                          <span className="badge sale">{t('category.sale')}</span>
                         )}
                         {product.hot && !isOutOfStock && (
-                          <span className="badge hot">Hot</span>
+                          <span className="badge hot">{t('category.hot')}</span>
                         )}
                       </div>
                       <div className="info">

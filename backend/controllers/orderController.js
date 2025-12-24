@@ -567,15 +567,14 @@ module.exports = {
     }
   },
 
-  // ==================== PUBLIC: TRA CỨU ĐƠN HÀNG ====================
+  // ==================== PUBLIC: TRA CỨU ĐƠN HÀNG - ✅ CHỈ CẦN MÃ ĐƠN HÀNG ====================
   trackPublicByOrderNumber: async (req, res) => {
     try {
       const { orderNumber } = req.params;
-      const { phone } = req.query;
 
-      if (!orderNumber || !phone) {
+      if (!orderNumber) {
         return res.status(400).json({ 
-          message: "Vui lòng cung cấp mã đơn hàng và số điện thoại" 
+          message: "Vui lòng cung cấp mã đơn hàng" 
         });
       }
 
@@ -588,17 +587,6 @@ module.exports = {
       }
 
       const order = orders[0];
-
-      // Kiểm tra số điện thoại
-      const cleanPhone = phone.replace(/\D/g, '');
-      const orderPhone = order.customer.phone.replace(/\D/g, '');
-      
-      if (cleanPhone !== orderPhone) {
-        return res.status(403).json({ 
-          message: "Số điện thoại không khớp với đơn hàng" 
-        });
-      }
-
       const items = await OrderDetailService.getByOrderId(order._id);
 
       const getStatusText = (status) => {
