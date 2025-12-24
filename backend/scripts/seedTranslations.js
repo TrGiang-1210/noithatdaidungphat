@@ -1,4 +1,4 @@
-// backend/scripts/seedTranslations.js
+// backend/scripts/seedTranslations.js - FULL VERSION WITH CHECKOUT
 const mongoose = require('mongoose');
 const Translation = require('../models/Translation');
 require('dotenv').config();
@@ -20,6 +20,7 @@ const sampleTranslations = [
   { key: 'common.contact', namespace: 'common', viText: 'Liên hệ', category: 'UI' },
   { key: 'common.search', namespace: 'common', viText: 'Tìm kiếm', category: 'UI' },
   { key: 'common.language', namespace: 'common', viText: 'Ngôn ngữ', category: 'UI' },
+  { key: 'common.back', namespace: 'common', viText: 'Quay lại trang trước', category: 'UI' },
   
   // ========== HEADER ==========
   { key: 'header.topbar', namespace: 'header', viText: 'Nội Thất Đại Dũng Phát, Uy Tín - Chất Lượng - Chính Hãng', category: 'UI' },
@@ -38,7 +39,7 @@ const sampleTranslations = [
   { key: 'header.about', namespace: 'header', viText: 'Giới thiệu', category: 'UI' },
   
   // ========== FOOTER ==========
-  { key: 'footer.description', namespace: 'footer', viText: 'Nội Thất Đại Dũng Phát — cung cấp sản phẩm nội thất chất lượng, bền đẹp, giá tốt cho gia đình, khách sạn, văn phòng.', category: 'UI' },
+  { key: 'footer.description', namespace: 'footer', viText: 'Nội Thất Đại Dũng Phát – cung cấp sản phẩm nội thất chất lượng, bền đẹp, giá tốt cho gia đình, khách sạn, văn phòng.', category: 'UI' },
   { key: 'footer.policy', namespace: 'footer', viText: 'Chính sách', category: 'UI' },
   { key: 'footer.warrantyPolicy', namespace: 'footer', viText: 'Chính sách bảo hành', category: 'UI' },
   { key: 'footer.shippingPolicy', namespace: 'footer', viText: 'Chính sách vận chuyển', category: 'UI' },
@@ -51,8 +52,8 @@ const sampleTranslations = [
   { key: 'footer.store2Name', namespace: 'footer', viText: 'Nệm Đại Dũng Phát - Nệm Tốt Long An', category: 'UI' },
   { key: 'footer.address', namespace: 'footer', viText: 'Địa chỉ', category: 'UI' },
   { key: 'footer.phone', namespace: 'footer', viText: 'Điện thoại', category: 'UI' },
-  { key: 'footer.workingHours', namespace: 'footer', viText: 'Giờ làm việc: 8:00 — 21:00 (T2—CN)', category: 'UI' },
-  { key: 'footer.copyright', namespace: 'footer', viText: 'Đại Dũng Phát — All rights reserved.', category: 'UI' },
+  { key: 'footer.workingHours', namespace: 'footer', viText: 'Giờ làm việc: 8:00 – 21:00 (T2–CN)', category: 'UI' },
+  { key: 'footer.copyright', namespace: 'footer', viText: 'Đại Dũng Phát – All rights reserved.', category: 'UI' },
   
   // ========== PRODUCT (GENERAL) ==========
   { key: 'product.buyNow', namespace: 'products', viText: 'Mua ngay', category: 'UI' },
@@ -63,6 +64,7 @@ const sampleTranslations = [
   { key: 'product.inStock', namespace: 'products', viText: 'Còn hàng', category: 'UI' },
   { key: 'product.outOfStock', namespace: 'products', viText: 'Hết hàng', category: 'UI' },
   { key: 'product.description', namespace: 'products', viText: 'Mô tả sản phẩm', category: 'UI' },
+  { key: 'product.standard', namespace: 'products', viText: 'Tiêu chuẩn', category: 'UI' },
   
   // ========== PRODUCT DETAIL PAGE ==========
   { key: 'product.sku', namespace: 'products', viText: 'Mã hàng', category: 'UI' },
@@ -88,11 +90,41 @@ const sampleTranslations = [
   // ========== CART & CHECKOUT ==========
   { key: 'cart.title', namespace: 'cart', viText: 'Giỏ hàng', category: 'UI' },
   { key: 'cart.empty', namespace: 'cart', viText: 'Giỏ hàng trống', category: 'UI' },
+  { key: 'cart.emptyCart', namespace: 'cart', viText: 'Giỏ hàng trống', category: 'UI' },
   { key: 'cart.checkout', namespace: 'cart', viText: 'Thanh toán', category: 'UI' },
   { key: 'cart.total', namespace: 'cart', viText: 'Tổng cộng', category: 'UI' },
   { key: 'cart.remove', namespace: 'cart', viText: 'Xóa', category: 'UI' },
+  { key: 'cart.removeItem', namespace: 'cart', viText: 'Xóa sản phẩm khỏi giỏ hàng', category: 'UI' },
   { key: 'cart.update', namespace: 'cart', viText: 'Cập nhật', category: 'UI' },
   { key: 'cart.continueShopping', namespace: 'cart', viText: 'Tiếp tục mua sắm', category: 'UI' },
+  { key: 'cart.noProductName', namespace: 'cart', viText: 'Không có tên', category: 'UI' },
+  
+  // ========== CHECKOUT PAGE ==========
+  { key: 'checkout.deliveryInfo', namespace: 'checkout', viText: 'THÔNG TIN GIAO HÀNG', category: 'UI' },
+  { key: 'checkout.phonePlaceholder', namespace: 'checkout', viText: 'Số điện thoại *', category: 'UI' },
+  { key: 'checkout.emailPlaceholder', namespace: 'checkout', viText: 'Email', category: 'UI' },
+  { key: 'checkout.namePlaceholder', namespace: 'checkout', viText: 'Họ và tên *', category: 'UI' },
+  { key: 'checkout.selectProvince', namespace: 'checkout', viText: 'Chọn tỉnh / thành phố *', category: 'UI' },
+  { key: 'checkout.addressPlaceholder', namespace: 'checkout', viText: 'Địa chỉ chi tiết *', category: 'UI' },
+  { key: 'checkout.notePlaceholder', namespace: 'checkout', viText: 'Nhập ghi chú (nếu có)', category: 'UI' },
+  { key: 'checkout.validPhone', namespace: 'checkout', viText: 'Vui lòng nhập số điện thoại hợp lệ', category: 'UI' },
+  { key: 'checkout.enterName', namespace: 'checkout', viText: 'Vui lòng nhập họ tên', category: 'error' },
+  { key: 'checkout.enterPhone', namespace: 'checkout', viText: 'Vui lòng nhập số điện thoại', category: 'error' },
+  { key: 'checkout.enterAddress', namespace: 'checkout', viText: 'Vui lòng nhập địa chỉ', category: 'error' },
+  { key: 'checkout.paymentCOD', namespace: 'checkout', viText: 'Thanh toán khi nhận hàng', category: 'UI' },
+  { key: 'checkout.paymentBank', namespace: 'checkout', viText: 'Thanh toán chuyển khoản', category: 'UI' },
+  { key: 'checkout.bankAccount', namespace: 'checkout', viText: 'Tài khoản ngân hàng: Ngân hàng Thương mại Cổ phần Á Châu (ACB)', category: 'UI' },
+  { key: 'checkout.accountHolder', namespace: 'checkout', viText: 'Chủ tài khoản', category: 'UI' },
+  { key: 'checkout.accountNumber', namespace: 'checkout', viText: 'Số tài khoản', category: 'UI' },
+  { key: 'checkout.qrAlt', namespace: 'checkout', viText: 'QR chuyển khoản ACB', category: 'UI' },
+  { key: 'checkout.bankNote', namespace: 'checkout', viText: 'Sau khi chuyển khoản, vui lòng nhấn nút xác nhận bên dưới để hoàn tất đơn hàng.', category: 'UI' },
+  { key: 'checkout.confirmPayment', namespace: 'checkout', viText: 'XÁC NHẬN THANH TOÁN', category: 'UI' },
+  { key: 'checkout.processing', namespace: 'checkout', viText: 'ĐANG XỬ LÝ...', category: 'UI' },
+  { key: 'checkout.support', namespace: 'checkout', viText: 'Hỗ trợ', category: 'UI' },
+  { key: 'checkout.orderSuccess', namespace: 'checkout', viText: 'Đặt hàng thành công! Chúng tôi sẽ liên hệ ngay', category: 'notification' },
+  { key: 'checkout.orderFailed', namespace: 'checkout', viText: 'Đặt hàng thất bại. Vui lòng thử lại.', category: 'error' },
+  { key: 'checkout.guestCheckoutInfo', namespace: 'checkout', viText: 'Bạn có thể xem giỏ hàng mà không cần đăng nhập. Đăng nhập để lưu đơn hoặc hoàn tất thanh toán.', category: 'notification' },
+  { key: 'checkout.shippingFee', namespace: 'checkout', viText: 'Phí vận chuyển', category: 'UI' },
   
   // ========== USER ACCOUNT ==========
   { key: 'user.login', namespace: 'auth', viText: 'Đăng nhập', category: 'UI' },
