@@ -1,4 +1,4 @@
-// src/admin/pages/ProductManager.tsx - WITH INTEGRATED PAGINATION
+// src/admin/pages/ProductManager.tsx - FIXED MULTILINGUAL ATTRIBUTES
 import { useState, useEffect, useMemo } from "react";
 import { Plus, Edit2, Trash2, Loader2, X, Search } from "lucide-react";
 import axiosInstance from "../../axios";
@@ -196,6 +196,18 @@ export default function ProductManager() {
 
   const openEditModal = (prod: Product) => {
     setEditingProd(prod);
+    
+    // ✅ Convert multilingual attributes back to simple string format for editing
+    const convertedAttributes = (prod.attributes || []).map(attr => ({
+      name: getName(attr.name),
+      options: (attr.options || []).map(opt => ({
+        label: getName(opt.label),
+        value: opt.value || "",
+        image: opt.image,
+        isDefault: opt.isDefault || false
+      }))
+    }));
+    
     setFormData({
       name: getName(prod.name),
       sku: prod.sku,
@@ -207,7 +219,7 @@ export default function ProductManager() {
       hot: prod.hot || false,
       onSale: prod.onSale || false,
       images: [],
-      attributes: prod.attributes || [],
+      attributes: convertedAttributes,
     });
     setImagePreviews(prod.images);
     
@@ -356,8 +368,25 @@ export default function ProductManager() {
       }
     });
 
+    // ✅ CRITICAL FIX: Convert attributes to multilingual format
     if (formData.attributes && formData.attributes.length > 0) {
-      data.append("attributes", JSON.stringify(formData.attributes));
+      const multilingualAttributes = formData.attributes.map(attr => ({
+        name: { 
+          vi: attr.name || "", 
+          zh: "" 
+        },
+        options: attr.options.map(opt => ({
+          label: { 
+            vi: opt.label || "", 
+            zh: "" 
+          },
+          value: opt.value || "",
+          image: opt.image,
+          isDefault: opt.isDefault || false
+        }))
+      }));
+      
+      data.append("attributes", JSON.stringify(multilingualAttributes));
     }
 
     try {
@@ -530,7 +559,6 @@ export default function ProductManager() {
               
               <div className="pagination-numbers">
                 {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => {
-                  // Show first page, last page, current page, and pages around current
                   if (
                     page === 1 ||
                     page === totalPages ||
