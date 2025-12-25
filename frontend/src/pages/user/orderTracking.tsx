@@ -1,4 +1,4 @@
-// src/pages/orderTracking/OrderTracking.tsx - MULTILINGUAL VERSION
+// src/pages/orderTracking/OrderTracking.tsx - WITH ATTRIBUTES DISPLAY
 import { useState, useEffect } from 'react';
 import axiosInstance from '@/axios';
 import '@/styles/pages/user/orderTracking.scss';
@@ -22,6 +22,7 @@ interface OrderTrackingResult {
     price: string;
     img_url?: string;
     images?: string[];
+    selectedAttributes?: Record<string, string>; // ✅ THÊM FIELD NÀY
   }>;
 }
 
@@ -258,6 +259,17 @@ export default function OrderTrackingPage() {
                           <div className="item-quantity">
                             {t('orderTracking.quantity') || 'Số lượng'}: {item.quantity}
                           </div>
+                          
+                          {/* ✅ HIỂN THỊ THUỘC TÍNH ĐÃ CHỌN */}
+                          {item.selectedAttributes && Object.keys(item.selectedAttributes).length > 0 && (
+                            <div className="item-attributes">
+                              {Object.entries(item.selectedAttributes).map(([key, value]) => (
+                                <span key={key} className="attribute-badge">
+                                  <strong>{key}:</strong> {value}
+                                </span>
+                              ))}
+                            </div>
+                          )}
                         </div>
                         <div className="item-price">{item.price}</div>
                       </div>

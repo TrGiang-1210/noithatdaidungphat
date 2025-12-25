@@ -1,4 +1,4 @@
-// src/styles/pages/user/orderTracking.scss
+// src/styles/pages/user/orderTracking.scss - WITH ATTRIBUTES STYLE
 .order-tracking-page {
   min-height: 100vh;
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
@@ -265,6 +265,33 @@
             .item-quantity {
               font-size: 0.9rem;
               color: #6b7280;
+              margin-bottom: 6px;
+            }
+
+            // ✅ STYLE CHO THUỘC TÍNH
+            .item-attributes {
+              display: flex;
+              flex-wrap: wrap;
+              gap: 6px;
+              margin-top: 8px;
+
+              .attribute-badge {
+                display: inline-flex;
+                align-items: center;
+                gap: 4px;
+                padding: 4px 10px;
+                background: #f0f9ff;
+                border: 1px solid #bae6fd;
+                border-radius: 6px;
+                font-size: 0.85rem;
+                color: #0369a1;
+                white-space: nowrap;
+                
+                strong {
+                  font-weight: 600;
+                  color: #0c4a6e;
+                }
+              }
             }
           }
 
@@ -404,8 +431,18 @@
             max-height: 150px;
           }
 
+          .item-info {
+            width: 100%;
+
+            .item-attributes {
+              margin-top: 10px;
+            }
+          }
+
           .item-price {
             align-self: flex-end;
+            font-size: 1.2rem;
+            margin-top: 8px;
           }
         }
 
