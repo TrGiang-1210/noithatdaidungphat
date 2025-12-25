@@ -55,21 +55,47 @@ export default function OrderManager() {
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [showDetailModal, setShowDetailModal] = useState(false);
   const [filterStatus, setFilterStatus] = useState<string>("all");
-  const [processingOrderId, setProcessingOrderId] = useState<string | null>(null);
+  const [processingOrderId, setProcessingOrderId] = useState<string | null>(
+    null
+  );
   const [searchQuery, setSearchQuery] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
 
   const getPaymentMethodLabel = (method: string) => {
     const labels: Record<string, string> = {
-      'cod': 'Thanh toán khi nhận hàng (COD)',
-      'bank': 'Chuyển khoản ngân hàng',
-      'momo': 'Ví điện tử MoMo',
-      'COD': 'Thanh toán khi nhận hàng (COD)',
-      'Bank': 'Chuyển khoản ngân hàng',
-      'Momo': 'Ví điện tử MoMo'
+      cod: "Thanh toán khi nhận hàng (COD)",
+      bank: "Chuyển khoản ngân hàng",
+      momo: "Ví điện tử MoMo",
+      COD: "Thanh toán khi nhận hàng (COD)",
+      Bank: "Chuyển khoản ngân hàng",
+      Momo: "Ví điện tử MoMo",
     };
     return labels[method] || method;
+  };
+
+  // ✅ Helper: Convert attribute value → label
+  const getAttributeLabel = (
+    attributeName: string,
+    value: string,
+    product: any
+  ) => {
+    if (!product || !product.attributes) return value;
+
+    const attribute = product.attributes.find((attr: any) => {
+      const attrNameVi =
+        typeof attr.name === "object" ? attr.name.vi : attr.name;
+      return attrNameVi === attributeName;
+    });
+
+    if (!attribute || !attribute.options) return value;
+
+    const option = attribute.options.find((opt: any) => opt.value === value);
+    if (!option) return value;
+
+    const label =
+      typeof option.label === "object" ? option.label.vi : option.label;
+    return label || value;
   };
 
   const fetchOrders = async () => {
@@ -241,9 +267,9 @@ export default function OrderManager() {
 
   const filteredOrders = useMemo(() => {
     if (!searchQuery.trim()) return statusFilteredOrders;
-    
+
     const query = searchQuery.toLowerCase().trim();
-    
+
     return statusFilteredOrders.filter((order) => {
       if (order.orderNumber?.toLowerCase().includes(query)) return true;
       if (order.customer?.name?.toLowerCase().includes(query)) return true;
@@ -253,7 +279,7 @@ export default function OrderManager() {
         item?.product?.name?.toLowerCase().includes(query)
       );
       if (hasMatchingProduct) return true;
-      
+
       return false;
     });
   }, [statusFilteredOrders, searchQuery]);
@@ -269,7 +295,7 @@ export default function OrderManager() {
 
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
   const handleItemsPerPageChange = (value: number) => {
@@ -379,7 +405,7 @@ export default function OrderManager() {
           onChange={(e) => setSearchQuery(e.target.value)}
         />
         {searchQuery && (
-          <button 
+          <button
             className="clear-search"
             onClick={() => setSearchQuery("")}
             title="Xóa tìm kiếm"
@@ -392,10 +418,9 @@ export default function OrderManager() {
       <div className="orders-table">
         {currentOrders.length === 0 ? (
           <p className="empty">
-            {searchQuery 
+            {searchQuery
               ? `Không tìm thấy đơn hàng nào với từ khóa "${searchQuery}"`
-              : "Không có đơn hàng nào"
-            }
+              : "Không có đơn hàng nào"}
           </p>
         ) : (
           <>
@@ -595,9 +620,11 @@ export default function OrderManager() {
           <div className="pagination-left">
             <div className="items-per-page">
               <span>Hiển thị:</span>
-              <select 
-                value={itemsPerPage} 
-                onChange={(e) => handleItemsPerPageChange(Number(e.target.value))}
+              <select
+                value={itemsPerPage}
+                onChange={(e) =>
+                  handleItemsPerPageChange(Number(e.target.value))
+                }
               >
                 <option value={5}>5</option>
                 <option value={10}>10</option>
@@ -609,47 +636,57 @@ export default function OrderManager() {
               <span>đơn hàng/trang</span>
             </div>
             <div className="page-info">
-              Hiển thị {startIndex + 1}-{Math.min(endIndex, filteredOrders.length)} trong tổng số {filteredOrders.length} đơn hàng
+              Hiển thị {startIndex + 1}-
+              {Math.min(endIndex, filteredOrders.length)} trong tổng số{" "}
+              {filteredOrders.length} đơn hàng
             </div>
           </div>
 
           {totalPages > 1 && (
             <div className="pagination-center">
-              <button 
+              <button
                 onClick={() => handlePageChange(currentPage - 1)}
                 disabled={currentPage === 1}
                 className="pagination-btn"
               >
                 ← Trước
               </button>
-              
+
               <div className="pagination-numbers">
-                {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => {
-                  if (
-                    page === 1 ||
-                    page === totalPages ||
-                    (page >= currentPage - 1 && page <= currentPage + 1)
-                  ) {
-                    return (
-                      <button
-                        key={page}
-                        onClick={() => handlePageChange(page)}
-                        className={`pagination-number ${currentPage === page ? 'active' : ''}`}
-                      >
-                        {page}
-                      </button>
-                    );
-                  } else if (
-                    page === currentPage - 2 ||
-                    page === currentPage + 2
-                  ) {
-                    return <span key={page} className="pagination-ellipsis">...</span>;
+                {Array.from({ length: totalPages }, (_, i) => i + 1).map(
+                  (page) => {
+                    if (
+                      page === 1 ||
+                      page === totalPages ||
+                      (page >= currentPage - 1 && page <= currentPage + 1)
+                    ) {
+                      return (
+                        <button
+                          key={page}
+                          onClick={() => handlePageChange(page)}
+                          className={`pagination-number ${
+                            currentPage === page ? "active" : ""
+                          }`}
+                        >
+                          {page}
+                        </button>
+                      );
+                    } else if (
+                      page === currentPage - 2 ||
+                      page === currentPage + 2
+                    ) {
+                      return (
+                        <span key={page} className="pagination-ellipsis">
+                          ...
+                        </span>
+                      );
+                    }
+                    return null;
                   }
-                  return null;
-                })}
+                )}
               </div>
 
-              <button 
+              <button
                 onClick={() => handlePageChange(currentPage + 1)}
                 disabled={currentPage === totalPages}
                 className="pagination-btn"
@@ -720,7 +757,9 @@ export default function OrderManager() {
                   </div>
                   <div className="info-item">
                     <strong>Thanh toán:</strong>
-                    <span>{getPaymentMethodLabel(selectedOrder.paymentMethod)}</span>
+                    <span>
+                      {getPaymentMethodLabel(selectedOrder.paymentMethod)}
+                    </span>
                   </div>
                 </div>
 
@@ -771,17 +810,25 @@ export default function OrderManager() {
                           <div className="item-sku">
                             SKU: {item.product?.sku || "N/A"}
                           </div>
-                          
+
                           {/* ✅ HIỂN THỊ THUỘC TÍNH ĐÃ CHỌN */}
-                          {item.selectedAttributes && Object.keys(item.selectedAttributes).length > 0 && (
-                            <div className="item-attributes">
-                              {Object.entries(item.selectedAttributes).map(([key, value]) => (
-                                <span key={key} className="attribute-badge">
-                                  <strong>{key}:</strong> {value}
-                                </span>
-                              ))}
-                            </div>
-                          )}
+                          {item.selectedAttributes &&
+                            Object.keys(item.selectedAttributes).length > 0 && (
+                              <div className="item-attributes">
+                                {Object.entries(item.selectedAttributes).map(
+                                  ([key, value]) => (
+                                    <span key={key} className="attribute-badge">
+                                      <strong>{key}:</strong>{" "}
+                                      {getAttributeLabel(
+                                        key,
+                                        value,
+                                        item.product._id
+                                      )}
+                                    </span>
+                                  )
+                                )}
+                              </div>
+                            )}
                         </div>
                         <div className="item-quantity">x{item.quantity}</div>
                         <div className="item-price">

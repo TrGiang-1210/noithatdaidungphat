@@ -1,4 +1,4 @@
-// src/pages/orderTracking/OrderTracking.tsx - WITH ATTRIBUTES DISPLAY
+// src/pages/orderTracking/OrderTracking.tsx - DEBUG VERSION
 import { useState, useEffect } from 'react';
 import axiosInstance from '@/axios';
 import '@/styles/pages/user/orderTracking.scss';
@@ -22,7 +22,8 @@ interface OrderTrackingResult {
     price: string;
     img_url?: string;
     images?: string[];
-    selectedAttributes?: Record<string, string>; // ✅ THÊM FIELD NÀY
+    selectedAttributes?: Record<string, string>; // ← Backend field
+    attributes?: Record<string, string>; // ← Có thể backend dùng field này
   }>;
 }
 
@@ -33,7 +34,6 @@ export default function OrderTrackingPage() {
   const [result, setResult] = useState<OrderTrackingResult | null>(null);
   const [error, setError] = useState('');
 
-  // ✅ PAYMENT METHOD LABELS - Multilingual
   const getPaymentMethodLabel = (method: string) => {
     const methodKey = method.toLowerCase();
     
@@ -48,7 +48,6 @@ export default function OrderTrackingPage() {
     return method;
   };
 
-  // ✅ ORDER STATUS LABELS - Multilingual
   const getStatusLabel = (statusKey: string) => {
     const statusLabels: Record<string, string> = {
       'Pending': t('orderTracking.statusPending') || 'Chờ xử lý',
@@ -94,11 +93,22 @@ export default function OrderTrackingPage() {
         `/orders/track/${orderNumber.toUpperCase().trim()}`
       );
       
+      console.log('✅ FULL API Response:', res.data);
+      console.log('✅ Items:', res.data.items);
+      
+      // 🔍 DEBUG: In ra item đầu tiên
+      if (res.data.items && res.data.items.length > 0) {
+        console.log('🔍 First Item FULL:', JSON.stringify(res.data.items[0], null, 2));
+        console.log('🔍 selectedAttributes:', res.data.items[0].selectedAttributes);
+        console.log('🔍 attributes:', res.data.items[0].attributes);
+      }
+      
       setResult(res.data);
       localStorage.setItem('lastTrackedOrder', JSON.stringify(res.data));
       localStorage.setItem('lastOrderNumber', orderNumber.toUpperCase().trim());
       
     } catch (err: any) {
+      console.error('❌ API Error:', err);
       setError(
         err.response?.data?.message || 
         t('orderTracking.orderNotFound') || 
@@ -236,45 +246,67 @@ export default function OrderTrackingPage() {
               <div className="detail-section">
                 <h3>{t('orderTracking.orderedProducts') || 'Sản phẩm đã đặt'}</h3>
                 <div className="items-list">
-                  {result.items.map((item, idx) => {
-                    const imageUrl = item.img_url || 
-                                    (item.images && item.images.length > 0 ? item.images[0] : null);
-                    
-                    return (
-                      <div key={idx} className="item-row">
-                        <img 
-                          src={
-                            imageUrl
-                              ? getImageUrl(imageUrl)
-                              : 'https://via.placeholder.com/60?text=No+Image'
-                          }
-                          alt={item.name}
-                          onError={(e) => {
-                            console.error('Image load failed:', e.currentTarget.src);
-                            e.currentTarget.src = 'https://via.placeholder.com/60?text=Error';
-                          }}
-                        />
-                        <div className="item-info">
-                          <div className="item-name">{item.name}</div>
-                          <div className="item-quantity">
-                            {t('orderTracking.quantity') || 'Số lượng'}: {item.quantity}
-                          </div>
-                          
-                          {/* ✅ HIỂN THỊ THUỘC TÍNH ĐÃ CHỌN */}
-                          {item.selectedAttributes && Object.keys(item.selectedAttributes).length > 0 && (
-                            <div className="item-attributes">
-                              {Object.entries(item.selectedAttributes).map(([key, value]) => (
-                                <span key={key} className="attribute-badge">
-                                  <strong>{key}:</strong> {value}
-                                </span>
-                              ))}
+                  {result.items && result.items.length > 0 ? (
+                    result.items.map((item, idx) => {
+                      if (!item || typeof item !== 'object') {
+                        console.error('❌ Invalid item:', item);
+                        return null;
+                      }
+
+                      const imageUrl = item.img_url || 
+                                      (item.images && item.images.length > 0 ? item.images[0] : null);
+                      
+                      // 🔍 TÌM ATTRIBUTES TỪ CẢ 2 FIELD
+                      const attrs = item.selectedAttributes || item.attributes || {};
+                      
+                      console.log(`📦 Item ${idx} Render:`, {
+                        name: item.name,
+                        selectedAttributes: item.selectedAttributes,
+                        attributes: item.attributes,
+                        using: attrs
+                      });
+                      
+                      return (
+                        <div key={idx} className="item-row">
+                          <img 
+                            src={
+                              imageUrl
+                                ? getImageUrl(imageUrl)
+                                : 'https://via.placeholder.com/60?text=No+Image'
+                            }
+                            alt={item.name || 'Product'}
+                            onError={(e) => {
+                              e.currentTarget.src = 'https://via.placeholder.com/60?text=Error';
+                            }}
+                          />
+                          <div className="item-info">
+                            <div className="item-name">{item.name || 'N/A'}</div>
+                            <div className="item-quantity">
+                              {t('orderTracking.quantity') || 'Số lượng'}: {item.quantity || 0}
                             </div>
-                          )}
+                            
+                            {/* ✅ HIỂN THỊ THUỘC TÍNH - HỖ TRỢ CẢ 2 FIELD */}
+                            {attrs && typeof attrs === 'object' && Object.keys(attrs).length > 0 && (
+                              <div className="item-attributes">
+                                {Object.entries(attrs).map(([key, value]) => {
+                                  const displayValue = String(value || 'N/A');
+                                  
+                                  return (
+                                    <span key={key} className="attribute-badge">
+                                      <strong>{key}:</strong> {displayValue}
+                                    </span>
+                                  );
+                                })}
+                              </div>
+                            )}
+                          </div>
+                          <div className="item-price">{item.price || '0₫'}</div>
                         </div>
-                        <div className="item-price">{item.price}</div>
-                      </div>
-                    );
-                  })}
+                      );
+                    })
+                  ) : (
+                    <p>Không có sản phẩm nào</p>
+                  )}
                 </div>
 
                 <div className="total-row">
