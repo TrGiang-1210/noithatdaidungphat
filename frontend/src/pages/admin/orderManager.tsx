@@ -1,4 +1,4 @@
-// src/admin/pages/OrderManager.tsx - WITH SEARCH AND PAGINATION
+// src/admin/pages/OrderManager.tsx - WITH ATTRIBUTES DISPLAY
 import { useState, useEffect, useMemo } from "react";
 import {
   Package,
@@ -28,6 +28,7 @@ interface OrderItem {
   };
   quantity: number;
   price: number;
+  selectedAttributes?: Record<string, string>; // ✅ THÊM FIELD NÀY
 }
 
 interface Order {
@@ -94,6 +95,7 @@ export default function OrderManager() {
                 images: [],
                 sku: "N/A",
               },
+              selectedAttributes: item.selectedAttributes || {}, // ✅ LƯU THUỘC TÍNH
             })),
         }));
 
@@ -232,32 +234,21 @@ export default function OrderManager() {
     return `${minutes}m`;
   };
 
-  // Filter by status first
   const statusFilteredOrders = useMemo(() => {
     if (filterStatus === "all") return orders;
     return orders.filter((o) => o.status === filterStatus);
   }, [orders, filterStatus]);
 
-  // Then filter by search query
   const filteredOrders = useMemo(() => {
     if (!searchQuery.trim()) return statusFilteredOrders;
     
     const query = searchQuery.toLowerCase().trim();
     
     return statusFilteredOrders.filter((order) => {
-      // Search in order number
       if (order.orderNumber?.toLowerCase().includes(query)) return true;
-      
-      // Search in customer name
       if (order.customer?.name?.toLowerCase().includes(query)) return true;
-      
-      // Search in customer phone
       if (order.customer?.phone?.includes(query)) return true;
-      
-      // Search in customer address
       if (order.customer?.address?.toLowerCase().includes(query)) return true;
-      
-      // Search in product names
       const hasMatchingProduct = order.items?.some((item) =>
         item?.product?.name?.toLowerCase().includes(query)
       );
@@ -267,13 +258,11 @@ export default function OrderManager() {
     });
   }, [statusFilteredOrders, searchQuery]);
 
-  // Pagination
   const totalPages = Math.ceil(filteredOrders.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
   const endIndex = startIndex + itemsPerPage;
   const currentOrders = filteredOrders.slice(startIndex, endIndex);
 
-  // Reset to page 1 when search query, filter or items per page changes
   useEffect(() => {
     setCurrentPage(1);
   }, [searchQuery, filterStatus, itemsPerPage]);
@@ -342,7 +331,6 @@ export default function OrderManager() {
         </div>
       </div>
 
-      {/* Filter */}
       <div className="filter-bar">
         <button
           className={filterStatus === "all" ? "active" : ""}
@@ -382,7 +370,6 @@ export default function OrderManager() {
         </button>
       </div>
 
-      {/* Search Box */}
       <div className="search-box">
         <Search size={18} />
         <input
@@ -402,7 +389,6 @@ export default function OrderManager() {
         )}
       </div>
 
-      {/* Orders Table */}
       <div className="orders-table">
         {currentOrders.length === 0 ? (
           <p className="empty">
@@ -604,7 +590,6 @@ export default function OrderManager() {
         )}
       </div>
 
-      {/* Pagination */}
       {filteredOrders.length > 0 && (
         <div className="pagination">
           <div className="pagination-left">
@@ -676,7 +661,7 @@ export default function OrderManager() {
         </div>
       )}
 
-      {/* Modal chi tiết */}
+      {/* ✅ MODAL CHI TIẾT - CÓ HIỂN THỊ THUỘC TÍNH */}
       {showDetailModal && selectedOrder && (
         <div
           className="modal-overlay"
@@ -786,6 +771,17 @@ export default function OrderManager() {
                           <div className="item-sku">
                             SKU: {item.product?.sku || "N/A"}
                           </div>
+                          
+                          {/* ✅ HIỂN THỊ THUỘC TÍNH ĐÃ CHỌN */}
+                          {item.selectedAttributes && Object.keys(item.selectedAttributes).length > 0 && (
+                            <div className="item-attributes">
+                              {Object.entries(item.selectedAttributes).map(([key, value]) => (
+                                <span key={key} className="attribute-badge">
+                                  <strong>{key}:</strong> {value}
+                                </span>
+                              ))}
+                            </div>
+                          )}
                         </div>
                         <div className="item-quantity">x{item.quantity}</div>
                         <div className="item-price">

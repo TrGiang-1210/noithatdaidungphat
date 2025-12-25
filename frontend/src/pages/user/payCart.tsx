@@ -32,9 +32,9 @@ const PayCart: React.FC = () => {
 
   // ✅ Helper to get text from multilingual product name
   const getProductName = (name: any): string => {
-    if (!name) return t('cart.noProductName') || "Không có tên";
-    if (typeof name === 'string') return name;
-    if (typeof name === 'object' && name !== null) {
+    if (!name) return t("cart.noProductName") || "Không có tên";
+    if (typeof name === "string") return name;
+    if (typeof name === "object" && name !== null) {
       return name[language] || name.vi || name.en || String(name);
     }
     return String(name);
@@ -88,23 +88,25 @@ const PayCart: React.FC = () => {
 
     // Validation
     if (cartItems.length === 0) {
-      toast.error(t('cart.emptyCart') || "Giỏ hàng trống!");
+      toast.error(t("cart.emptyCart") || "Giỏ hàng trống!");
       return;
     }
     if (!formData.city) {
-      toast.error(t('checkout.selectProvince') || "Vui lòng chọn tỉnh/thành phố");
+      toast.error(
+        t("checkout.selectProvince") || "Vui lòng chọn tỉnh/thành phố"
+      );
       return;
     }
     if (!formData.name.trim()) {
-      toast.error(t('checkout.enterName') || "Vui lòng nhập họ tên");
+      toast.error(t("checkout.enterName") || "Vui lòng nhập họ tên");
       return;
     }
     if (!formData.phone.trim()) {
-      toast.error(t('checkout.enterPhone') || "Vui lòng nhập số điện thoại");
+      toast.error(t("checkout.enterPhone") || "Vui lòng nhập số điện thoại");
       return;
     }
     if (!formData.address.trim()) {
-      toast.error(t('checkout.enterAddress') || "Vui lòng nhập địa chỉ");
+      toast.error(t("checkout.enterAddress") || "Vui lòng nhập địa chỉ");
       return;
     }
 
@@ -117,17 +119,19 @@ const PayCart: React.FC = () => {
           quantity: item.quantity,
           price: item.product.price || item.product.priceSale || 0,
           name: getProductName(item.product.name),
-          img_url: Array.isArray(item.product.images) 
-            ? item.product.images[0] 
+          img_url: Array.isArray(item.product.images)
+            ? item.product.images[0]
             : item.product.image || item.product.img_url || "",
+          selectedAttributes:
+            item.selectedAttributes || item.product.selectedAttributes || {}, // ✅ THÊM DÒNG NÀY
         })),
         total: totalPrice,
         payment_method: formData.paymentMethod === "cod" ? "cod" : "bank",
         customer: {
           name: formData.name.trim(),
-          phone: formData.phone.trim().replace(/\D/g, ''),
+          phone: formData.phone.trim().replace(/\D/g, ""),
           email: formData.email.trim() || undefined,
-          address: `${formData.address.trim()}, ${formData.city}`,
+          address: formData.address.trim(),
         },
         city: formData.city,
         note: formData.note.trim() || "",
@@ -142,7 +146,10 @@ const PayCart: React.FC = () => {
 
       await clearCart();
 
-      toast.success(t('checkout.orderSuccess') || "Đặt hàng thành công! Chúng tôi sẽ liên hệ ngay");
+      toast.success(
+        t("checkout.orderSuccess") ||
+          "Đặt hàng thành công! Chúng tôi sẽ liên hệ ngay"
+      );
 
       navigate("/dat-hang-thanh-cong", {
         state: {
@@ -154,20 +161,22 @@ const PayCart: React.FC = () => {
             name: formData.name,
             phone: formData.phone,
             email: formData.email,
-          }
+          },
         },
       });
     } catch (err: any) {
       console.error("Lỗi đặt hàng:", err);
       console.error("Error response:", err.response?.data);
-      
-      const errorMessage = err.response?.data?.message 
-        || err.response?.data?.error
-        || err.message
-        || t('checkout.orderFailed') || "Đặt hàng thất bại. Vui lòng thử lại.";
-      
+
+      const errorMessage =
+        err.response?.data?.message ||
+        err.response?.data?.error ||
+        err.message ||
+        t("checkout.orderFailed") ||
+        "Đặt hàng thất bại. Vui lòng thử lại.";
+
       toast.error(errorMessage);
-      
+
       if (err.response?.data) {
         console.error("Backend error details:", err.response.data);
       }
@@ -179,7 +188,8 @@ const PayCart: React.FC = () => {
   const handleCheckout = async () => {
     if (!user) {
       toast.info(
-        t('checkout.guestCheckoutInfo') || "Bạn có thể xem giỏ hàng mà không cần đăng nhập. Đăng nhập để lưu đơn hoặc hoàn tất thanh toán."
+        t("checkout.guestCheckoutInfo") ||
+          "Bạn có thể xem giỏ hàng mà không cần đăng nhập. Đăng nhập để lưu đơn hoặc hoàn tất thanh toán."
       );
     }
 
@@ -192,30 +202,35 @@ const PayCart: React.FC = () => {
     <div className="paycart-container">
       <div className="paycart-wrapper">
         <div className="paycart-left">
-          <h2>{t('checkout.deliveryInfo') || 'THÔNG TIN GIAO HÀNG'}</h2>
+          <h2>{t("checkout.deliveryInfo") || "THÔNG TIN GIAO HÀNG"}</h2>
 
           <form onSubmit={handleSubmit} className="paycart-form">
             <div className="form-row">
               <input
                 type="tel"
-                placeholder={t('checkout.phonePlaceholder') || 'Số điện thoại *'}
+                placeholder={
+                  t("checkout.phonePlaceholder") || "Số điện thoại *"
+                }
                 name="phone"
                 value={formData.phone}
                 onChange={handleChange}
                 required
                 pattern="[0-9\s\-\+]+"
-                title={t('checkout.validPhone') || 'Vui lòng nhập số điện thoại hợp lệ'}
+                title={
+                  t("checkout.validPhone") ||
+                  "Vui lòng nhập số điện thoại hợp lệ"
+                }
               />
               <input
                 type="email"
-                placeholder={t('checkout.emailPlaceholder') || 'Email'}
+                placeholder={t("checkout.emailPlaceholder") || "Email"}
                 name="email"
                 value={formData.email}
                 onChange={handleChange}
               />
               <input
                 type="text"
-                placeholder={t('checkout.namePlaceholder') || 'Họ và tên *'}
+                placeholder={t("checkout.namePlaceholder") || "Họ và tên *"}
                 name="name"
                 value={formData.name}
                 onChange={handleChange}
@@ -230,7 +245,9 @@ const PayCart: React.FC = () => {
                   onChange={handleChange}
                   required
                 >
-                  <option value="">{t('checkout.selectProvince') || 'Chọn tỉnh / thành phố *'}</option>
+                  <option value="">
+                    {t("checkout.selectProvince") || "Chọn tỉnh / thành phố *"}
+                  </option>
                   {provinces.map((province) => (
                     <option key={province} value={province}>
                       {province}
@@ -241,7 +258,9 @@ const PayCart: React.FC = () => {
             </div>
             <input
               type="text"
-              placeholder={t('checkout.addressPlaceholder') || 'Địa chỉ chi tiết *'}
+              placeholder={
+                t("checkout.addressPlaceholder") || "Địa chỉ chi tiết *"
+              }
               name="address"
               className="address"
               value={formData.address}
@@ -250,7 +269,9 @@ const PayCart: React.FC = () => {
               minLength={5}
             />
             <textarea
-              placeholder={t('checkout.notePlaceholder') || 'Nhập ghi chú (nếu có)'}
+              placeholder={
+                t("checkout.notePlaceholder") || "Nhập ghi chú (nếu có)"
+              }
               name="note"
               value={formData.note}
               onChange={handleChange}
@@ -266,7 +287,9 @@ const PayCart: React.FC = () => {
                   checked={formData.paymentMethod === "cod"}
                   onChange={handleChange}
                 />
-                <span>{t('checkout.paymentCOD') || 'Thanh toán khi nhận hàng'}</span>
+                <span>
+                  {t("checkout.paymentCOD") || "Thanh toán khi nhận hàng"}
+                </span>
               </label>
 
               <label>
@@ -277,7 +300,9 @@ const PayCart: React.FC = () => {
                   checked={formData.paymentMethod === "bank"}
                   onChange={handleChange}
                 />
-                <span>{t('checkout.paymentBank') || 'Thanh toán chuyển khoản'}</span>
+                <span>
+                  {t("checkout.paymentBank") || "Thanh toán chuyển khoản"}
+                </span>
               </label>
             </div>
 
@@ -285,20 +310,25 @@ const PayCart: React.FC = () => {
               <div className="bank-transfer-info">
                 <div className="bank-header">
                   <strong>
-                    {t('checkout.bankAccount') || 'Tài khoản ngân hàng: Ngân hàng Thương mại Cổ phần Á Châu (ACB)'}
+                    {t("checkout.bankAccount") ||
+                      "Tài khoản ngân hàng: Ngân hàng Thương mại Cổ phần Á Châu (ACB)"}
                   </strong>
                   <br />
-                  {t('checkout.accountHolder') || 'Chủ tài khoản'}: <strong>LƯU THỊ NGỌC HÀ</strong> - {t('checkout.accountNumber') || 'Số tài khoản'}: <strong>1005986868</strong>
+                  {t("checkout.accountHolder") || "Chủ tài khoản"}:{" "}
+                  <strong>LƯU THỊ NGỌC HÀ</strong> -{" "}
+                  {t("checkout.accountNumber") || "Số tài khoản"}:{" "}
+                  <strong>1005986868</strong>
                 </div>
                 <div className="qr-wrapper">
                   <img
                     src="./src/assets/qr-acbbank.jpg"
-                    alt={t('checkout.qrAlt') || 'QR chuyển khoản ACB'}
+                    alt={t("checkout.qrAlt") || "QR chuyển khoản ACB"}
                     className="qr-code"
                   />
                 </div>
                 <p className="note">
-                  {t('checkout.bankNote') || 'Sau khi chuyển khoản, vui lòng nhấn nút xác nhận bên dưới để hoàn tất đơn hàng.'}
+                  {t("checkout.bankNote") ||
+                    "Sau khi chuyển khoản, vui lòng nhấn nút xác nhận bên dưới để hoàn tất đơn hàng."}
                 </p>
               </div>
             )}
@@ -308,18 +338,19 @@ const PayCart: React.FC = () => {
               className="btn-pay"
               disabled={loading || cartItems.length === 0}
             >
-              {loading 
-                ? (t('checkout.processing') || 'ĐANG XỬ LÝ...') 
-                : (t('checkout.confirmPayment') || 'XÁC NHẬN THANH TOÁN')
-              }
+              {loading
+                ? t("checkout.processing") || "ĐANG XỬ LÝ..."
+                : t("checkout.confirmPayment") || "XÁC NHẬN THANH TOÁN"}
             </button>
           </form>
 
           <div className="paycart-footer">
             <button onClick={() => navigate(-1)} className="btn-back">
-              ← {t('common.back') || 'Quay lại trang trước'}
+              ← {t("common.back") || "Quay lại trang trước"}
             </button>
-            <span className="support">{t('checkout.support') || 'Hỗ trợ'}: 0941 038 839 </span>
+            <span className="support">
+              {t("checkout.support") || "Hỗ trợ"}: 0941 038 839{" "}
+            </span>
           </div>
         </div>
 
@@ -348,7 +379,10 @@ const PayCart: React.FC = () => {
 
                     <div className="item-info">
                       <h4>{getProductName(product.name)}</h4>
-                      <p>{t('product.size') || 'Kích thước'}: {product.size || (t('product.standard') || 'Tiêu chuẩn')}</p>
+                      <p>
+                        {t("product.size") || "Kích thước"}:{" "}
+                        {product.size || t("product.standard") || "Tiêu chuẩn"}
+                      </p>
                     </div>
 
                     <div className="item-price">
@@ -358,7 +392,9 @@ const PayCart: React.FC = () => {
                     <button
                       className="btn-remove-item"
                       onClick={() => removeItem(product._id)}
-                      title={t('cart.removeItem') || 'Xóa sản phẩm khỏi giỏ hàng'}
+                      title={
+                        t("cart.removeItem") || "Xóa sản phẩm khỏi giỏ hàng"
+                      }
                     >
                       <svg
                         width="18"
@@ -375,15 +411,17 @@ const PayCart: React.FC = () => {
                 );
               })
             ) : (
-              <div className="empty-cart">{t('cart.emptyCart') || 'Giỏ hàng trống'}</div>
+              <div className="empty-cart">
+                {t("cart.emptyCart") || "Giỏ hàng trống"}
+              </div>
             )}
 
             <div className="summary-row">
-              <span>{t('checkout.shippingFee') || 'Phí vận chuyển'}</span>
+              <span>{t("checkout.shippingFee") || "Phí vận chuyển"}</span>
               <strong>0 ₫</strong>
             </div>
             <div className="summary-row total">
-              <span>{t('cart.total') || 'Tổng cộng'}</span>
+              <span>{t("cart.total") || "Tổng cộng"}</span>
               <strong className="final-price">
                 {totalPrice.toLocaleString()} ₫
               </strong>

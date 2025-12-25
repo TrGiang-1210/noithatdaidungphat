@@ -27,6 +27,9 @@ const orderSchema = Joi.object({
         price: Joi.number().required(),
         name: Joi.string().required(),
         img_url: Joi.string().allow("", null),
+        selectedAttributes: Joi.object()
+          .pattern(Joi.string(), Joi.string())
+          .optional(), // ✅ THÊM DÒNG NÀY
       })
     )
     .min(1)
@@ -37,7 +40,9 @@ const orderSchema = Joi.object({
 // ✅ HELPER: Tạo mã đơn hàng unique
 const generateOrderCode = () => {
   const timestamp = Date.now().toString().slice(-8);
-  const random = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
+  const random = Math.floor(Math.random() * 1000)
+    .toString()
+    .padStart(3, "0");
   return `DH${timestamp}${random}`;
 };
 
@@ -56,22 +61,22 @@ module.exports = {
       // 1. KIỂM TRA VÀ TRỪ TỒN KHO (RESERVE)
       for (const item of items) {
         const product = await ProductService.getById(item.product_id);
-        
+
         if (!product) {
-          return res.status(404).json({ 
-            message: `Sản phẩm "${item.name}" không tồn tại` 
+          return res.status(404).json({
+            message: `Sản phẩm "${item.name}" không tồn tại`,
           });
         }
 
         if (product.quantity < item.quantity) {
-          return res.status(400).json({ 
-            message: `Sản phẩm "${item.name}" chỉ còn ${product.quantity} sản phẩm` 
+          return res.status(400).json({
+            message: `Sản phẩm "${item.name}" chỉ còn ${product.quantity} sản phẩm`,
           });
         }
 
         // TRỪ TỒN KHO NGAY LẬP TỨC
         await ProductService.update(item.product_id, {
-          quantity: product.quantity - item.quantity
+          quantity: product.quantity - item.quantity,
         });
       }
 
@@ -93,7 +98,7 @@ module.exports = {
           address: fullAddress,
         },
         note: note || "",
-        reservedUntil: new Date(Date.now() + 24 * 60 * 60 * 1000)
+        reservedUntil: new Date(Date.now() + 24 * 60 * 60 * 1000),
       });
 
       // 5. TẠO CHI TIẾT ĐƠN HÀNG
@@ -104,6 +109,7 @@ module.exports = {
         price: item.price,
         name: item.name,
         img_url: item.img_url || "",
+        selectedAttributes: item.selectedAttributes || {}, // ✅ LƯU THUỘC TÍNH ĐÃ CHỌN
       }));
 
       await OrderDetailService.createMany(detailDocs);
@@ -139,12 +145,12 @@ module.exports = {
         order_id: order._id,
         order_code: order.order_code,
         orderNumber: order.order_code,
-        reservedUntil: order.reservedUntil
+        reservedUntil: order.reservedUntil,
       });
     } catch (error) {
       console.error("Lỗi tạo đơn hàng:", error);
-      res.status(500).json({ 
-        message: error.message || "Lỗi tạo đơn hàng" 
+      res.status(500).json({
+        message: error.message || "Lỗi tạo đơn hàng",
       });
     }
   },
@@ -164,12 +170,12 @@ module.exports = {
       for (const item of items) {
         const product = await ProductService.getById(item.product_id);
         if (!product || product.quantity < item.quantity) {
-          return res.status(400).json({ 
-            message: `Sản phẩm "${item.name}" không đủ số lượng` 
+          return res.status(400).json({
+            message: `Sản phẩm "${item.name}" không đủ số lượng`,
           });
         }
         await ProductService.update(item.product_id, {
-          quantity: product.quantity - item.quantity
+          quantity: product.quantity - item.quantity,
         });
       }
 
@@ -190,7 +196,7 @@ module.exports = {
           address: fullAddress,
         },
         note: note || "",
-        reservedUntil: new Date(Date.now() + 24 * 60 * 60 * 1000)
+        reservedUntil: new Date(Date.now() + 24 * 60 * 60 * 1000),
       });
 
       const detailDocs = items.map((item) => ({
@@ -207,10 +213,17 @@ module.exports = {
       if (userId) await CartService.clearCart(userId).catch(() => {});
 
       const orderId = order._id.toString();
-      const redirectUrl = process.env.MOMO_REDIRECT_URL || "http://localhost:5173/momo-callback";
-      const ipnUrl = process.env.MOMO_IPN_URL || "http://localhost:5000/api/momo/webhook";
+      const redirectUrl =
+        process.env.MOMO_REDIRECT_URL || "http://localhost:5173/momo-callback";
+      const ipnUrl =
+        process.env.MOMO_IPN_URL || "http://localhost:5000/api/momo/webhook";
 
-      const momoRes = await createMomoPayment(orderId, total, redirectUrl, ipnUrl);
+      const momoRes = await createMomoPayment(
+        orderId,
+        total,
+        redirectUrl,
+        ipnUrl
+      );
 
       if (momoRes && momoRes.payUrl) {
         res.json({
@@ -232,9 +245,9 @@ module.exports = {
   getAllOrdersAdmin: async (req, res) => {
     try {
       const { status, sort = "created_at", order = "desc" } = req.query;
-      
+
       const filters = {};
-      if (status && status !== 'all') {
+      if (status && status !== "all") {
         filters.status = status;
       }
 
@@ -248,15 +261,16 @@ module.exports = {
             _id: order._id,
             orderNumber: order.order_code,
             customer: order.customer,
-            items: items.map(item => ({
+            items: items.map((item) => ({
               product: {
                 _id: item.product_id,
                 name: item.name,
                 images: [item.img_url],
-                sku: item.product_id.sku || "N/A"
+                sku: item.product_id.sku || "N/A",
               },
               quantity: item.quantity,
-              price: item.price
+              price: item.price,
+              selectedAttributes: item.selectedAttributes || {}, // ✅ THÊM DÒNG NÀY
             })),
             totalAmount: order.total,
             status: order.status,
@@ -264,7 +278,7 @@ module.exports = {
             note: order.note,
             createdAt: order.created_at,
             updatedAt: order.updated_at,
-            reservedUntil: order.reservedUntil
+            reservedUntil: order.reservedUntil,
           };
         })
       );
@@ -272,7 +286,9 @@ module.exports = {
       res.json(ordersWithDetails);
     } catch (error) {
       console.error("Error fetching orders:", error);
-      res.status(500).json({ message: error.message || "Lỗi khi lấy đơn hàng" });
+      res
+        .status(500)
+        .json({ message: error.message || "Lỗi khi lấy đơn hàng" });
     }
   },
 
@@ -290,15 +306,15 @@ module.exports = {
         _id: order._id,
         orderNumber: order.order_code,
         customer: order.customer,
-        items: items.map(item => ({
+        items: items.map((item) => ({
           product: {
             _id: item.product_id,
             name: item.name,
             images: [item.img_url],
-            sku: item.product_id.sku || "N/A"
+            sku: item.product_id.sku || "N/A",
           },
           quantity: item.quantity,
-          price: item.price
+          price: item.price,
         })),
         totalAmount: order.total,
         status: order.status,
@@ -306,10 +322,12 @@ module.exports = {
         note: order.note,
         createdAt: order.created_at,
         updatedAt: order.updated_at,
-        reservedUntil: order.reservedUntil
+        reservedUntil: order.reservedUntil,
       });
     } catch (error) {
-      res.status(500).json({ message: error.message || "Lỗi khi lấy đơn hàng" });
+      res
+        .status(500)
+        .json({ message: error.message || "Lỗi khi lấy đơn hàng" });
     }
   },
 
@@ -317,12 +335,20 @@ module.exports = {
   updateOrderStatus: async (req, res) => {
     try {
       const { status } = req.body;
-      
+
       if (!status) {
-        return res.status(400).json({ message: "Vui lòng cung cấp trạng thái mới" });
+        return res
+          .status(400)
+          .json({ message: "Vui lòng cung cấp trạng thái mới" });
       }
 
-      const validStatuses = ["Pending", "Confirmed", "Shipping", "Completed", "Cancelled"];
+      const validStatuses = [
+        "Pending",
+        "Confirmed",
+        "Shipping",
+        "Completed",
+        "Cancelled",
+      ];
       if (!validStatuses.includes(status)) {
         return res.status(400).json({ message: "Trạng thái không hợp lệ" });
       }
@@ -335,7 +361,7 @@ module.exports = {
       // Cập nhật trạng thái
       const updated = await OrderService.update(req.params.id, {
         status,
-        updated_at: new Date()
+        updated_at: new Date(),
       });
 
       // Gửi email thông báo (nếu có)
@@ -354,11 +380,13 @@ module.exports = {
 
       res.json({
         message: "Cập nhật trạng thái thành công",
-        order: updated
+        order: updated,
       });
     } catch (error) {
       console.error("Error updating status:", error);
-      res.status(500).json({ message: error.message || "Lỗi cập nhật trạng thái" });
+      res
+        .status(500)
+        .json({ message: error.message || "Lỗi cập nhật trạng thái" });
     }
   },
 
@@ -372,8 +400,8 @@ module.exports = {
 
       // Chỉ cho phép hủy đơn Pending hoặc Confirmed
       if (!["Pending", "Confirmed"].includes(order.status)) {
-        return res.status(400).json({ 
-          message: "Chỉ được hủy đơn hàng đang chờ xác nhận hoặc đã xác nhận" 
+        return res.status(400).json({
+          message: "Chỉ được hủy đơn hàng đang chờ xác nhận hoặc đã xác nhận",
         });
       }
 
@@ -384,7 +412,7 @@ module.exports = {
           const product = await ProductService.getById(item.product_id);
           if (product) {
             await ProductService.update(item.product_id, {
-              quantity: product.quantity + item.quantity
+              quantity: product.quantity + item.quantity,
             });
             console.log(`✅ Hoàn ${item.quantity} sản phẩm ${item.name}`);
           }
@@ -396,12 +424,12 @@ module.exports = {
       // Cập nhật trạng thái đơn hàng
       const updated = await OrderService.update(req.params.id, {
         status: "Cancelled",
-        updated_at: new Date()
+        updated_at: new Date(),
       });
 
       res.json({
         message: "Đã hủy đơn hàng và hoàn tồn kho thành công",
-        order: updated
+        order: updated,
       });
     } catch (error) {
       console.error("Error cancelling order:", error);
@@ -419,13 +447,15 @@ module.exports = {
 
       // Xóa chi tiết đơn hàng
       await OrderDetailService.deleteByOrderId(order._id);
-      
+
       // Xóa đơn hàng
       await OrderService.delete(req.params.id);
 
       res.json({ message: "Đã xóa đơn hàng" });
     } catch (error) {
-      res.status(500).json({ message: error.message || "Lỗi khi xóa đơn hàng" });
+      res
+        .status(500)
+        .json({ message: error.message || "Lỗi khi xóa đơn hàng" });
     }
   },
 
@@ -444,7 +474,7 @@ module.exports = {
         shipping,
         completed,
         cancelled,
-        total: pending + confirmed + shipping + completed + cancelled
+        total: pending + confirmed + shipping + completed + cancelled,
       });
     } catch (error) {
       res.status(500).json({ message: error.message || "Lỗi lấy thống kê" });
@@ -472,7 +502,7 @@ module.exports = {
             totalAmount: order.total,
             status: order.status,
             paymentMethod: order.payment_method,
-            createdAt: order.created_at
+            createdAt: order.created_at,
           };
         })
       );
@@ -497,7 +527,9 @@ module.exports = {
 
       // Kiểm tra quyền sở hữu
       if (order.user_id.toString() !== req.user.id) {
-        return res.status(403).json({ message: "Bạn không có quyền xem đơn hàng này" });
+        return res
+          .status(403)
+          .json({ message: "Bạn không có quyền xem đơn hàng này" });
       }
 
       const items = await OrderDetailService.getByOrderId(order._id);
@@ -511,7 +543,7 @@ module.exports = {
         status: order.status,
         paymentMethod: order.payment_method,
         note: order.note,
-        createdAt: order.created_at
+        createdAt: order.created_at,
       });
     } catch (error) {
       res.status(500).json({ message: error.message || "Lỗi lấy đơn hàng" });
@@ -532,13 +564,15 @@ module.exports = {
 
       // Kiểm tra quyền sở hữu
       if (order.user_id.toString() !== req.user.id) {
-        return res.status(403).json({ message: "Bạn không có quyền hủy đơn hàng này" });
+        return res
+          .status(403)
+          .json({ message: "Bạn không có quyền hủy đơn hàng này" });
       }
 
       // Chỉ cho phép hủy đơn Pending
       if (order.status !== "Pending") {
-        return res.status(400).json({ 
-          message: "Chỉ được hủy đơn hàng đang chờ xác nhận" 
+        return res.status(400).json({
+          message: "Chỉ được hủy đơn hàng đang chờ xác nhận",
         });
       }
 
@@ -548,19 +582,19 @@ module.exports = {
         const product = await ProductService.getById(item.product_id);
         if (product) {
           await ProductService.update(item.product_id, {
-            quantity: product.quantity + item.quantity
+            quantity: product.quantity + item.quantity,
           });
         }
       }
 
       const updated = await OrderService.update(req.params.id, {
         status: "Cancelled",
-        updated_at: new Date()
+        updated_at: new Date(),
       });
 
       res.json({
         message: "Đã hủy đơn hàng thành công",
-        order: updated
+        order: updated,
       });
     } catch (error) {
       res.status(500).json({ message: error.message || "Lỗi hủy đơn hàng" });
@@ -573,8 +607,8 @@ module.exports = {
       const { orderNumber } = req.params;
 
       if (!orderNumber) {
-        return res.status(400).json({ 
-          message: "Vui lòng cung cấp mã đơn hàng" 
+        return res.status(400).json({
+          message: "Vui lòng cung cấp mã đơn hàng",
         });
       }
 
@@ -615,6 +649,7 @@ module.exports = {
           quantity: item.quantity,
           price: item.price.toLocaleString("vi-VN") + " ₫",
           img_url: item.img_url || "",
+          selectedAttributes: item.selectedAttributes || {}, // ✅ THÊM DÒNG NÀY
         })),
       });
     } catch (error) {
