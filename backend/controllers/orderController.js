@@ -601,7 +601,7 @@ module.exports = {
     }
   },
 
-  // ==================== PUBLIC: TRA CỨU ĐƠN HÀNG - ✅ CHỈ CẦN MÃ ĐƠN HÀNG ====================
+  // ==================== PUBLIC: TRA CỨU ĐƠN HÀNG - FINAL FIX ====================
   trackPublicByOrderNumber: async (req, res) => {
     try {
       const { orderNumber } = req.params;
@@ -643,18 +643,120 @@ module.exports = {
         address: order.customer.address,
         orderDate: new Date(order.created_at).toLocaleString("vi-VN"),
         totalAmount: order.total.toLocaleString("vi-VN") + " ₫",
-        paymentMethod: order.payment_method === "cod" ? "COD" : "Chuyển khoản",
-        items: items.map((item) => ({
-          name: item.name,
-          quantity: item.quantity,
-          price: item.price.toLocaleString("vi-VN") + " ₫",
-          img_url: item.img_url || "",
-          selectedAttributes: item.selectedAttributes || {}, // ✅ THÊM DÒNG NÀY
-        })),
+        paymentMethod:
+          order.payment_method === "cod"
+            ? "COD"
+            : order.payment_method === "momo"
+            ? "MoMo"
+            : "Chuyển khoản",
+        items: await Promise.all(
+          items.map(async (item) => {
+            // ✅ LẤY selectedAttributes VÀ LOẠI BỎ MONGOOSE INTERNAL FIELDS
+            let rawAttributes = {};
+
+            if (item.selectedAttributes) {
+              // Convert Mongoose object to plain object
+              if (typeof item.selectedAttributes.toObject === "function") {
+                rawAttributes = item.selectedAttributes.toObject();
+              } else if (typeof item.selectedAttributes.toJSON === "function") {
+                rawAttributes = item.selectedAttributes.toJSON();
+              } else {
+                rawAttributes = { ...item.selectedAttributes };
+              }
+
+              // ✅ LỌC BỎ CÁC FIELD NỘI BỘ CỦA MONGOOSE
+              rawAttributes = Object.fromEntries(
+                Object.entries(rawAttributes).filter(
+                  ([key]) => !key.startsWith("$") && !key.startsWith("_")
+                )
+              );
+            }
+
+            // ✅ Convert VALUE → LABEL
+            let attributeLabels = {};
+
+            if (rawAttributes && Object.keys(rawAttributes).length > 0) {
+              try {
+                const product = await ProductService.getById(item.product_id);
+
+                if (product && Array.isArray(product.attributes)) {
+                  for (const [attrName, attrValue] of Object.entries(
+                    rawAttributes
+                  )) {
+                    // ✅ Tìm attribute theo tên
+                    const attribute = product.attributes.find((attr) => {
+                      if (!attr || !attr.name) return false;
+                      const name =
+                        typeof attr.name === "object"
+                          ? attr.name.vi
+                          : attr.name;
+                      return name === attrName;
+                    });
+
+                    if (attribute && Array.isArray(attribute.options)) {
+                      // ✅ Tìm option theo value
+                      const option = attribute.options.find(
+                        (opt) => opt && opt.value === attrValue
+                      );
+
+                      if (option && option.label) {
+                        // ✅ Lấy label (ƯU TIÊN TIẾNG VIỆT)
+                        let label;
+                        if (typeof option.label === "object") {
+                          label =
+                            option.label.vi ||
+                            option.label.en ||
+                            String(option.label);
+                        } else {
+                          label = String(option.label);
+                        }
+
+                        attributeLabels[attrName] = String(label || attrValue);
+                        console.log(
+                          `✅ Convert: ${attrName} = ${attrValue} → ${attributeLabels[attrName]}`
+                        );
+                      } else {
+                        attributeLabels[attrName] = String(attrValue);
+                        console.log(
+                          `⚠️ Option not found for ${attrName}: ${attrValue}`
+                        );
+                      }
+                    } else {
+                      attributeLabels[attrName] = String(attrValue);
+                      console.log(`⚠️ Attribute not found: ${attrName}`);
+                    }
+                  }
+                } else {
+                  console.log(
+                    `⚠️ Product not found or no attributes: ${item.product_id}`
+                  );
+                  // Fallback: convert all values to string
+                  for (const [key, val] of Object.entries(rawAttributes)) {
+                    attributeLabels[key] = String(val);
+                  }
+                }
+              } catch (e) {
+                console.error("❌ Error converting attributes:", e);
+                // Fallback: convert all values to string
+                for (const [key, val] of Object.entries(rawAttributes)) {
+                  attributeLabels[key] = String(val);
+                }
+              }
+            }
+
+            return {
+              name: item.name || "N/A",
+              quantity: item.quantity || 0,
+              price: (item.price || 0).toLocaleString("vi-VN") + " ₫",
+              img_url: item.img_url || "",
+              selectedAttributes: attributeLabels, // ✅ CHỈ TRẢ VỀ PLAIN OBJECT VỚI STRING VALUES
+            };
+          })
+        ),
       });
     } catch (error) {
-      console.error("Error tracking order:", error);
-      res.status(500).json({ message: "Lỗi server" });
+      console.error("❌ Error tracking order:", error);
+      res.status(500).json({ message: "Lỗi server: " + error.message });
     }
   },
 
