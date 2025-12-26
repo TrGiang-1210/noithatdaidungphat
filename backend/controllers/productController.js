@@ -215,13 +215,20 @@ exports.searchProducts = async (req, res) => {
 // GET /api/products/:id
 exports.getProductById = async (req, res) => {
   try {
-    const { lang = 'vi' } = req.query;
+    const { lang = 'vi', raw } = req.query;  // ← THÊM PARAM raw
+    
     const p = await Product.findById(req.params.id)
       .populate('categories')
       .lean();
     
     if (!p) return res.status(404).json({ message: "Product not found" });
     
+    // ✅ NẾU raw=true → TRẢ VỀ NGUYÊN GỐC (KHÔNG TRANSFORM)
+    if (raw === 'true' || raw === true) {
+      return res.json(p);
+    }
+    
+    // ✅ NẾU KHÔNG → TRANSFORM NHƯ BÌNH THƯỜNG
     const transformed = transformProduct(p, lang);
     return res.json(transformed);
   } catch (err) {

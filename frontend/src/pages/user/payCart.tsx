@@ -1,4 +1,4 @@
-// src/pages/cart/payCart.tsx - MULTILINGUAL VERSION
+// src/pages/cart/payCart.tsx - WITH ATTRIBUTES DISPLAY
 import React, { useState, useEffect, useContext } from "react";
 import { useNavigate } from "react-router-dom";
 import "@/styles/pages/user/payCart.scss";
@@ -19,6 +19,11 @@ const PayCart: React.FC = () => {
   const { addOrder } = useOrder();
   const { cartItems, clearCart, reloadCart, removeItem } = useCart();
   const { user } = useContext(AuthContext);
+
+  // ✅ STATE ĐỂ LƯU ATTRIBUTES ĐÃ CONVERT
+  const [attributeLabels, setAttributeLabels] = useState<
+    Record<string, Record<string, string>>
+  >({});
 
   const [formData, setFormData] = useState({
     phone: "",
@@ -61,6 +66,132 @@ const PayCart: React.FC = () => {
       reloadCart().catch(() => {});
     }
   }, [reloadCart]);
+
+  // ✅ FETCH PRODUCT ATTRIBUTES ĐỂ CONVERT VALUE → LABEL
+  useEffect(() => {
+    console.log("⚡ useEffect triggered, cartItems length:", cartItems.length);
+
+    const fetchAttributeLabels = async () => {
+      const labels: Record<string, Record<string, string>> = {};
+
+      console.log("🔍 Processing cart items:", cartItems);
+
+      for (const item of cartItems) {
+        console.log(
+          "📦 Checking item:",
+          item.product._id,
+          "selectedAttributes:",
+          item.selectedAttributes
+        );
+
+        // ✅ KIỂM TRA selectedAttributes
+        if (!item.selectedAttributes) {
+          console.log("⚠️ No selectedAttributes on item");
+          continue;
+        }
+
+        if (Object.keys(item.selectedAttributes).length === 0) {
+          console.log("⚠️ Empty selectedAttributes");
+          continue;
+        }
+
+        try {
+          console.log("🔍 Fetching product:", item.product._id);
+
+          const res = await axiosInstance.get(
+            `/products/${item.product._id}?raw=true`
+          );
+          const product = res.data;
+
+          console.log("📦 Product attributes:", product.attributes);
+
+          if (product && Array.isArray(product.attributes)) {
+            const itemLabels: Record<string, string> = {};
+
+            for (const [attrName, attrValue] of Object.entries(
+              item.selectedAttributes
+            )) {
+              console.log(`🔍 Looking for: ${attrName} = ${attrValue}`);
+
+              // ✅ TÌM ATTRIBUTE
+              const attribute = product.attributes.find((attr: any) => {
+                if (!attr || !attr.name) return false;
+
+                // Case 1: attr.name là STRING
+                if (typeof attr.name === "string") {
+                  console.log(`   Checking: "${attr.name}" vs "${attrName}"`);
+                  return attr.name === attrName;
+                }
+
+                // Case 2: attr.name là OBJECT
+                if (typeof attr.name === "object") {
+                  const nameVi = attr.name.vi || "";
+                  const nameZh = attr.name.zh || "";
+                  console.log(
+                    `   Checking: "${nameVi}" or "${nameZh}" vs "${attrName}"`
+                  );
+                  return nameVi === attrName || nameZh === attrName;
+                }
+
+                return false;
+              });
+
+              if (attribute && Array.isArray(attribute.options)) {
+                console.log(`   ✅ Found attribute:`, attribute.name);
+
+                // TÌM OPTION
+                const option = attribute.options.find(
+                  (opt: any) => opt && opt.value === attrValue
+                );
+
+                if (option && option.label) {
+                  // LẤY LABEL
+                  let label;
+                  if (typeof option.label === "string") {
+                    label = option.label;
+                  } else if (typeof option.label === "object") {
+                    label =
+                      option.label.vi ||
+                      option.label.zh ||
+                      option.label.en ||
+                      String(option.label);
+                  } else {
+                    label = String(option.label);
+                  }
+
+                  itemLabels[attrName] = label;
+                  console.log(
+                    `   ✅ FOUND LABEL: ${attrName} = ${attrValue} → "${label}"`
+                  );
+                } else {
+                  itemLabels[attrName] = String(attrValue);
+                  console.log(`   ⚠️ Option not found for value: ${attrValue}`);
+                }
+              } else {
+                itemLabels[attrName] = String(attrValue);
+                console.log(`   ⚠️ Attribute "${attrName}" not found`);
+              }
+            }
+
+            labels[item.product._id] = itemLabels;
+            console.log(
+              `✅ Final labels for product ${item.product._id}:`,
+              itemLabels
+            );
+          }
+        } catch (error) {
+          console.error("❌ Error fetching attributes:", error);
+        }
+      }
+
+      console.log("🎯 ALL attributeLabels:", labels);
+      setAttributeLabels(labels);
+    };
+
+    if (cartItems.length > 0) {
+      fetchAttributeLabels();
+    }
+  }, [cartItems]);
 
   const handleChange = (
     e: React.ChangeEvent<
@@ -379,10 +510,39 @@ const PayCart: React.FC = () => {
 
                     <div className="item-info">
                       <h4>{getProductName(product.name)}</h4>
-                      <p>
-                        {t("product.size") || "Kích thước"}:{" "}
-                        {product.size || t("product.standard") || "Tiêu chuẩn"}
-                      </p>
+
+                      {/* ✅ HIỂN THỊ THUỘC TÍNH - SỬ DỤNG LABEL ĐÃ CONVERT */}
+                      {(() => {
+                        const attrs =
+                          item.selectedAttributes ||
+                          product.selectedAttributes ||
+                          {};
+                        const hasAttrs = Object.keys(attrs).length > 0;
+
+                        if (hasAttrs) {
+                          // Lấy labels đã convert (nếu có), nếu không thì dùng value gốc
+                          const labels = attributeLabels[product._id] || attrs;
+
+                          return (
+                            <div className="selected-attributes">
+                              {Object.entries(attrs).map(([key, value]) => (
+                                <span key={key} className="attr-item">
+                                  {key}: <strong>{labels[key] || value}</strong>
+                                </span>
+                              ))}
+                            </div>
+                          );
+                        }
+
+                        return (
+                          <p>
+                            {t("product.size") || "Kích thước"}:{" "}
+                            {product.size ||
+                              t("product.standard") ||
+                              "Tiêu chuẩn"}
+                          </p>
+                        );
+                      })()}
                     </div>
 
                     <div className="item-price">

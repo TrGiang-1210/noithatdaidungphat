@@ -75,20 +75,24 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({
   const lastToastTime = useRef<number>(0); // ← THÊM REF ĐỂ DEBOUNCE TOAST
 
   // Helper: chuẩn hóa product object
-  const normalizeProduct = (prod: any): Product => ({
-    _id: prod._id || prod.productId,
-    name: prod.name || "Sản phẩm không tên",
-    price: prod.priceSale ?? prod.price ?? 0,
-    images: Array.isArray(prod.images)
-      ? prod.images
-      : prod.image
-      ? [prod.image]
-      : prod.img_url
-      ? [prod.img_url]
-      : [],
-    size: prod.size,
-    selectedAttributes: prod.selectedAttributes || {}, // ✅ THÊM DÒNG NÀY
-  });
+  const normalizeProduct = (prod: any): Product => {
+    console.log("🔄 Normalizing product:", prod._id, prod.selectedAttributes);
+
+    return {
+      _id: prod._id || prod.productId,
+      name: prod.name || "Sản phẩm không tên",
+      price: prod.priceSale ?? prod.price ?? 0,
+      images: Array.isArray(prod.images)
+        ? prod.images
+        : prod.image
+        ? [prod.image]
+        : prod.img_url
+        ? [prod.img_url]
+        : [],
+      size: prod.size,
+      selectedAttributes: prod.selectedAttributes || {},
+    };
+  };
 
   // ← THÊM FUNCTION SHOW TOAST VỚI DEBOUNCE
   const showSuccessToast = (message: string) => {
@@ -119,6 +123,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({
         items: serverCart.items.map((item: any) => ({
           product: normalizeProduct(item.product || item),
           quantity: item.quantity || 1,
+          selectedAttributes: item.selectedAttributes || {}, // ✅ THÊM DÒNG NÀY
         })),
         totalQuantity:
           serverCart.totalQuantity ||
@@ -139,10 +144,19 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({
       if (raw) {
         const parsed = JSON.parse(raw);
         if (parsed && parsed.items && parsed.items.length > 0) {
-          const normalizedItems = parsed.items.map((item: any) => ({
-            product: normalizeProduct(item.product || item),
-            quantity: item.quantity || 1,
-          }));
+          const normalizedItems = parsed.items.map((item: any) => {
+            console.log(
+              "🔄 Loading local item:",
+              item.product?._id,
+              item.selectedAttributes
+            );
+
+            return {
+              product: normalizeProduct(item.product || item),
+              quantity: item.quantity || 1,
+              selectedAttributes: item.selectedAttributes || {}, // ✅ THÊM DÒNG NÀY
+            };
+          });
           const totalQty = normalizedItems.reduce(
             (s: number, i: any) => s + i.quantity,
             0
@@ -177,17 +191,23 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({
       const normalizedProduct = normalizeProduct(product);
       const token = localStorage.getItem("token");
 
+      console.log(
+        "➕ Adding to cart:",
+        normalizedProduct._id,
+        "with attributes:",
+        product.selectedAttributes
+      );
+
       if (token) {
         try {
           const res = await addToCartAPI(normalizedProduct._id, quantity);
-          // API thành công → reload từ server
           await loadCart();
-          showSuccessToast("Đã thêm vào giỏ hàng!"); // ← DÙNG DEBOUNCED TOAST
+          showSuccessToast("Đã thêm vào giỏ hàng!");
           return true;
         } catch (err: any) {
           console.error("Lỗi thêm giỏ hàng server:", err);
 
-          // VẪN THÊM VÀO LOCAL ĐỂ KHÔNG MẤT SẢN PHẨM
+          // ✅ VẪN THÊM VÀO LOCAL VỚI selectedAttributes
           setCart((prev) => {
             const existing = prev.items.find(
               (i) => i.product._id === normalizedProduct._id
@@ -199,8 +219,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({
                   ? {
                       ...i,
                       quantity: i.quantity + quantity,
-                      selectedAttributes:
-                        normalizedProduct.selectedAttributes || {}, // ✅ LƯU THUỘC TÍNH
+                      selectedAttributes: product.selectedAttributes || {}, // ✅ CẬP NHẬT THUỘC TÍNH
                     }
                   : i
               );
@@ -210,8 +229,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({
                 {
                   product: normalizedProduct,
                   quantity,
-                  selectedAttributes:
-                    normalizedProduct.selectedAttributes || {}, // ✅ LƯU THUỘC TÍNH
+                  selectedAttributes: product.selectedAttributes || {}, // ✅ LƯU THUỘC TÍNH
                 },
               ];
             }
@@ -221,13 +239,12 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({
             return newCart;
           });
 
-          // KHÔNG TOAST Ở ĐÂY vì đã toast ở catch block phía trên
-          showSuccessToast("Đã thêm vào giỏ hàng"); // ← DÙNG DEBOUNCED TOAST
+          showSuccessToast("Đã thêm vào giỏ hàng");
           return false;
         }
       }
 
-      // Guest flow (giữ nguyên nhưng dùng debounced toast)
+      // ✅ GUEST FLOW - LƯU selectedAttributes
       setCart((prev) => {
         const existing = prev.items.find(
           (i) => i.product._id === normalizedProduct._id
@@ -236,11 +253,22 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({
         if (existing) {
           newItems = prev.items.map((i) =>
             i.product._id === normalizedProduct._id
-              ? { ...i, quantity: i.quantity + quantity }
+              ? {
+                  ...i,
+                  quantity: i.quantity + quantity,
+                  selectedAttributes: product.selectedAttributes || {}, // ✅ CẬP NHẬT
+                }
               : i
           );
         } else {
-          newItems = [...prev.items, { product: normalizedProduct, quantity }];
+          newItems = [
+            ...prev.items,
+            {
+              product: normalizedProduct,
+              quantity,
+              selectedAttributes: product.selectedAttributes || {}, // ✅ LƯU
+            },
+          ];
         }
         const newTotal = newItems.reduce((s, i) => s + i.quantity, 0);
         const newCart = { items: newItems, totalQuantity: newTotal };
@@ -248,7 +276,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({
         return newCart;
       });
 
-      showSuccessToast("Đã thêm vào giỏ hàng!"); // ← DÙNG DEBOUNCED TOAST
+      showSuccessToast("Đã thêm vào giỏ hàng!");
       return false;
     },
     [loadCart]

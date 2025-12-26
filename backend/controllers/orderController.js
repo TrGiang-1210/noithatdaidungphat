@@ -601,7 +601,7 @@ module.exports = {
     }
   },
 
-  // ==================== PUBLIC: TRA CỨU ĐƠN HÀNG - FINAL FIX ====================
+  // ==================== PUBLIC: TRA CỨU ĐÔN HÀNG - MAP FIX ====================
   trackPublicByOrderNumber: async (req, res) => {
     try {
       const { orderNumber } = req.params;
@@ -651,39 +651,62 @@ module.exports = {
             : "Chuyển khoản",
         items: await Promise.all(
           items.map(async (item) => {
-            // ✅ LẤY selectedAttributes VÀ LOẠI BỎ MONGOOSE INTERNAL FIELDS
-            let rawAttributes = {};
+            // ✅ CONVERT MONGOOSE MAP → PLAIN OBJECT
+            let selectedAttributes = {};
 
             if (item.selectedAttributes) {
-              // Convert Mongoose object to plain object
-              if (typeof item.selectedAttributes.toObject === "function") {
-                rawAttributes = item.selectedAttributes.toObject();
-              } else if (typeof item.selectedAttributes.toJSON === "function") {
-                rawAttributes = item.selectedAttributes.toJSON();
-              } else {
-                rawAttributes = { ...item.selectedAttributes };
+              // Nếu là Mongoose Map
+              if (item.selectedAttributes instanceof Map) {
+                console.log("🗺️ Is Mongoose Map");
+                selectedAttributes = Object.fromEntries(
+                  item.selectedAttributes
+                );
               }
-
-              // ✅ LỌC BỎ CÁC FIELD NỘI BỘ CỦA MONGOOSE
-              rawAttributes = Object.fromEntries(
-                Object.entries(rawAttributes).filter(
-                  ([key]) => !key.startsWith("$") && !key.startsWith("_")
-                )
-              );
+              // Nếu là object có toObject()
+              else if (typeof item.selectedAttributes.toObject === "function") {
+                console.log("📄 Has toObject()");
+                const obj = item.selectedAttributes.toObject();
+                // Lọc bỏ internal fields
+                selectedAttributes = Object.fromEntries(
+                  Object.entries(obj).filter(
+                    ([key]) => !key.startsWith("$") && !key.startsWith("_")
+                  )
+                );
+              }
+              // Nếu là object có toJSON()
+              else if (typeof item.selectedAttributes.toJSON === "function") {
+                console.log("🔄 Has toJSON()");
+                const obj = item.selectedAttributes.toJSON();
+                selectedAttributes = Object.fromEntries(
+                  Object.entries(obj).filter(
+                    ([key]) => !key.startsWith("$") && !key.startsWith("_")
+                  )
+                );
+              }
+              // Fallback: plain object
+              else {
+                console.log("📦 Plain object");
+                selectedAttributes = { ...item.selectedAttributes };
+              }
             }
 
-            // ✅ Convert VALUE → LABEL
+            console.log("✅ Raw attributes:", selectedAttributes);
+
+            // ✅ CONVERT VALUE → LABEL
             let attributeLabels = {};
 
-            if (rawAttributes && Object.keys(rawAttributes).length > 0) {
+            if (
+              selectedAttributes &&
+              Object.keys(selectedAttributes).length > 0
+            ) {
               try {
                 const product = await ProductService.getById(item.product_id);
 
                 if (product && Array.isArray(product.attributes)) {
                   for (const [attrName, attrValue] of Object.entries(
-                    rawAttributes
+                    selectedAttributes
                   )) {
-                    // ✅ Tìm attribute theo tên
+                    // Tìm attribute theo tên
                     const attribute = product.attributes.find((attr) => {
                       if (!attr || !attr.name) return false;
                       const name =
@@ -694,13 +717,13 @@ module.exports = {
                     });
 
                     if (attribute && Array.isArray(attribute.options)) {
-                      // ✅ Tìm option theo value
+                      // Tìm option theo value
                       const option = attribute.options.find(
                         (opt) => opt && opt.value === attrValue
                       );
 
                       if (option && option.label) {
-                        // ✅ Lấy label (ƯU TIÊN TIẾNG VIỆT)
+                        // Lấy label (ưu tiên tiếng Việt)
                         let label;
                         if (typeof option.label === "object") {
                           label =
@@ -731,25 +754,27 @@ module.exports = {
                     `⚠️ Product not found or no attributes: ${item.product_id}`
                   );
                   // Fallback: convert all values to string
-                  for (const [key, val] of Object.entries(rawAttributes)) {
+                  for (const [key, val] of Object.entries(selectedAttributes)) {
                     attributeLabels[key] = String(val);
                   }
                 }
               } catch (e) {
                 console.error("❌ Error converting attributes:", e);
                 // Fallback: convert all values to string
-                for (const [key, val] of Object.entries(rawAttributes)) {
+                for (const [key, val] of Object.entries(selectedAttributes)) {
                   attributeLabels[key] = String(val);
                 }
               }
             }
+
+            console.log("✅ Final attributeLabels:", attributeLabels);
 
             return {
               name: item.name || "N/A",
               quantity: item.quantity || 0,
               price: (item.price || 0).toLocaleString("vi-VN") + " ₫",
               img_url: item.img_url || "",
-              selectedAttributes: attributeLabels, // ✅ CHỈ TRẢ VỀ PLAIN OBJECT VỚI STRING VALUES
+              selectedAttributes: attributeLabels, // ✅ PLAIN OBJECT với STRING VALUES
             };
           })
         ),
