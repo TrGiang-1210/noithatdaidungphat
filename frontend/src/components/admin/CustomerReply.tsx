@@ -346,7 +346,7 @@ const CustomerReply = () => {
     <div className="admin-chat-container">
       <div className="chat-rooms-sidebar">
         <div className="chat-sidebar-header">
-          <h3>Tin nhắn khách hàng</h3>
+          <h3>Quản lý tin nhắn khách hàng</h3>
           <div className="connection-status">
             <span className={`status-indicator ${isConnected ? 'connected' : 'disconnected'}`}></span>
             {isConnected ? 'Đang hoạt động' : 'Mất kết nối'}
