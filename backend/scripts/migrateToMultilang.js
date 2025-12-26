@@ -1,22 +1,18 @@
-// backend/scripts/migrateToMultilang.js
+// backend/scripts/migrateToMultilang.js - ✅ WITH ORDERS MIGRATION
 const mongoose = require('mongoose');
 const Product = require('../models/Product');
 const Category = require('../models/Category');
+const OrderDetail = require('../models/OrderDetail'); // ✅ THÊM
 require('dotenv').config();
 
 /**
  * Helper: Normalize field to multilingual format
  */
 function normalizeField(field, fieldName = 'field') {
-  // Nếu là string → convert sang {vi: string, zh: ''}
   if (typeof field === 'string') {
-    return {
-      vi: field,
-      zh: ''
-    };
+    return { vi: field, zh: '' };
   }
   
-  // Nếu là object nhưng thiếu vi hoặc zh
   if (typeof field === 'object' && field !== null) {
     return {
       vi: field.vi || field.en || field.default || '',
@@ -24,33 +20,22 @@ function normalizeField(field, fieldName = 'field') {
     };
   }
   
-  // Nếu null/undefined → default object
-  return {
-    vi: '',
-    zh: ''
-  };
+  return { vi: '', zh: '' };
 }
 
 /**
  * Check if field needs migration
  */
 function needsMigration(field) {
-  // String → cần migrate
-  if (typeof field === 'string') {
-    return true;
-  }
+  if (typeof field === 'string') return true;
   
-  // Object nhưng thiếu vi hoặc zh → cần migrate
   if (typeof field === 'object' && field !== null) {
     if (!field.hasOwnProperty('vi') || !field.hasOwnProperty('zh')) {
       return true;
     }
   }
   
-  // null/undefined → cần migrate
-  if (!field) {
-    return true;
-  }
+  if (!field) return true;
   
   return false;
 }
@@ -67,7 +52,6 @@ async function migrateProducts() {
       let needSave = false;
       const productName = product.name?.vi || product.name || product._id;
       
-      // Migrate name
       if (needsMigration(product.name)) {
         const oldName = product.name;
         product.name = normalizeField(product.name, 'name');
@@ -75,16 +59,13 @@ async function migrateProducts() {
         needSave = true;
       }
       
-      // Migrate description
       if (needsMigration(product.description)) {
         product.description = normalizeField(product.description, 'description');
         needSave = true;
       }
       
-      // Migrate attributes
       if (product.attributes && Array.isArray(product.attributes)) {
         product.attributes.forEach((attr, attrIdx) => {
-          // Migrate attribute name
           if (needsMigration(attr.name)) {
             const oldAttrName = attr.name;
             attr.name = normalizeField(attr.name, 'attribute.name');
@@ -92,7 +73,6 @@ async function migrateProducts() {
             needSave = true;
           }
           
-          // Migrate options
           if (attr.options && Array.isArray(attr.options)) {
             attr.options.forEach((option, optIdx) => {
               if (needsMigration(option.label)) {
@@ -108,7 +88,6 @@ async function migrateProducts() {
       
       if (needSave) {
         try {
-          // ✅ QUAN TRỌNG: Sử dụng updateOne thay vì save() để tránh validation issues
           await Product.updateOne(
             { _id: product._id },
             { 
@@ -155,7 +134,6 @@ async function migrateCategories() {
       let needSave = false;
       const categoryName = category.name?.vi || category.name || category._id;
       
-      // Migrate name
       if (needsMigration(category.name)) {
         const oldName = category.name;
         category.name = normalizeField(category.name, 'name');
@@ -163,7 +141,6 @@ async function migrateCategories() {
         needSave = true;
       }
       
-      // Migrate description
       if (needsMigration(category.description)) {
         category.description = normalizeField(category.description, 'description');
         needSave = true;
@@ -171,7 +148,6 @@ async function migrateCategories() {
       
       if (needSave) {
         try {
-          // ✅ QUAN TRỌNG: Sử dụng updateOne
           await Category.updateOne(
             { _id: category._id },
             { 
@@ -205,13 +181,79 @@ async function migrateCategories() {
   }
 }
 
+// ✅ NEW: Migrate OrderDetails
+async function migrateOrders() {
+  try {
+    console.log('📦 Migrating Order Details to multilingual format...\n');
+    
+    const orderDetails = await OrderDetail.find({});
+    let migrated = 0;
+    let skipped = 0;
+    
+    for (const detail of orderDetails) {
+      let needSave = false;
+      
+      // Migrate name
+      if (needsMigration(detail.name)) {
+        const oldName = detail.name;
+        detail.name = normalizeField(detail.name, 'name');
+        console.log(`📝 Order Item: "${oldName}" → {vi: "${detail.name.vi}", zh: "${detail.name.zh}"}`);
+        needSave = true;
+      }
+      
+      // Migrate selectedAttributes (Map)
+      if (detail.selectedAttributes && detail.selectedAttributes.size > 0) {
+        for (const [key, value] of detail.selectedAttributes.entries()) {
+          if (needsMigration(value)) {
+            const oldValue = value;
+            detail.selectedAttributes.set(key, normalizeField(value));
+            console.log(`  └─ Attribute "${key}": "${oldValue}" → {vi: "${detail.selectedAttributes.get(key).vi}", zh: ""}`);
+            needSave = true;
+          }
+        }
+      }
+      
+      if (needSave) {
+        try {
+          await OrderDetail.updateOne(
+            { _id: detail._id },
+            { 
+              $set: { 
+                name: detail.name,
+                selectedAttributes: detail.selectedAttributes
+              } 
+            }
+          );
+          migrated++;
+          console.log(`✅ Migrated order item ${detail._id}\n`);
+        } catch (saveError) {
+          console.error(`❌ Error saving order detail ${detail._id}:`, saveError.message);
+        }
+      } else {
+        skipped++;
+      }
+    }
+    
+    console.log('\n' + '='.repeat(60));
+    console.log(`✅ Order Details Migration Complete`);
+    console.log(`   Migrated: ${migrated}`);
+    console.log(`   Skipped: ${skipped}`);
+    console.log(`   Total: ${orderDetails.length}`);
+    console.log('='.repeat(60) + '\n');
+    
+  } catch (error) {
+    console.error('❌ Error migrating order details:', error);
+    throw error;
+  }
+}
+
 /**
  * Verify migration results
  */
 async function verifyMigration() {
   console.log('🔍 Verifying migration results...\n');
   
-  // Check products - ✅ FIX: Kiểm tra đúng cấu trúc
+  // Check products
   const productsWithIssues = await Product.find({}).lean();
   const problemProducts = productsWithIssues.filter(p => {
     return typeof p.name !== 'object' || 
@@ -227,6 +269,15 @@ async function verifyMigration() {
            !c.name.hasOwnProperty('vi') || 
            !c.name.hasOwnProperty('zh') ||
            !c.name.vi;
+  });
+  
+  // ✅ Check order details
+  const orderDetailsWithIssues = await OrderDetail.find({}).lean();
+  const problemOrderDetails = orderDetailsWithIssues.filter(od => {
+    return typeof od.name !== 'object' || 
+           !od.name.hasOwnProperty('vi') || 
+           !od.name.hasOwnProperty('zh') ||
+           !od.name.vi;
   });
   
   if (problemProducts.length > 0) {
@@ -255,6 +306,20 @@ async function verifyMigration() {
     console.log('✅ All categories migrated successfully!');
   }
   
+  // ✅ NEW
+  if (problemOrderDetails.length > 0) {
+    console.log(`⚠️  Found ${problemOrderDetails.length} order details with issues:`);
+    problemOrderDetails.slice(0, 5).forEach(od => {
+      console.log(`   - ${od._id}: name =`, JSON.stringify(od.name));
+    });
+    if (problemOrderDetails.length > 5) {
+      console.log(`   ... and ${problemOrderDetails.length - 5} more`);
+    }
+    console.log('');
+  } else {
+    console.log('✅ All order details migrated successfully!');
+  }
+  
   console.log('');
 }
 
@@ -266,6 +331,7 @@ async function run() {
     
     await migrateProducts();
     await migrateCategories();
+    await migrateOrders(); // ✅ THÊM
     await verifyMigration();
     
     console.log('🎉 All migrations completed!\n');
@@ -273,7 +339,7 @@ async function run() {
     console.log('   1. Restart your backend server');
     console.log('   2. Go to Admin Panel → Database Translation');
     console.log('   3. Click "Làm mới" to refresh stats');
-    console.log('   4. Click "Dịch X sản phẩm chưa dịch" to translate\n');
+    console.log('   4. Click "Dịch X items chưa dịch" to translate\n');
     
     process.exit(0);
   } catch (error) {

@@ -112,6 +112,7 @@ router.post('/upload-product-images', auth, admin, productUpload.array('images',
 router.get('/bulk-translate/stats', auth, admin, bulkTranslateController.getTranslationStats);
 router.post('/bulk-translate/products', auth, admin, bulkTranslateController.translateAllProducts);
 router.post('/bulk-translate/categories', auth, admin, bulkTranslateController.translateAllCategories);
+router.post('/bulk-translate/orders', auth, admin, bulkTranslateController.translateAllOrders);
 
 // ==================== TRANSLATION ROUTES (ĐẶT TRƯỚC ĐỂ TRÁNH CONFLICT) ====================
 // ✅ IMPORTANT: Đặt các routes cụ thể TRƯỚC các routes có params động

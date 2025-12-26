@@ -1,6 +1,7 @@
-// backend/controllers/bulkTranslateController.js
+// backend/controllers/bulkTranslateController.js - ✅ WITH ORDERS
 const Product = require('../models/Product');
 const Category = require('../models/Category');
+const OrderDetail = require('../models/OrderDetail'); // ✅ THÊM
 const aiTranslationService = require('../services/aiTranslation.service');
 
 /**
@@ -17,17 +18,14 @@ function getTextSafely(field, lang) {
  * Helper: Ensure field là object multilingual
  */
 function ensureMultilingualObject(field, sourceLang = 'vi') {
-  // Nếu là string → convert
   if (typeof field === 'string') {
     return { [sourceLang]: field, zh: '' };
   }
   
-  // Nếu null/undefined → tạo mới
   if (!field || typeof field !== 'object') {
     return { [sourceLang]: '', zh: '' };
   }
   
-  // Nếu đã là object → ensure có đủ keys
   return {
     [sourceLang]: field[sourceLang] || '',
     zh: field.zh || ''
@@ -41,7 +39,6 @@ exports.translateAllProducts = async (req, res) => {
   try {
     const { sourceLang = 'vi', targetLang = 'zh', force = false } = req.body;
     
-    // Query: Tìm products chưa có bản dịch hoặc force = true
     const query = force 
       ? {} 
       : { [`name.${targetLang}`]: { $in: ['', null] } };
@@ -67,7 +64,6 @@ exports.translateAllProducts = async (req, res) => {
       try {
         let needSave = false;
         
-        // ✅ Ensure name là object
         product.name = ensureMultilingualObject(product.name, sourceLang);
         const sourceName = product.name[sourceLang];
         
@@ -76,7 +72,6 @@ exports.translateAllProducts = async (req, res) => {
           continue;
         }
         
-        // Dịch name nếu chưa có
         if (!product.name[targetLang] || force) {
           const result = await aiTranslationService.translateWithClaude(
             sourceName, 
@@ -89,11 +84,9 @@ exports.translateAllProducts = async (req, res) => {
           console.log(`✅ Name: ${sourceName} → ${result.translation}`);
         }
         
-        // ✅ Ensure description là object
         product.description = ensureMultilingualObject(product.description, sourceLang);
         const sourceDesc = product.description[sourceLang];
         
-        // ✅ FIX: Chỉ dịch nếu có nội dung VÀ chưa dịch
         if (sourceDesc && sourceDesc.trim() && (!product.description[targetLang] || force)) {
           const result = await aiTranslationService.translateWithClaude(
             sourceDesc, 
@@ -106,14 +99,11 @@ exports.translateAllProducts = async (req, res) => {
           console.log(`✅ Description translated`);
         }
         
-        // ✅ FIX: Dịch attributes (nếu có)
         if (product.attributes && Array.isArray(product.attributes) && product.attributes.length > 0) {
           for (const attr of product.attributes) {
-            // ✅ Ensure attr.name là object
             attr.name = ensureMultilingualObject(attr.name, sourceLang);
             const attrName = attr.name[sourceLang];
             
-            // ✅ FIX: Kiểm tra có nội dung
             if (attrName && attrName.trim() && (!attr.name[targetLang] || force)) {
               const result = await aiTranslationService.translateWithClaude(
                 attrName,
@@ -126,14 +116,11 @@ exports.translateAllProducts = async (req, res) => {
               console.log(`  ✅ Attr: ${attrName} → ${result.translation}`);
             }
             
-            // ✅ FIX: Dịch attribute options
             if (attr.options && Array.isArray(attr.options) && attr.options.length > 0) {
               for (const option of attr.options) {
-                // ✅ Ensure option.label là object
                 option.label = ensureMultilingualObject(option.label, sourceLang);
                 const optionLabel = option.label[sourceLang];
                 
-                // ✅ FIX: Kiểm tra có nội dung
                 if (optionLabel && optionLabel.trim() && (!option.label[targetLang] || force)) {
                   const result = await aiTranslationService.translateWithClaude(
                     optionLabel,
@@ -151,7 +138,6 @@ exports.translateAllProducts = async (req, res) => {
         }
         
         if (needSave) {
-          // ✅ FIX: Dùng updateOne thay vì save() để tránh validation issues
           await Product.updateOne(
             { _id: product._id },
             { 
@@ -166,7 +152,6 @@ exports.translateAllProducts = async (req, res) => {
           console.log(`✅ Saved product ${product._id}\n`);
         }
         
-        // Delay để tránh rate limit
         await new Promise(resolve => setTimeout(resolve, 1500));
         
       } catch (err) {
@@ -233,7 +218,6 @@ exports.translateAllCategories = async (req, res) => {
       try {
         let needSave = false;
         
-        // ✅ Ensure name là object
         category.name = ensureMultilingualObject(category.name, sourceLang);
         const sourceName = category.name[sourceLang];
         
@@ -242,7 +226,6 @@ exports.translateAllCategories = async (req, res) => {
           continue;
         }
         
-        // Dịch name
         if (!category.name[targetLang] || force) {
           const result = await aiTranslationService.translateWithClaude(
             sourceName, 
@@ -255,11 +238,9 @@ exports.translateAllCategories = async (req, res) => {
           console.log(`✅ Category: ${sourceName} → ${result.translation}`);
         }
         
-        // ✅ Ensure description là object TRƯỚC KHI dịch
         category.description = ensureMultilingualObject(category.description, sourceLang);
         const sourceDesc = category.description[sourceLang];
         
-        // ✅ FIX: Chỉ dịch nếu có nội dung
         if (sourceDesc && sourceDesc.trim() && (!category.description[targetLang] || force)) {
           const result = await aiTranslationService.translateWithClaude(
             sourceDesc, 
@@ -320,6 +301,132 @@ exports.translateAllCategories = async (req, res) => {
   }
 };
 
+// ✅ NEW: Dịch tất cả order details
+exports.translateAllOrders = async (req, res) => {
+  try {
+    const { sourceLang = 'vi', targetLang = 'zh', force = false } = req.body;
+    
+    // Query: Tìm order details chưa có bản dịch
+    const query = force 
+      ? {} 
+      : { [`name.${targetLang}`]: { $in: ['', null] } };
+    
+    const orderDetails = await OrderDetail.find(query);
+    
+    if (orderDetails.length === 0) {
+      return res.json({
+        success: true,
+        message: 'Không có đơn hàng nào cần dịch',
+        translated: 0,
+        total: 0
+      });
+    }
+    
+    let translated = 0;
+    let failed = 0;
+    const errors = [];
+    
+    console.log(`📦 Starting translation for ${orderDetails.length} order items...`);
+    
+    for (const detail of orderDetails) {
+      try {
+        let needSave = false;
+        
+        // Dịch name
+        detail.name = ensureMultilingualObject(detail.name, sourceLang);
+        const sourceName = detail.name[sourceLang];
+        
+        if (!sourceName) {
+          console.warn(`⚠️  Order detail ${detail._id} has no name in ${sourceLang}, skipping...`);
+          continue;
+        }
+        
+        if (!detail.name[targetLang] || force) {
+          const result = await aiTranslationService.translateWithClaude(
+            sourceName, 
+            sourceLang, 
+            targetLang
+          );
+          
+          detail.name[targetLang] = result.translation;
+          needSave = true;
+          console.log(`✅ Name: ${sourceName} → ${result.translation}`);
+        }
+        
+        // Dịch selectedAttributes (Map)
+        if (detail.selectedAttributes && detail.selectedAttributes.size > 0) {
+          for (const [attrKey, attrValue] of detail.selectedAttributes.entries()) {
+            // Ensure attrValue là multilingual object
+            const normalizedValue = ensureMultilingualObject(attrValue, sourceLang);
+            const sourceAttrValue = normalizedValue[sourceLang];
+            
+            if (sourceAttrValue && sourceAttrValue.trim() && (!normalizedValue[targetLang] || force)) {
+              const result = await aiTranslationService.translateWithClaude(
+                sourceAttrValue,
+                sourceLang,
+                targetLang
+              );
+              
+              normalizedValue[targetLang] = result.translation;
+              detail.selectedAttributes.set(attrKey, normalizedValue);
+              needSave = true;
+              console.log(`  ✅ Attr "${attrKey}": ${sourceAttrValue} → ${result.translation}`);
+            } else {
+              // Cập nhật lại giá trị đã normalize
+              detail.selectedAttributes.set(attrKey, normalizedValue);
+            }
+          }
+        }
+        
+        if (needSave) {
+          await OrderDetail.updateOne(
+            { _id: detail._id },
+            { 
+              $set: { 
+                name: detail.name,
+                selectedAttributes: detail.selectedAttributes
+              } 
+            }
+          );
+          translated++;
+          console.log(`✅ Saved order detail ${detail._id}\n`);
+        }
+        
+        // Delay để tránh rate limit
+        await new Promise(resolve => setTimeout(resolve, 1500));
+        
+      } catch (err) {
+        failed++;
+        const itemName = getTextSafely(detail.name, sourceLang) || 'Unknown';
+        errors.push({
+          orderDetailId: detail._id,
+          itemName: itemName,
+          error: err.message
+        });
+        console.error(`❌ Failed to translate order detail ${detail._id}:`, err.message);
+      }
+    }
+    
+    console.log(`✅ Translation completed: ${translated} success, ${failed} failed`);
+    
+    res.json({
+      success: true,
+      message: `Đã dịch ${translated}/${orderDetails.length} mục đơn hàng`,
+      translated,
+      failed,
+      total: orderDetails.length,
+      errors: errors.length > 0 ? errors : undefined
+    });
+    
+  } catch (error) {
+    console.error('Error in translateAllOrders:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+};
+
 /**
  * Lấy thống kê translation
  */
@@ -339,6 +446,12 @@ exports.getTranslationStats = async (req, res) => {
       [`name.${targetLang}`]: { $exists: true, $ne: '' }
     });
     
+    // ✅ Đếm order details
+    const totalOrders = await OrderDetail.countDocuments({});
+    const translatedOrders = await OrderDetail.countDocuments({
+      [`name.${targetLang}`]: { $exists: true, $ne: '' }
+    });
+    
     res.json({
       success: true,
       data: {
@@ -353,6 +466,13 @@ exports.getTranslationStats = async (req, res) => {
           translated: translatedCategories,
           pending: totalCategories - translatedCategories,
           percentage: totalCategories > 0 ? Math.round((translatedCategories / totalCategories) * 100) : 0
+        },
+        // ✅ NEW
+        orders: {
+          total: totalOrders,
+          translated: translatedOrders,
+          pending: totalOrders - translatedOrders,
+          percentage: totalOrders > 0 ? Math.round((translatedOrders / totalOrders) * 100) : 0
         }
       }
     });
