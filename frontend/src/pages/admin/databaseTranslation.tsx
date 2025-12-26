@@ -15,18 +15,22 @@ interface TranslationStats {
     pending: number;
     percentage: number;
   };
+  orders: { // ✅ THÊM
+    total: number;
+    translated: number;
+    pending: number;
+    percentage: number;
+  };
 }
 
 const DatabaseTranslation: React.FC = () => {
   const [stats, setStats] = useState<TranslationStats | null>(null);
   const [loading, setLoading] = useState(false);
-  const [translating, setTranslating] = useState<'products' | 'categories' | null>(null);
+  const [translating, setTranslating] = useState<'products' | 'categories' | 'orders' | null>(null);
   const [progress, setProgress] = useState<string>('');
 
-  // Lấy token từ localStorage
   const getToken = () => localStorage.getItem('token');
 
-  // Load thống kê
   const loadStats = async () => {
     try {
       const token = getToken();
@@ -49,7 +53,6 @@ const DatabaseTranslation: React.FC = () => {
     loadStats();
   }, []);
 
-  // Dịch products
   const handleTranslateProducts = async (force: boolean = false) => {
     const confirmMsg = force 
       ? 'Bạn có chắc muốn DỊCH LẠI TẤT CẢ sản phẩm? (Kể cả đã dịch)'
@@ -81,13 +84,12 @@ const DatabaseTranslation: React.FC = () => {
       if (data.success) {
         toast.success(data.message || 'Dịch thành công!');
         
-        // Hiển thị chi tiết
         if (data.errors && data.errors.length > 0) {
           console.error('Translation errors:', data.errors);
           toast.error(`Có ${data.failed} sản phẩm lỗi, xem console để biết chi tiết`);
         }
         
-        await loadStats(); // Refresh stats
+        await loadStats();
       } else {
         toast.error(data.error || 'Có lỗi xảy ra');
       }
@@ -101,7 +103,6 @@ const DatabaseTranslation: React.FC = () => {
     }
   };
 
-  // Dịch categories
   const handleTranslateCategories = async (force: boolean = false) => {
     const confirmMsg = force 
       ? 'Bạn có chắc muốn DỊCH LẠI TẤT CẢ danh mục? (Kể cả đã dịch)'
@@ -152,12 +153,63 @@ const DatabaseTranslation: React.FC = () => {
     }
   };
 
+  // ✅ NEW: Dịch orders
+  const handleTranslateOrders = async (force: boolean = false) => {
+    const confirmMsg = force 
+      ? 'Bạn có chắc muốn DỊCH LẠI TẤT CẢ đơn hàng? (Kể cả đã dịch)'
+      : `Bạn có chắc muốn dịch ${stats?.orders.pending || 0} mục đơn hàng chưa dịch?`;
+    
+    if (!confirm(confirmMsg)) return;
+
+    setTranslating('orders');
+    setLoading(true);
+    setProgress('Đang chuẩn bị...');
+
+    try {
+      const token = getToken();
+      const res = await fetch('http://localhost:5000/api/admin/bulk-translate/orders', {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          sourceLang: 'vi',
+          targetLang: 'zh',
+          force
+        })
+      });
+
+      const data = await res.json();
+
+      if (data.success) {
+        toast.success(data.message || 'Dịch thành công!');
+        
+        if (data.errors && data.errors.length > 0) {
+          console.error('Translation errors:', data.errors);
+          toast.error(`Có ${data.failed} mục đơn hàng lỗi, xem console để biết chi tiết`);
+        }
+        
+        await loadStats();
+      } else {
+        toast.error(data.error || 'Có lỗi xảy ra');
+      }
+    } catch (error) {
+      console.error('Error translating orders:', error);
+      toast.error('Không thể dịch đơn hàng');
+    } finally {
+      setLoading(false);
+      setTranslating(null);
+      setProgress('');
+    }
+  };
+
   return (
     <div className="database-translation">
       <div className="page-header">
         <div className="header-content">
           <h1>Dịch Database</h1>
-          <p> Chuyển đổi cấu trúc dữ liệu trong DB từ string → Object đa ngôn ngữ</p>
+          <p>Chuyển đổi cấu trúc dữ liệu trong DB từ string → Object đa ngôn ngữ</p>
         </div>
         <button 
           className="btn-refresh" 
@@ -168,9 +220,9 @@ const DatabaseTranslation: React.FC = () => {
         </button>
       </div>
 
-      {/* Statistics */}
       {stats && (
         <div className="stats-grid">
+          {/* Products */}
           <div className="stat-card products">
             <div className="stat-header">
               <div className="stat-icon">📦</div>
@@ -227,6 +279,7 @@ const DatabaseTranslation: React.FC = () => {
             </div>
           </div>
 
+          {/* Categories */}
           <div className="stat-card categories">
             <div className="stat-header">
               <div className="stat-icon">📁</div>
@@ -282,10 +335,66 @@ const DatabaseTranslation: React.FC = () => {
               </button>
             </div>
           </div>
+
+          {/* ✅ NEW: Orders */}
+          <div className="stat-card orders">
+            <div className="stat-header">
+              <div className="stat-icon">🛒</div>
+              <h3>Đơn hàng (Orders)</h3>
+            </div>
+            
+            <div className="stat-numbers">
+              <div className="stat-row">
+                <span className="label">Tổng cộng:</span>
+                <span className="value">{stats.orders.total}</span>
+              </div>
+              <div className="stat-row">
+                <span className="label">Đã dịch:</span>
+                <span className="value success">{stats.orders.translated}</span>
+              </div>
+              <div className="stat-row">
+                <span className="label">Chưa dịch:</span>
+                <span className="value pending">{stats.orders.pending}</span>
+              </div>
+            </div>
+
+            <div className="progress-bar">
+              <div 
+                className="progress-fill orders"
+                style={{ width: `${stats.orders.percentage}%` }}
+              >
+                <span className="progress-text">{stats.orders.percentage}%</span>
+              </div>
+            </div>
+
+            <div className="stat-actions">
+              <button
+                className="btn btn-primary"
+                onClick={() => handleTranslateOrders(false)}
+                disabled={loading || stats.orders.pending === 0}
+              >
+                {translating === 'orders' ? (
+                  <>
+                    <span className="spinner"></span>
+                    Đang dịch...
+                  </>
+                ) : (
+                  <>✨ Dịch {stats.orders.pending} đơn hàng chưa dịch</>
+                )}
+              </button>
+              <button
+                className="btn btn-outline"
+                onClick={() => handleTranslateOrders(true)}
+                disabled={loading}
+                title="Dịch lại tất cả, kể cả đã dịch"
+              >
+                🔄 Dịch lại tất cả
+              </button>
+            </div>
+          </div>
         </div>
       )}
 
-      {/* Progress indicator */}
       {loading && (
         <div className="progress-indicator">
           <div className="spinner-large"></div>
@@ -294,7 +403,6 @@ const DatabaseTranslation: React.FC = () => {
         </div>
       )}
 
-      {/* Instructions */}
       <div className="instructions-section">
         <h3>📚 Hướng dẫn sử dụng:</h3>
         
@@ -302,7 +410,7 @@ const DatabaseTranslation: React.FC = () => {
           <div className="instruction-card">
             <div className="step-number">1</div>
             <h4>Kiểm tra thống kê</h4>
-            <p>Xem số lượng sản phẩm/danh mục chưa dịch ở phía trên</p>
+            <p>Xem số lượng items chưa dịch ở phía trên (Products, Categories, Orders)</p>
           </div>
 
           <div className="instruction-card">
@@ -320,7 +428,7 @@ const DatabaseTranslation: React.FC = () => {
           <div className="instruction-card">
             <div className="step-number">4</div>
             <h4>Kiểm tra kết quả</h4>
-            <p>Sau khi xong, vào trang Products/Categories để xem bản dịch</p>
+            <p>Sau khi xong, vào trang Products/Categories/Orders để xem bản dịch</p>
           </div>
         </div>
 
@@ -329,7 +437,7 @@ const DatabaseTranslation: React.FC = () => {
           <ul>
             <li><strong>Google Translate Free:</strong> Chất lượng dịch ổn nhưng không hoàn hảo, nên review lại</li>
             <li><strong>Delay 1.5s:</strong> Mỗi item có delay để tránh bị block bởi Google</li>
-            <li><strong>Attributes:</strong> Sản phẩm có attributes (màu sắc, kích thước) sẽ mất nhiều thời gian hơn</li>
+            <li><strong>Orders:</strong> Bao gồm tên sản phẩm và thuộc tính đã chọn (màu sắc, kích thước...)</li>
             <li><strong>Errors:</strong> Nếu có lỗi, xem console (F12) để biết chi tiết</li>
             <li><strong>Force mode:</strong> Chỉ dùng khi muốn dịch lại tất cả (cẩn thận!)</li>
           </ul>

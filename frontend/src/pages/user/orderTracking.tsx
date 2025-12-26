@@ -1,4 +1,4 @@
-// src/pages/orderTracking/OrderTracking.tsx - DEBUG VERSION
+// src/pages/orderTracking/OrderTracking.tsx - MULTILINGUAL WITH ATTRIBUTE KEY TRANSLATION
 import { useState, useEffect } from 'react';
 import axiosInstance from '@/axios';
 import '@/styles/pages/user/orderTracking.scss';
@@ -22,13 +22,12 @@ interface OrderTrackingResult {
     price: string;
     img_url?: string;
     images?: string[];
-    selectedAttributes?: Record<string, string>; // ← Backend field
-    attributes?: Record<string, string>; // ← Có thể backend dùng field này
+    selectedAttributes?: Record<string, string>;
   }>;
 }
 
 export default function OrderTrackingPage() {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const [orderNumber, setOrderNumber] = useState('');
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<OrderTrackingResult | null>(null);
@@ -63,24 +62,41 @@ export default function OrderTrackingPage() {
     try {
       const savedOrder = localStorage.getItem('lastTrackedOrder');
       const savedOrderNumber = localStorage.getItem('lastOrderNumber');
+      const savedLanguage = localStorage.getItem('lastOrderLanguage');
       
-      if (savedOrder) {
+      if (savedOrder && savedLanguage === language) {
         const order = JSON.parse(savedOrder);
         setResult(order);
         
         if (savedOrderNumber) setOrderNumber(savedOrderNumber);
+      } else if (savedOrder && savedLanguage !== language) {
+        localStorage.removeItem('lastTrackedOrder');
+        if (savedOrderNumber) {
+          setOrderNumber(savedOrderNumber);
+        }
       }
     } catch (err) {
       console.error('Error loading saved order:', err);
       localStorage.removeItem('lastTrackedOrder');
       localStorage.removeItem('lastOrderNumber');
+      localStorage.removeItem('lastOrderLanguage');
     }
-  }, []);
+  }, [language]);
 
-  const handleSearch = async (e: React.FormEvent) => {
+  useEffect(() => {
+    const savedOrderNumber = localStorage.getItem('lastOrderNumber');
+    if (savedOrderNumber && orderNumber) {
+      handleSearch(new Event('submit') as any, true);
+    }
+  }, [language]);
+
+  const handleSearch = async (e: React.FormEvent, silent: boolean = false) => {
     e.preventDefault();
-    setError('');
-    setResult(null);
+    
+    if (!silent) {
+      setError('');
+      setResult(null);
+    }
 
     if (!orderNumber.trim()) {
       setError(t('orderTracking.fillOrderCode') || 'Vui lòng nhập mã đơn hàng');
@@ -90,30 +106,27 @@ export default function OrderTrackingPage() {
     setLoading(true);
     try {
       const res = await axiosInstance.get(
-        `/orders/track/${orderNumber.toUpperCase().trim()}`
+        `/orders/track/${orderNumber.toUpperCase().trim()}?lang=${language}`
       );
       
-      console.log('✅ FULL API Response:', res.data);
-      console.log('✅ Items:', res.data.items);
-      
-      // 🔍 DEBUG: In ra item đầu tiên
-      if (res.data.items && res.data.items.length > 0) {
-        console.log('🔍 First Item FULL:', JSON.stringify(res.data.items[0], null, 2));
-        console.log('🔍 selectedAttributes:', res.data.items[0].selectedAttributes);
-        console.log('🔍 attributes:', res.data.items[0].attributes);
-      }
+      console.log('✅ API Response:', res.data);
+      console.log('✅ Language:', language);
       
       setResult(res.data);
+      
       localStorage.setItem('lastTrackedOrder', JSON.stringify(res.data));
       localStorage.setItem('lastOrderNumber', orderNumber.toUpperCase().trim());
+      localStorage.setItem('lastOrderLanguage', language);
       
     } catch (err: any) {
       console.error('❌ API Error:', err);
-      setError(
-        err.response?.data?.message || 
-        t('orderTracking.orderNotFound') || 
-        'Không tìm thấy đơn hàng với mã này'
-      );
+      if (!silent) {
+        setError(
+          err.response?.data?.message || 
+          t('orderTracking.orderNotFound') || 
+          'Không tìm thấy đơn hàng với mã này'
+        );
+      }
     } finally {
       setLoading(false);
     }
@@ -159,6 +172,7 @@ export default function OrderTrackingPage() {
     setError('');
     localStorage.removeItem('lastTrackedOrder');
     localStorage.removeItem('lastOrderNumber');
+    localStorage.removeItem('lastOrderLanguage');
   };
 
   return (
@@ -256,14 +270,11 @@ export default function OrderTrackingPage() {
                       const imageUrl = item.img_url || 
                                       (item.images && item.images.length > 0 ? item.images[0] : null);
                       
-                      // 🔍 TÌM ATTRIBUTES TỪ CẢ 2 FIELD
-                      const attrs = item.selectedAttributes || item.attributes || {};
+                      const attrs = item.selectedAttributes || {};
                       
-                      console.log(`📦 Item ${idx} Render:`, {
+                      console.log(`📦 Item ${idx} (${language}):`, {
                         name: item.name,
-                        selectedAttributes: item.selectedAttributes,
-                        attributes: item.attributes,
-                        using: attrs
+                        selectedAttributes: item.selectedAttributes
                       });
                       
                       return (
@@ -285,7 +296,7 @@ export default function OrderTrackingPage() {
                               {t('orderTracking.quantity') || 'Số lượng'}: {item.quantity || 0}
                             </div>
                             
-                            {/* ✅ HIỂN THỊ THUỘC TÍNH - HỖ TRỢ CẢ 2 FIELD */}
+                            {/* ✅ CẢ KEYS VÀ VALUES ĐÃ ĐƯỢC BACKEND DỊCH */}
                             {attrs && typeof attrs === 'object' && Object.keys(attrs).length > 0 && (
                               <div className="item-attributes">
                                 {Object.entries(attrs).map(([key, value]) => {
@@ -305,7 +316,7 @@ export default function OrderTrackingPage() {
                       );
                     })
                   ) : (
-                    <p>Không có sản phẩm nào</p>
+                    <p>{t('orderTracking.noProducts') || 'Không có sản phẩm nào'}</p>
                   )}
                 </div>
 

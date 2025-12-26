@@ -279,6 +279,17 @@
     }
   }
 
+  // ✅ THÊM class cho orders card
+  .stat-card.orders {
+    .stat-icon {
+      // background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+    }
+
+    .progress-fill.orders {
+      background: linear-gradient(90deg, #f093fb 0%, #f5576c 100%);
+    }
+  }
+
   // ==================== PROGRESS INDICATOR ====================
   .progress-indicator {
     background: white;

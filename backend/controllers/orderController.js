@@ -46,6 +46,16 @@ const generateOrderCode = () => {
   return `DH${timestamp}${random}`;
 };
 
+// ✅ Helper: Get text by language
+function getTextByLang(field, lang = "vi") {
+  if (!field) return "";
+  if (typeof field === "string") return field;
+  if (typeof field === "object") {
+    return field[lang] || field.vi || field.en || "";
+  }
+  return "";
+}
+
 module.exports = {
   // ==================== PUBLIC: TẠO ĐƠN HÀNG (COD/BANK) ====================
   createOrder: async (req, res) => {
@@ -601,10 +611,11 @@ module.exports = {
     }
   },
 
-  // ==================== PUBLIC: TRA CỨU ĐÔN HÀNG - MAP FIX ====================
+  // ==================== PUBLIC: TRA CỨU ĐƠN HÀNG - MULTILINGUAL ====================
   trackPublicByOrderNumber: async (req, res) => {
     try {
       const { orderNumber } = req.params;
+      const lang = req.query.lang || "vi";
 
       if (!orderNumber) {
         return res.status(400).json({
@@ -651,49 +662,40 @@ module.exports = {
             : "Chuyển khoản",
         items: await Promise.all(
           items.map(async (item) => {
+            // ✅ GET NAME BY LANGUAGE
+            const itemName = getTextByLang(item.name, lang);
+
             // ✅ CONVERT MONGOOSE MAP → PLAIN OBJECT
             let selectedAttributes = {};
 
             if (item.selectedAttributes) {
-              // Nếu là Mongoose Map
               if (item.selectedAttributes instanceof Map) {
-                console.log("🗺️ Is Mongoose Map");
                 selectedAttributes = Object.fromEntries(
                   item.selectedAttributes
                 );
-              }
-              // Nếu là object có toObject()
-              else if (typeof item.selectedAttributes.toObject === "function") {
-                console.log("📄 Has toObject()");
+              } else if (
+                typeof item.selectedAttributes.toObject === "function"
+              ) {
                 const obj = item.selectedAttributes.toObject();
-                // Lọc bỏ internal fields
                 selectedAttributes = Object.fromEntries(
                   Object.entries(obj).filter(
                     ([key]) => !key.startsWith("$") && !key.startsWith("_")
                   )
                 );
-              }
-              // Nếu là object có toJSON()
-              else if (typeof item.selectedAttributes.toJSON === "function") {
-                console.log("🔄 Has toJSON()");
+              } else if (typeof item.selectedAttributes.toJSON === "function") {
                 const obj = item.selectedAttributes.toJSON();
                 selectedAttributes = Object.fromEntries(
                   Object.entries(obj).filter(
                     ([key]) => !key.startsWith("$") && !key.startsWith("_")
                   )
                 );
-              }
-              // Fallback: plain object
-              else {
-                console.log("📦 Plain object");
+              } else {
                 selectedAttributes = { ...item.selectedAttributes };
               }
             }
 
-            console.log("✅ Raw attributes:", selectedAttributes);
-
-            // ✅ CONVERT VALUE → LABEL
-            let attributeLabels = {};
+            // ✅ TRANSLATE BOTH KEYS AND VALUES
+            let translatedAttributes = {};
 
             if (
               selectedAttributes &&
@@ -703,78 +705,86 @@ module.exports = {
                 const product = await ProductService.getById(item.product_id);
 
                 if (product && Array.isArray(product.attributes)) {
-                  for (const [attrName, attrValue] of Object.entries(
+                  for (const [viAttrName, viAttrValue] of Object.entries(
                     selectedAttributes
                   )) {
-                    // Tìm attribute theo tên
+                    // 1️⃣ Tìm attribute trong product theo tên tiếng Việt
                     const attribute = product.attributes.find((attr) => {
                       if (!attr || !attr.name) return false;
-                      const name =
-                        typeof attr.name === "object"
-                          ? attr.name.vi
-                          : attr.name;
-                      return name === attrName;
+                      const name = getTextByLang(attr.name, "vi");
+                      return name === viAttrName;
                     });
 
-                    if (attribute && Array.isArray(attribute.options)) {
-                      // Tìm option theo value
-                      const option = attribute.options.find(
-                        (opt) => opt && opt.value === attrValue
-                      );
+                    if (attribute) {
+                      // 2️⃣ DỊCH KEY (attribute name)
+                      const translatedKey = getTextByLang(attribute.name, lang);
 
-                      if (option && option.label) {
-                        // Lấy label (ưu tiên tiếng Việt)
-                        let label;
-                        if (typeof option.label === "object") {
-                          label =
-                            option.label.vi ||
-                            option.label.en ||
-                            String(option.label);
+                      // 3️⃣ DỊCH VALUE (option label)
+                      if (Array.isArray(attribute.options)) {
+                        const valueToMatch =
+                          typeof viAttrValue === "string"
+                            ? viAttrValue
+                            : getTextByLang(viAttrValue, "vi");
+
+                        const option = attribute.options.find(
+                          (opt) => opt && opt.value === valueToMatch
+                        );
+
+                        if (option && option.label) {
+                          const translatedValue = getTextByLang(
+                            option.label,
+                            lang
+                          );
+                          translatedAttributes[translatedKey] = translatedValue;
+
+                          console.log(
+                            `✅ Translated: "${viAttrName}: ${viAttrValue}" → "${translatedKey}: ${translatedValue}" (${lang})`
+                          );
                         } else {
-                          label = String(option.label);
+                          translatedAttributes[translatedKey] =
+                            getTextByLang(viAttrValue, lang) ||
+                            String(viAttrValue);
                         }
-
-                        attributeLabels[attrName] = String(label || attrValue);
-                        console.log(
-                          `✅ Convert: ${attrName} = ${attrValue} → ${attributeLabels[attrName]}`
-                        );
                       } else {
-                        attributeLabels[attrName] = String(attrValue);
-                        console.log(
-                          `⚠️ Option not found for ${attrName}: ${attrValue}`
-                        );
+                        translatedAttributes[translatedKey] =
+                          getTextByLang(viAttrValue, lang) ||
+                          String(viAttrValue);
                       }
                     } else {
-                      attributeLabels[attrName] = String(attrValue);
-                      console.log(`⚠️ Attribute not found: ${attrName}`);
+                      // Fallback: không tìm thấy attribute → giữ nguyên
+                      translatedAttributes[viAttrName] =
+                        getTextByLang(viAttrValue, lang) || String(viAttrValue);
+                      console.log(`⚠️ Attribute not found: ${viAttrName}`);
                     }
                   }
                 } else {
                   console.log(
                     `⚠️ Product not found or no attributes: ${item.product_id}`
                   );
-                  // Fallback: convert all values to string
+                  // Fallback: convert all values by language
                   for (const [key, val] of Object.entries(selectedAttributes)) {
-                    attributeLabels[key] = String(val);
+                    translatedAttributes[key] =
+                      getTextByLang(val, lang) || String(val);
                   }
                 }
               } catch (e) {
-                console.error("❌ Error converting attributes:", e);
-                // Fallback: convert all values to string
+                console.error("❌ Error translating attributes:", e);
+                // Fallback: convert all values by language
                 for (const [key, val] of Object.entries(selectedAttributes)) {
-                  attributeLabels[key] = String(val);
+                  translatedAttributes[key] =
+                    getTextByLang(val, lang) || String(val);
                 }
               }
             }
 
-            console.log("✅ Final attributeLabels:", attributeLabels);
+            console.log("✅ Final translatedAttributes:", translatedAttributes);
 
             return {
-              name: item.name || "N/A",
+              name: itemName || "N/A",
               quantity: item.quantity || 0,
               price: (item.price || 0).toLocaleString("vi-VN") + " ₫",
               img_url: item.img_url || "",
-              selectedAttributes: attributeLabels, // ✅ PLAIN OBJECT với STRING VALUES
+              selectedAttributes: translatedAttributes, // ✅ BOTH KEYS AND VALUES TRANSLATED
             };
           })
         ),
