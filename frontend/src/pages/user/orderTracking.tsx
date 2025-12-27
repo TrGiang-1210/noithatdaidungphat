@@ -296,15 +296,19 @@ export default function OrderTrackingPage() {
                               {t('orderTracking.quantity') || 'Số lượng'}: {item.quantity || 0}
                             </div>
                             
-                            {/* ✅ CẢ KEYS VÀ VALUES ĐÃ ĐƯỢC BACKEND DỊCH */}
+                            {/* ✅ CẢ KEYS VÀ VALUES ĐÃ ĐƯỢC BACKEND DỊCH - CHỈ CẦN HIỂN THỊ */}
                             {attrs && typeof attrs === 'object' && Object.keys(attrs).length > 0 && (
                               <div className="item-attributes">
-                                {Object.entries(attrs).map(([key, value]) => {
+                                {Object.entries(attrs).map(([key, value], attrIdx) => {
+                                  // ✅ Backend đã dịch cả key và value, chỉ cần hiển thị
+                                  const displayKey = String(key || 'N/A');
                                   const displayValue = String(value || 'N/A');
                                   
+                                  console.log(`🎯 Displaying attribute: ${displayKey} = ${displayValue}`);
+                                  
                                   return (
-                                    <span key={key} className="attribute-badge">
-                                      <strong>{key}:</strong> {displayValue}
+                                    <span key={`${idx}-${attrIdx}-${displayKey}`} className="attribute-badge">
+                                      <strong>{displayKey}:</strong> {displayValue}
                                     </span>
                                   );
                                 })}
