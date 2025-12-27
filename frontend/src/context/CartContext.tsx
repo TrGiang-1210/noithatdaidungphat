@@ -1,4 +1,4 @@
-// src/contexts/CartContext.tsx - FIXED VERSION
+// src/contexts/CartContext.tsx - FIXED WITH LANGUAGE SUPPORT
 import React, {
   createContext,
   useCallback,
@@ -16,23 +16,24 @@ import {
 } from "@/api/user/cartAPI";
 import { toast } from "react-toastify";
 import { useLanguage } from "@/context/LanguageContext";
+import axiosInstance from "../axios";
 
 type Product = {
   _id: string;
-  name: string;
+  name: any; // ✅ Đổi thành any để support cả string và object multilingual
   price: number;
   priceSale?: number;
   images?: string[];
   image?: string;
   img_url?: string;
   size?: string;
-  selectedAttributes?: Record<string, string>; // ✅ THÊM FIELD NÀY
+  selectedAttributes?: Record<string, string>;
 };
 
 type CartItem = {
   product: Product;
   quantity: number;
-  selectedAttributes?: Record<string, string>; // ✅ THÊM FIELD NÀY
+  selectedAttributes?: Record<string, string>;
 };
 
 type CartShape = {
@@ -74,15 +75,15 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({
 }) => {
   const { language } = useLanguage();
   const [cart, setCart] = useState<CartShape>(defaultCart);
-  const lastToastTime = useRef<number>(0); // ← THÊM REF ĐỂ DEBOUNCE TOAST
+  const lastToastTime = useRef<number>(0);
 
-  // Helper: chuẩn hóa product object
+  // ✅ Helper: chuẩn hóa product object (GIỮ NGUYÊN MULTILINGUAL NAME)
   const normalizeProduct = (prod: any): Product => {
-    console.log("🔄 Normalizing product:", prod._id, prod.selectedAttributes);
+    console.log("📄 Normalizing product:", prod._id, "name:", prod.name);
 
     return {
       _id: prod._id || prod.productId,
-      name: prod.name || "Sản phẩm không tên",
+      name: prod.name || "Sản phẩm không tên", // ✅ Giữ nguyên object/string
       price: prod.priceSale ?? prod.price ?? 0,
       images: Array.isArray(prod.images)
         ? prod.images
@@ -96,17 +97,15 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({
     };
   };
 
-  // ← THÊM FUNCTION SHOW TOAST VỚI DEBOUNCE
   const showSuccessToast = (message: string) => {
     const now = Date.now();
-    // Chỉ show toast nếu đã qua 1 giây kể từ toast trước
     if (now - lastToastTime.current > 1000) {
       toast.success(message);
       lastToastTime.current = now;
     }
   };
 
-  // Load cart từ server hoặc localStorage
+  // ✅ Load cart từ server hoặc localStorage
   const loadCart = useCallback(async () => {
     const token = localStorage.getItem("token");
 
@@ -125,7 +124,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({
         items: serverCart.items.map((item: any) => ({
           product: normalizeProduct(item.product || item),
           quantity: item.quantity || 1,
-          selectedAttributes: item.selectedAttributes || {}, // ✅ THÊM DÒNG NÀY
+          selectedAttributes: item.selectedAttributes || {},
         })),
         totalQuantity:
           serverCart.totalQuantity ||
@@ -135,7 +134,6 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({
           ),
       };
       setCart(normalized);
-      // XÓA local để tránh xung đột
       localStorage.removeItem("cart_local");
       return;
     }
@@ -146,19 +144,11 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({
       if (raw) {
         const parsed = JSON.parse(raw);
         if (parsed && parsed.items && parsed.items.length > 0) {
-          const normalizedItems = parsed.items.map((item: any) => {
-            console.log(
-              "🔄 Loading local item:",
-              item.product?._id,
-              item.selectedAttributes
-            );
-
-            return {
-              product: normalizeProduct(item.product || item),
-              quantity: item.quantity || 1,
-              selectedAttributes: item.selectedAttributes || {}, // ✅ THÊM DÒNG NÀY
-            };
-          });
+          const normalizedItems = parsed.items.map((item: any) => ({
+            product: normalizeProduct(item.product || item),
+            quantity: item.quantity || 1,
+            selectedAttributes: item.selectedAttributes || {},
+          }));
           const totalQty = normalizedItems.reduce(
             (s: number, i: any) => s + i.quantity,
             0
@@ -171,20 +161,84 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({
       console.error("Lỗi parse local cart", e);
     }
 
-    // Cuối cùng nếu cả 2 đều rỗng
     setCart(defaultCart);
   }, []);
 
+  // ✅ FETCH LẠI PRODUCT INFO KHI ĐỔI NGÔN NGỮ
   useEffect(() => {
-    // ✅ Reload cart khi đổi ngôn ngữ
-    loadCart();
-  }, [language, loadCart]); // ← Phụ thuộc vào language
+    console.log("🔄 Language changed to:", language, "- Refetching products...");
+
+    const refetchProducts = async () => {
+      if (cart.items.length === 0) {
+        console.log("⚠️ Cart is empty, skipping refetch");
+        return;
+      }
+
+      try {
+        const updatedItems = await Promise.all(
+          cart.items.map(async (item) => {
+            try {
+              // ✅ Fetch product với language param
+              const res = await axiosInstance.get(
+                `/products/${item.product._id}?lang=${language}`
+              );
+
+              console.log(`✅ Refetched product ${item.product._id}:`, res.data.name);
+              console.log(`   Type of name:`, typeof res.data.name);
+
+              // ✅ REBUILD product object hoàn toàn, không spread cũ
+              return {
+                ...item,
+                product: {
+                  _id: item.product._id,
+                  name: res.data.name, // ✅ Lấy trực tiếp từ API
+                  price: item.product.price,
+                  priceSale: item.product.priceSale,
+                  images: item.product.images,
+                  image: item.product.image,
+                  img_url: item.product.img_url,
+                  size: item.product.size,
+                  selectedAttributes: item.product.selectedAttributes,
+                },
+              };
+            } catch (error) {
+              console.error(`❌ Error fetching product ${item.product._id}:`, error);
+              return item; // Giữ nguyên nếu lỗi
+            }
+          })
+        );
+
+        console.log("🎯 Setting cart with updated items:", updatedItems.map(i => i.product.name));
+
+        setCart((prev) => ({
+          ...prev,
+          items: updatedItems,
+        }));
+
+        // ✅ LƯU VÀO LOCALSTORAGE NGAY SAU KHI UPDATE (KHÔNG GỌI normalizeProduct)
+        try {
+          localStorage.setItem("cart_local", JSON.stringify({
+            items: updatedItems,
+            totalQuantity: updatedItems.reduce((s, i) => s + i.quantity, 0),
+          }));
+          console.log("💾 Saved updated cart to localStorage");
+        } catch (e) {
+          console.warn("Không lưu được localStorage", e);
+        }
+
+        console.log("✅ Cart updated successfully");
+      } catch (error) {
+        console.error("❌ Error refetching products:", error);
+      }
+    };
+
+    refetchProducts();
+  }, [language]); // ✅ Chỉ phụ thuộc vào language
 
   const reloadCart = useCallback(async () => {
     await loadCart();
   }, [loadCart]);
 
-  // Lưu localStorage (chỉ dùng cho guest)
   const persistLocalCart = (newCart: CartShape) => {
     try {
       localStorage.setItem("cart_local", JSON.stringify(newCart));
@@ -214,7 +268,6 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({
         } catch (err: any) {
           console.error("Lỗi thêm giỏ hàng server:", err);
 
-          // ✅ VẪN THÊM VÀO LOCAL VỚI selectedAttributes
           setCart((prev) => {
             const existing = prev.items.find(
               (i) => i.product._id === normalizedProduct._id
@@ -226,7 +279,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({
                   ? {
                       ...i,
                       quantity: i.quantity + quantity,
-                      selectedAttributes: product.selectedAttributes || {}, // ✅ CẬP NHẬT THUỘC TÍNH
+                      selectedAttributes: product.selectedAttributes || {},
                     }
                   : i
               );
@@ -236,7 +289,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({
                 {
                   product: normalizedProduct,
                   quantity,
-                  selectedAttributes: product.selectedAttributes || {}, // ✅ LƯU THUỘC TÍNH
+                  selectedAttributes: product.selectedAttributes || {},
                 },
               ];
             }
@@ -251,7 +304,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({
         }
       }
 
-      // ✅ GUEST FLOW - LƯU selectedAttributes
+      // GUEST FLOW
       setCart((prev) => {
         const existing = prev.items.find(
           (i) => i.product._id === normalizedProduct._id
@@ -263,7 +316,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({
               ? {
                   ...i,
                   quantity: i.quantity + quantity,
-                  selectedAttributes: product.selectedAttributes || {}, // ✅ CẬP NHẬT
+                  selectedAttributes: product.selectedAttributes || {},
                 }
               : i
           );
@@ -273,7 +326,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({
             {
               product: normalizedProduct,
               quantity,
-              selectedAttributes: product.selectedAttributes || {}, // ✅ LƯU
+              selectedAttributes: product.selectedAttributes || {},
             },
           ];
         }

@@ -1,4 +1,4 @@
-// src/pages/cart/payCart.tsx - FIXED VERSION WITH useMemo LOCALIZATION
+// src/pages/cart/payCart.tsx - FIXED VERSION WITH KEY & VALUE TRANSLATION
 import React, { useState, useEffect, useContext, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import "@/styles/pages/user/payCart.scss";
@@ -20,9 +20,9 @@ const PayCart: React.FC = () => {
   const { cartItems, clearCart, reloadCart, removeItem } = useCart();
   const { user } = useContext(AuthContext);
 
-  // ✅ STATE ĐỂ LƯU ATTRIBUTES ĐÃ CONVERT
+  // ✅ STATE ĐỂ LƯU ATTRIBUTES ĐÃ CONVERT (BAO GỒM CẢ KEY VÀ VALUE)
   const [attributeLabels, setAttributeLabels] = useState<
-    Record<string, Record<string, string>>
+    Record<string, { keys: Record<string, string>; values: Record<string, string> }>
   >({});
 
   const [formData, setFormData] = useState({
@@ -81,12 +81,12 @@ const PayCart: React.FC = () => {
     }
   }, [language, reloadCart]);
 
-  // ✅ FETCH PRODUCT ATTRIBUTES ĐỂ CONVERT VALUE → LABEL
+  // ✅ FETCH PRODUCT ATTRIBUTES ĐỂ CONVERT VALUE → LABEL VÀ KEY → TRANSLATED KEY
   useEffect(() => {
     console.log("⚡ useEffect triggered, cartItems length:", cartItems.length);
 
     const fetchAttributeLabels = async () => {
-      const labels: Record<string, Record<string, string>> = {};
+      const labels: Record<string, { keys: Record<string, string>; values: Record<string, string> }> = {};
 
       for (const item of cartItems) {
         if (!item.selectedAttributes) continue;
@@ -99,7 +99,8 @@ const PayCart: React.FC = () => {
           const product = res.data;
 
           if (product && Array.isArray(product.attributes)) {
-            const itemLabels: Record<string, string> = {};
+            const translatedKeys: Record<string, string> = {};
+            const translatedValues: Record<string, string> = {};
 
             for (const [attrName, attrValue] of Object.entries(
               item.selectedAttributes
@@ -116,37 +117,54 @@ const PayCart: React.FC = () => {
                 return false;
               });
 
-              if (attribute && Array.isArray(attribute.options)) {
-                // TÌM OPTION
-                const option = attribute.options.find(
-                  (opt: any) => opt && opt.value === attrValue
-                );
+              if (attribute) {
+                // ✅ DỊCH KEY (TÊN THUỘC TÍNH)
+                let translatedKey = attrName;
+                if (typeof attribute.name === "object") {
+                  translatedKey = attribute.name[language] || attribute.name.vi || attrName;
+                } else if (typeof attribute.name === "string") {
+                  translatedKey = attribute.name;
+                }
+                translatedKeys[attrName] = translatedKey;
 
-                if (option && option.label) {
-                  // ✅ LẤY LABEL THEO NGÔN NGỮ HIỆN TẠI
-                  let label;
-                  if (typeof option.label === "string") {
-                    label = option.label;
-                  } else if (typeof option.label === "object") {
-                    label =
-                      option.label[language] ||
-                      option.label.vi ||
-                      option.label.zh ||
-                      String(option.label);
+                // ✅ DỊCH VALUE (GIÁ TRỊ THUỘC TÍNH)
+                if (Array.isArray(attribute.options)) {
+                  const option = attribute.options.find(
+                    (opt: any) => opt && opt.value === attrValue
+                  );
+
+                  if (option && option.label) {
+                    let label;
+                    if (typeof option.label === "string") {
+                      label = option.label;
+                    } else if (typeof option.label === "object") {
+                      label =
+                        option.label[language] ||
+                        option.label.vi ||
+                        option.label.zh ||
+                        String(option.label);
+                    } else {
+                      label = String(option.label);
+                    }
+
+                    translatedValues[attrName] = label;
                   } else {
-                    label = String(option.label);
+                    translatedValues[attrName] = String(attrValue);
                   }
-
-                  itemLabels[attrName] = label;
                 } else {
-                  itemLabels[attrName] = String(attrValue);
+                  translatedValues[attrName] = String(attrValue);
                 }
               } else {
-                itemLabels[attrName] = String(attrValue);
+                // Không tìm thấy attribute → giữ nguyên
+                translatedKeys[attrName] = attrName;
+                translatedValues[attrName] = String(attrValue);
               }
             }
 
-            labels[item.product._id] = itemLabels;
+            labels[item.product._id] = {
+              keys: translatedKeys,
+              values: translatedValues,
+            };
           }
         } catch (error) {
           console.error("❌ Error fetching attributes:", error);
@@ -503,7 +521,7 @@ const PayCart: React.FC = () => {
                     <div className="item-info">
                       <h4>{product.displayName}</h4>
 
-                      {/* ✅ HIỂN THỊ THUỘC TÍNH - SỬ DỤNG LABEL ĐÃ CONVERT */}
+                      {/* ✅ HIỂN THỊ THUỘC TÍNH - SỬ DỤNG LABEL ĐÃ CONVERT (CẢ KEY VÀ VALUE) */}
                       {(() => {
                         const attrs =
                           item.selectedAttributes ||
@@ -512,16 +530,22 @@ const PayCart: React.FC = () => {
                         const hasAttrs = Object.keys(attrs).length > 0;
 
                         if (hasAttrs) {
-                          // Lấy labels đã convert (nếu có), nếu không thì dùng value gốc
-                          const labels = attributeLabels[product._id] || attrs;
+                          // Lấy labels đã convert (nếu có)
+                          const productLabels = attributeLabels[product._id];
 
                           return (
                             <div className="selected-attributes">
-                              {Object.entries(attrs).map(([key, value]) => (
-                                <span key={key} className="attr-item">
-                                  {key}: <strong>{labels[key] || value}</strong>
-                                </span>
-                              ))}
+                              {Object.entries(attrs).map(([key, value]) => {
+                                // ✅ LẤY KEY VÀ VALUE ĐÃ DỊCH
+                                const translatedKey = productLabels?.keys?.[key] || key;
+                                const translatedValue = productLabels?.values?.[key] || value;
+
+                                return (
+                                  <span key={key} className="attr-item">
+                                    {translatedKey}: <strong>{translatedValue}</strong>
+                                  </span>
+                                );
+                              })}
                             </div>
                           );
                         }
