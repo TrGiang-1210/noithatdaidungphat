@@ -15,6 +15,7 @@ import {
   clearCartAPI,
 } from "@/api/user/cartAPI";
 import { toast } from "react-toastify";
+import { useLanguage } from "@/context/LanguageContext";
 
 type Product = {
   _id: string;
@@ -71,6 +72,7 @@ export const useCart = () => useContext(CartContext);
 export const CartProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
+  const { language } = useLanguage();
   const [cart, setCart] = useState<CartShape>(defaultCart);
   const lastToastTime = useRef<number>(0); // ← THÊM REF ĐỂ DEBOUNCE TOAST
 
@@ -172,6 +174,11 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({
     // Cuối cùng nếu cả 2 đều rỗng
     setCart(defaultCart);
   }, []);
+
+  useEffect(() => {
+    // ✅ Reload cart khi đổi ngôn ngữ
+    loadCart();
+  }, [language, loadCart]); // ← Phụ thuộc vào language
 
   const reloadCart = useCallback(async () => {
     await loadCart();
