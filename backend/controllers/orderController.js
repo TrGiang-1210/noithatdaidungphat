@@ -57,7 +57,7 @@ function getTextByLang(field, lang = "vi") {
 }
 
 module.exports = {
-  // ==================== PUBLIC: TẠO ĐƠN HÀNG (COD/BANK) ====================
+  // ==================== PUBLIC: TẠO ĐỚN HÀNG (COD/BANK) ====================
   createOrder: async (req, res) => {
     try {
       const { error } = orderSchema.validate(req.body);
@@ -104,23 +104,99 @@ module.exports = {
         total,
         status: "Pending",
         customer: {
-          ...customer,
+          ...customer, // ✅ GIỮ NGUYÊN THÔNG TIN KHÁCH HÀNG (tên, sđt họ điền)
           address: fullAddress,
         },
         note: note || "",
         reservedUntil: new Date(Date.now() + 24 * 60 * 60 * 1000),
       });
 
-      // 5. TẠO CHI TIẾT ĐƠN HÀNG
-      const detailDocs = items.map((item) => ({
-        order_id: order._id,
-        product_id: item.product_id,
-        quantity: item.quantity,
-        price: item.price,
-        name: item.name,
-        img_url: item.img_url || "",
-        selectedAttributes: item.selectedAttributes || {}, // ✅ LƯU THUỘC TÍNH ĐÃ CHỌN
-      }));
+      // 5. ✅ TẠO CHI TIẾT ĐƠN HÀNG - CONVERT ATTRIBUTES VỀ TIẾNG VIỆT
+      const detailDocs = await Promise.all(
+        items.map(async (item) => {
+          const product = await ProductService.getById(item.product_id);
+
+          let viAttributes = {};
+
+          if (
+            item.selectedAttributes &&
+            Object.keys(item.selectedAttributes).length > 0
+          ) {
+            for (const [key, value] of Object.entries(
+              item.selectedAttributes
+            )) {
+              let viKey = key;
+              let viValue = value;
+
+              if (product && Array.isArray(product.attributes)) {
+                const attribute = product.attributes.find((attr) => {
+                  if (!attr || !attr.name) return false;
+
+                  if (typeof attr.name === "string") {
+                    return attr.name === key;
+                  } else if (typeof attr.name === "object") {
+                    return attr.name.vi === key || attr.name.zh === key;
+                  }
+                  return false;
+                });
+
+                if (attribute) {
+                  viKey =
+                    typeof attribute.name === "object"
+                      ? attribute.name.vi
+                      : attribute.name;
+
+                  if (Array.isArray(attribute.options)) {
+                    const option = attribute.options.find(
+                      (opt) => opt.value === value
+                    );
+                    if (option && option.label) {
+                      viValue =
+                        typeof option.label === "object"
+                          ? option.label.vi
+                          : option.label;
+                    }
+                  }
+                }
+              }
+
+              viAttributes[viKey] = viValue;
+            }
+          }
+
+          // ✅ LẤY TÊN SẢN PHẨM TIẾNG VIỆT
+          let productName = "N/A";
+
+          // Case 1: item.name là object {vi: "...", zh: "..."}
+          if (typeof item.name === "object" && item.name !== null) {
+            productName =
+              item.name.vi || item.name.zh || item.name.en || String(item.name);
+          }
+          // Case 2: item.name là string
+          else if (typeof item.name === "string") {
+            productName = item.name;
+          }
+          // Case 3: Lấy từ product nếu item.name không có
+          else if (product && product.name) {
+            if (typeof product.name === "object") {
+              productName =
+                product.name.vi || product.name.zh || String(product.name);
+            } else {
+              productName = String(product.name);
+            }
+          }
+
+          return {
+            order_id: order._id,
+            product_id: item.product_id,
+            quantity: item.quantity,
+            price: item.price,
+            name: productName, // ✅ ĐÃ LẤY TIẾNG VIỆT
+            img_url: item.img_url || "",
+            selectedAttributes: viAttributes,
+          };
+        })
+      );
 
       await OrderDetailService.createMany(detailDocs);
 
@@ -251,7 +327,7 @@ module.exports = {
     }
   },
 
-  // ==================== ADMIN: LẤY TẤT CẢ ĐƠN HÀNG ====================
+  // ==================== ADMIN: LẤY TẤT CẢ ĐƠN HÀNG (TIẾNG VIỆT) ====================
   getAllOrdersAdmin: async (req, res) => {
     try {
       const { status, sort = "created_at", order = "desc" } = req.query;
@@ -267,21 +343,62 @@ module.exports = {
       const ordersWithDetails = await Promise.all(
         orders.map(async (order) => {
           const items = await OrderDetailService.getByOrderId(order._id);
+
           return {
             _id: order._id,
             orderNumber: order.order_code,
             customer: order.customer,
-            items: items.map((item) => ({
-              product: {
-                _id: item.product_id,
-                name: item.name,
-                images: [item.img_url],
-                sku: item.product_id.sku || "N/A",
-              },
-              quantity: item.quantity,
-              price: item.price,
-              selectedAttributes: item.selectedAttributes || {}, // ✅ THÊM DÒNG NÀY
-            })),
+            items: await Promise.all(
+              items.map(async (item) => {
+                const product = await ProductService.getById(item.product_id);
+
+                let flattenedAttributes = {};
+
+                if (item.selectedAttributes) {
+                  const attrs =
+                    item.selectedAttributes instanceof Map
+                      ? Object.fromEntries(item.selectedAttributes)
+                      : item.selectedAttributes;
+
+                  for (const [key, value] of Object.entries(attrs)) {
+                    const viKey = key;
+                    let viValue = value;
+                    if (typeof value === "object" && value !== null) {
+                      viValue = value.vi || value.zh || String(value);
+                    } else {
+                      viValue = String(value);
+                    }
+                    flattenedAttributes[viKey] = viValue;
+                  }
+                }
+
+                // ✅ LẤY TÊN TIẾNG VIỆT TỪ PRODUCT TRONG DB
+                let productNameVi = "N/A";
+                if (product && product.name) {
+                  if (typeof product.name === "object") {
+                    productNameVi =
+                      product.name.vi ||
+                      product.name.zh ||
+                      String(product.name);
+                  } else {
+                    productNameVi = product.name;
+                  }
+                }
+
+                return {
+                  product: {
+                    _id: item.product_id,
+                    name: productNameVi, // ✅ ĐÃ LẤY TIẾNG VIỆT
+                    images: [item.img_url],
+                    sku: product?.sku || "N/A",
+                    attributes: product?.attributes || [],
+                  },
+                  quantity: item.quantity,
+                  price: item.price,
+                  selectedAttributes: flattenedAttributes,
+                };
+              })
+            ),
             totalAmount: order.total,
             status: order.status,
             paymentMethod: order.payment_method,

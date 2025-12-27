@@ -1,4 +1,4 @@
-// src/admin/pages/OrderManager.tsx - WITH ATTRIBUTES DISPLAY
+// src/admin/pages/OrderManager.tsx - FIX LỖI OBJECT RENDERING
 import { useState, useEffect, useMemo } from "react";
 import {
   Package,
@@ -28,7 +28,7 @@ interface OrderItem {
   };
   quantity: number;
   price: number;
-  selectedAttributes?: Record<string, string>; // ✅ THÊM FIELD NÀY
+  selectedAttributes?: Record<string, string>;
 }
 
 interface Order {
@@ -74,7 +74,7 @@ export default function OrderManager() {
     return labels[method] || method;
   };
 
-  // ✅ Helper: Convert attribute value → label
+  // ✅ FIX: Đảm bảo luôn trả về STRING, không phải object
   const getAttributeLabel = (
     attributeName: string,
     value: string,
@@ -93,9 +93,14 @@ export default function OrderManager() {
     const option = attribute.options.find((opt: any) => opt.value === value);
     if (!option) return value;
 
-    const label =
-      typeof option.label === "object" ? option.label.vi : option.label;
-    return label || value;
+    // ✅ FIX: Nếu label là object {vi: "...", zh: "..."}, lấy .vi
+    // Nếu label là string, dùng luôn
+    let label = option.label;
+    if (typeof label === "object" && label !== null) {
+      label = label.vi || label.zh || value;
+    }
+    
+    return String(label || value); // ✅ Đảm bảo luôn trả về string
   };
 
   const fetchOrders = async () => {
@@ -121,7 +126,7 @@ export default function OrderManager() {
                 images: [],
                 sku: "N/A",
               },
-              selectedAttributes: item.selectedAttributes || {}, // ✅ LƯU THUỘC TÍNH
+              selectedAttributes: item.selectedAttributes || {},
             })),
         }));
 
@@ -698,7 +703,7 @@ export default function OrderManager() {
         </div>
       )}
 
-      {/* ✅ MODAL CHI TIẾT - CÓ HIỂN THỊ THUỘC TÍNH */}
+      {/* ✅ MODAL CHI TIẾT - CHỈ FIX LỖI RENDER OBJECT */}
       {showDetailModal && selectedOrder && (
         <div
           className="modal-overlay"
@@ -811,7 +816,7 @@ export default function OrderManager() {
                             SKU: {item.product?.sku || "N/A"}
                           </div>
 
-                          {/* ✅ HIỂN THỊ THUỘC TÍNH ĐÃ CHỌN */}
+                          {/* ✅ FIX: HIỂN THỊ THUỘC TÍNH - ĐẢM BẢO LUÔN LÀ STRING */}
                           {item.selectedAttributes &&
                             Object.keys(item.selectedAttributes).length > 0 && (
                               <div className="item-attributes">
@@ -822,7 +827,7 @@ export default function OrderManager() {
                                       {getAttributeLabel(
                                         key,
                                         value,
-                                        item.product._id
+                                        item.product
                                       )}
                                     </span>
                                   )

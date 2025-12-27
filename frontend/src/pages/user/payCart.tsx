@@ -1,5 +1,5 @@
-// src/pages/cart/payCart.tsx - WITH ATTRIBUTES DISPLAY
-import React, { useState, useEffect, useContext } from "react";
+// src/pages/cart/payCart.tsx - FIXED VERSION WITH useMemo LOCALIZATION
+import React, { useState, useEffect, useContext, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import "@/styles/pages/user/payCart.scss";
 import { getCurrentUser } from "@/api/user/userAPI";
@@ -40,6 +40,7 @@ const PayCart: React.FC = () => {
     if (!name) return t("cart.noProductName") || "Không có tên";
     if (typeof name === "string") return name;
     if (typeof name === "object" && name !== null) {
+      // ✅ ƯU TIÊN NGÔN NGỮ HIỆN TẠI
       return name[language] || name.vi || name.en || String(name);
     }
     return String(name);
@@ -67,6 +68,19 @@ const PayCart: React.FC = () => {
     }
   }, [reloadCart]);
 
+  // ✅ RELOAD CART KHI ĐỔI NGÔN NGỮ - FETCH LẠI PRODUCTS
+  useEffect(() => {
+    console.log("🔄 Language changed to:", language);
+    
+    // Clear attributeLabels để trigger re-fetch
+    setAttributeLabels({});
+    
+    // ✅ FORCE RELOAD CART để fetch products với ngôn ngữ mới
+    if (typeof reloadCart === "function") {
+      reloadCart().catch(() => {});
+    }
+  }, [language, reloadCart]);
+
   // ✅ FETCH PRODUCT ATTRIBUTES ĐỂ CONVERT VALUE → LABEL
   useEffect(() => {
     console.log("⚡ useEffect triggered, cartItems length:", cartItems.length);
@@ -74,36 +88,15 @@ const PayCart: React.FC = () => {
     const fetchAttributeLabels = async () => {
       const labels: Record<string, Record<string, string>> = {};
 
-      console.log("🔍 Processing cart items:", cartItems);
-
       for (const item of cartItems) {
-        console.log(
-          "📦 Checking item:",
-          item.product._id,
-          "selectedAttributes:",
-          item.selectedAttributes
-        );
-
-        // ✅ KIỂM TRA selectedAttributes
-        if (!item.selectedAttributes) {
-          console.log("⚠️ No selectedAttributes on item");
-          continue;
-        }
-
-        if (Object.keys(item.selectedAttributes).length === 0) {
-          console.log("⚠️ Empty selectedAttributes");
-          continue;
-        }
+        if (!item.selectedAttributes) continue;
+        if (Object.keys(item.selectedAttributes).length === 0) continue;
 
         try {
-          console.log("🔍 Fetching product:", item.product._id);
-
           const res = await axiosInstance.get(
             `/products/${item.product._id}?raw=true`
           );
           const product = res.data;
-
-          console.log("📦 Product attributes:", product.attributes);
 
           if (product && Array.isArray(product.attributes)) {
             const itemLabels: Record<string, string> = {};
@@ -111,87 +104,63 @@ const PayCart: React.FC = () => {
             for (const [attrName, attrValue] of Object.entries(
               item.selectedAttributes
             )) {
-              console.log(`🔍 Looking for: ${attrName} = ${attrValue}`);
-
               // ✅ TÌM ATTRIBUTE
               const attribute = product.attributes.find((attr: any) => {
                 if (!attr || !attr.name) return false;
 
-                // Case 1: attr.name là STRING
                 if (typeof attr.name === "string") {
-                  console.log(`   Checking: "${attr.name}" vs "${attrName}"`);
                   return attr.name === attrName;
+                } else if (typeof attr.name === "object") {
+                  return attr.name.vi === attrName || attr.name.zh === attrName;
                 }
-
-                // Case 2: attr.name là OBJECT
-                if (typeof attr.name === "object") {
-                  const nameVi = attr.name.vi || "";
-                  const nameZh = attr.name.zh || "";
-                  console.log(
-                    `   Checking: "${nameVi}" or "${nameZh}" vs "${attrName}"`
-                  );
-                  return nameVi === attrName || nameZh === attrName;
-                }
-
                 return false;
               });
 
               if (attribute && Array.isArray(attribute.options)) {
-                console.log(`   ✅ Found attribute:`, attribute.name);
-
                 // TÌM OPTION
                 const option = attribute.options.find(
                   (opt: any) => opt && opt.value === attrValue
                 );
 
                 if (option && option.label) {
-                  // LẤY LABEL
+                  // ✅ LẤY LABEL THEO NGÔN NGỮ HIỆN TẠI
                   let label;
                   if (typeof option.label === "string") {
                     label = option.label;
                   } else if (typeof option.label === "object") {
                     label =
+                      option.label[language] ||
                       option.label.vi ||
                       option.label.zh ||
-                      option.label.en ||
                       String(option.label);
                   } else {
                     label = String(option.label);
                   }
 
                   itemLabels[attrName] = label;
-                  console.log(
-                    `   ✅ FOUND LABEL: ${attrName} = ${attrValue} → "${label}"`
-                  );
                 } else {
                   itemLabels[attrName] = String(attrValue);
-                  console.log(`   ⚠️ Option not found for value: ${attrValue}`);
                 }
               } else {
                 itemLabels[attrName] = String(attrValue);
-                console.log(`   ⚠️ Attribute "${attrName}" not found`);
               }
             }
 
             labels[item.product._id] = itemLabels;
-            console.log(
-              `✅ Final labels for product ${item.product._id}:`,
-              itemLabels
-            );
           }
         } catch (error) {
           console.error("❌ Error fetching attributes:", error);
         }
       }
 
-      console.log("🎯 ALL attributeLabels:", labels);
+      console.log("🎯 Final attributeLabels:", labels);
       setAttributeLabels(labels);
     };
 
     if (cartItems.length > 0) {
       fetchAttributeLabels();
     }
-  }, [cartItems]);
+  }, [cartItems, language]); // ✅ THÊM language VÀO DEPS
 
   const handleChange = (
     e: React.ChangeEvent<
@@ -213,6 +182,20 @@ const PayCart: React.FC = () => {
     (sum, item) => sum + (item.product?.price || 0) * item.quantity,
     0
   );
+
+  // ✅ LOCALIZED CART ITEMS - Re-compute tên sản phẩm theo ngôn ngữ hiện tại
+  const localizedCartItems = useMemo(() => {
+    console.log("🔄 Localizing cart items for language:", language);
+    
+    return cartItems.map(item => ({
+      ...item,
+      product: {
+        ...item.product,
+        // ✅ Tính toán lại displayName theo language hiện tại
+        displayName: getProductName(item.product.name)
+      }
+    }));
+  }, [cartItems, language]); // ← Re-compute khi language hoặc cartItems thay đổi
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -249,12 +232,18 @@ const PayCart: React.FC = () => {
           product_id: item.product._id,
           quantity: item.quantity,
           price: item.product.price || item.product.priceSale || 0,
-          name: getProductName(item.product.name),
+          // ✅ LUÔN GỬI TÊN TIẾNG VIỆT LÊN BACKEND
+          name:
+            typeof item.product.name === "object"
+              ? item.product.name.vi ||
+                item.product.name.zh ||
+                String(item.product.name)
+              : item.product.name,
           img_url: Array.isArray(item.product.images)
             ? item.product.images[0]
             : item.product.image || item.product.img_url || "",
           selectedAttributes:
-            item.selectedAttributes || item.product.selectedAttributes || {}, // ✅ THÊM DÒNG NÀY
+            item.selectedAttributes || item.product.selectedAttributes || {},
         })),
         total: totalPrice,
         payment_method: formData.paymentMethod === "cod" ? "cod" : "bank",
@@ -487,17 +476,20 @@ const PayCart: React.FC = () => {
 
         <div className="paycart-right">
           <div className="order-summary">
-            {cartItems.length ? (
-              cartItems.map((item, index) => {
+            {localizedCartItems.length ? (
+              localizedCartItems.map((item, index) => {
                 const product = item.product;
                 if (!product) return null;
 
                 return (
-                  <div key={product._id || index} className="cart-item">
+                  <div 
+                    key={`${product._id}-${language}-${index}`}
+                    className="cart-item"
+                  >
                     <div className="product-image-wrapper">
                       <img
                         src={getFirstImageUrl(product.images)}
-                        alt={getProductName(product.name)}
+                        alt={product.displayName}
                         onError={(e) => {
                           e.currentTarget.src =
                             "https://via.placeholder.com/300x300?text=No+Image";
@@ -509,7 +501,7 @@ const PayCart: React.FC = () => {
                     </div>
 
                     <div className="item-info">
-                      <h4>{getProductName(product.name)}</h4>
+                      <h4>{product.displayName}</h4>
 
                       {/* ✅ HIỂN THỊ THUỘC TÍNH - SỬ DỤNG LABEL ĐÃ CONVERT */}
                       {(() => {
