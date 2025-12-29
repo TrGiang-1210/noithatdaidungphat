@@ -1,21 +1,32 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import axios from 'axios';
-import { getImageUrl } from "@/utils/imageUrl"; // ← Import utils
+import { getImageUrl } from "@/utils/imageUrl";
+import { useLanguage } from "@/context/LanguageContext"; // ✅ NEW
 import "@/styles/pages/user/post.scss";
 
+// ✅ UPDATED: Multilingual fields
 interface PostCategory {
   _id: string;
-  name: string;
+  name: {
+    vi: string;
+    zh: string;
+  };
   slug: string;
 }
 
 interface Post {
   _id: string;
-  title: string;
+  title: {
+    vi: string;
+    zh: string;
+  };
   slug: string;
   thumbnail: string;
-  description: string;
+  description: {
+    vi: string;
+    zh: string;
+  };
   category_id: PostCategory;
   created_at: string;
 }
@@ -27,6 +38,7 @@ interface PostsResponse {
 }
 
 const Posts: React.FC = () => {
+  const { language, t } = useLanguage(); // ✅ NEW
   const [searchParams, setSearchParams] = useSearchParams();
   const [posts, setPosts] = useState<Post[]>([]);
   const [categories, setCategories] = useState<PostCategory[]>([]);
@@ -36,6 +48,13 @@ const Posts: React.FC = () => {
   const [selectedCategory, setSelectedCategory] = useState<string>('');
 
   const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+
+  // ✅ Helper: Get text by language
+  const getText = (field: any): string => {
+    if (!field) return '';
+    if (typeof field === 'string') return field;
+    return field[language] || field.vi || '';
+  };
 
   // Fetch categories
   useEffect(() => {
@@ -91,7 +110,7 @@ const Posts: React.FC = () => {
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
-    return date.toLocaleDateString('vi-VN', {
+    return date.toLocaleDateString(language === 'vi' ? 'vi-VN' : 'zh-CN', {
       year: 'numeric',
       month: 'long',
       day: 'numeric'
@@ -102,8 +121,8 @@ const Posts: React.FC = () => {
     <div className="posts-page">
       <div className="posts-hero">
         <div className="container">
-          <h1>Tin Tức & Xu Hướng</h1>
-          <p>Khám phá các ý tưởng trang trí & xu hướng nội thất mới nhất</p>
+          <h1>{t('posts.pageTitle')}</h1>
+          <p>{t('posts.pageSubtitle')}</p>
         </div>
       </div>
 
@@ -112,14 +131,14 @@ const Posts: React.FC = () => {
           {/* Sidebar */}
           <aside className="posts-sidebar">
             <div className="sidebar-widget">
-              <h3 className="widget-title">Danh Mục</h3>
+              <h3 className="widget-title">{t('posts.categories')}</h3>
               <ul className="category-list">
                 <li>
                   <button
                     className={!selectedCategory ? 'active' : ''}
                     onClick={() => handleCategoryFilter('')}
                   >
-                    Tất cả
+                    {t('posts.allCategories')}
                   </button>
                 </li>
                 {categories.map((cat) => (
@@ -128,7 +147,7 @@ const Posts: React.FC = () => {
                       className={selectedCategory === cat._id ? 'active' : ''}
                       onClick={() => handleCategoryFilter(cat._id)}
                     >
-                      {cat.name}
+                      {getText(cat.name)}
                     </button>
                   </li>
                 ))}
@@ -141,11 +160,11 @@ const Posts: React.FC = () => {
             {loading ? (
               <div className="posts-loading">
                 <div className="spinner"></div>
-                <p>Đang tải bài viết...</p>
+                <p>{t('posts.loading')}</p>
               </div>
             ) : posts.length === 0 ? (
               <div className="posts-empty">
-                <p>Chưa có bài viết nào.</p>
+                <p>{t('posts.noPosts')}</p>
               </div>
             ) : (
               <>
@@ -155,7 +174,7 @@ const Posts: React.FC = () => {
                       <Link to={`/posts/${post.slug}`} className="post-thumbnail">
                         <img
                           src={post.thumbnail ? getImageUrl(post.thumbnail) : '/placeholder-post.jpg'}
-                          alt={post.title}
+                          alt={getText(post.title)}
                           loading="lazy"
                           onError={(e) => {
                             e.currentTarget.src = 'https://via.placeholder.com/400x300?text=No+Image';
@@ -163,7 +182,7 @@ const Posts: React.FC = () => {
                         />
                         {post.category_id && (
                           <span className="post-category-badge">
-                            {post.category_id.name}
+                            {getText(post.category_id.name)}
                           </span>
                         )}
                       </Link>
@@ -175,16 +194,16 @@ const Posts: React.FC = () => {
                         
                         <h2 className="post-title">
                           <Link to={`/posts/${post.slug}`}>
-                            {post.title}
+                            {getText(post.title)}
                           </Link>
                         </h2>
                         
                         <p className="post-description">
-                          {post.description}
+                          {getText(post.description)}
                         </p>
                         
                         <Link to={`/posts/${post.slug}`} className="post-read-more">
-                          Đọc tiếp
+                          {t('posts.readMore')}
                           <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
                             <path d="M6 12L10 8L6 4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                           </svg>
@@ -205,7 +224,7 @@ const Posts: React.FC = () => {
                       <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
                         <path d="M12 16L6 10L12 4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                       </svg>
-                      Trước
+                      {t('posts.previous')}
                     </button>
 
                     <div className="pagination-numbers">
@@ -225,7 +244,7 @@ const Posts: React.FC = () => {
                       onClick={() => handlePageChange(currentPage + 1)}
                       disabled={currentPage === totalPages}
                     >
-                      Sau
+                      {t('posts.next')}
                       <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
                         <path d="M8 4L14 10L8 16" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                       </svg>

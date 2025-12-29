@@ -3,6 +3,8 @@ const mongoose = require('mongoose');
 const Product = require('../models/Product');
 const Category = require('../models/Category');
 const OrderDetail = require('../models/OrderDetail'); // ✅ THÊM
+const Post = require('../models/Post');
+const PostCategory = require('../models/PostCategory');
 require('dotenv').config();
 
 /**
@@ -247,6 +249,141 @@ async function migrateOrders() {
   }
 }
 
+async function migratePosts() {
+  try {
+    console.log('📄 Migrating Posts to multilingual format...\n');
+    
+    const posts = await Post.find({});
+    let migrated = 0;
+    let skipped = 0;
+    
+    for (const post of posts) {
+      let needSave = false;
+      const postTitle = post.title?.vi || post.title || post._id;
+      
+      // Migrate title
+      if (needsMigration(post.title)) {
+        const oldTitle = post.title;
+        post.title = normalizeField(post.title, 'title');
+        console.log(`📝 Title: "${oldTitle}" → {vi: "${post.title.vi}", zh: "${post.title.zh}"}`);
+        needSave = true;
+      }
+      
+      // Migrate description
+      if (needsMigration(post.description)) {
+        post.description = normalizeField(post.description, 'description');
+        needSave = true;
+      }
+      
+      // Migrate content
+      if (needsMigration(post.content)) {
+        post.content = normalizeField(post.content, 'content');
+        needSave = true;
+      }
+      
+      // Migrate meta_title
+      if (needsMigration(post.meta_title)) {
+        post.meta_title = normalizeField(post.meta_title, 'meta_title');
+        needSave = true;
+      }
+      
+      // Migrate meta_description
+      if (needsMigration(post.meta_description)) {
+        post.meta_description = normalizeField(post.meta_description, 'meta_description');
+        needSave = true;
+      }
+      
+      if (needSave) {
+        try {
+          await Post.updateOne(
+            { _id: post._id },
+            { 
+              $set: { 
+                title: post.title,
+                description: post.description,
+                content: post.content,
+                meta_title: post.meta_title,
+                meta_description: post.meta_description
+              } 
+            }
+          );
+          migrated++;
+          console.log(`✅ Migrated: ${postTitle}\n`);
+        } catch (saveError) {
+          console.error(`❌ Error saving post ${post._id}:`, saveError.message);
+        }
+      } else {
+        skipped++;
+        console.log(`⭐️ Skipped (already migrated): ${postTitle}`);
+      }
+    }
+    
+    console.log('\n' + '='.repeat(60));
+    console.log(`✅ Posts Migration Complete`);
+    console.log(`   Migrated: ${migrated}`);
+    console.log(`   Skipped: ${skipped}`);
+    console.log(`   Total: ${posts.length}`);
+    console.log('='.repeat(60) + '\n');
+    
+  } catch (error) {
+    console.error('❌ Error migrating posts:', error);
+    throw error;
+  }
+}
+
+async function migratePostCategories() {
+  try {
+    console.log('📁 Migrating Post Categories to multilingual format...\n');
+    
+    const categories = await PostCategory.find({});
+    let migrated = 0;
+    let skipped = 0;
+    
+    for (const category of categories) {
+      let needSave = false;
+      const categoryName = category.name?.vi || category.name || category._id;
+      
+      if (needsMigration(category.name)) {
+        const oldName = category.name;
+        category.name = normalizeField(category.name, 'name');
+        console.log(`📝 Name: "${oldName}" → {vi: "${category.name.vi}", zh: "${category.name.zh}"}`);
+        needSave = true;
+      }
+      
+      if (needSave) {
+        try {
+          await PostCategory.updateOne(
+            { _id: category._id },
+            { 
+              $set: { 
+                name: category.name
+              } 
+            }
+          );
+          migrated++;
+          console.log(`✅ Migrated: ${categoryName}\n`);
+        } catch (saveError) {
+          console.error(`❌ Error saving post category ${category._id}:`, saveError.message);
+        }
+      } else {
+        skipped++;
+        console.log(`⭐️ Skipped (already migrated): ${categoryName}`);
+      }
+    }
+    
+    console.log('\n' + '='.repeat(60));
+    console.log(`✅ Post Categories Migration Complete`);
+    console.log(`   Migrated: ${migrated}`);
+    console.log(`   Skipped: ${skipped}`);
+    console.log(`   Total: ${categories.length}`);
+    console.log('='.repeat(60) + '\n');
+    
+  } catch (error) {
+    console.error('❌ Error migrating post categories:', error);
+    throw error;
+  }
+}
+
 /**
  * Verify migration results
  */
@@ -262,7 +399,7 @@ async function verifyMigration() {
            !p.name.vi;
   });
   
-  // Check categories
+  // Check categories and post categories
   const categoriesWithIssues = await Category.find({}).lean();
   const problemCategories = categoriesWithIssues.filter(c => {
     return typeof c.name !== 'object' || 
@@ -278,6 +415,24 @@ async function verifyMigration() {
            !od.name.hasOwnProperty('vi') || 
            !od.name.hasOwnProperty('zh') ||
            !od.name.vi;
+  });
+
+   // Check posts
+  const postsWithIssues = await Post.find({}).lean();
+  const problemPosts = postsWithIssues.filter(p => {
+    return typeof p.title !== 'object' || 
+           !p.title.hasOwnProperty('vi') || 
+           !p.title.hasOwnProperty('zh') ||
+           !p.title.vi;
+  });
+  
+  // Check post categories
+  const postCategoriesWithIssues = await PostCategory.find({}).lean();
+  const problemPostCategories = postCategoriesWithIssues.filter(c => {
+    return typeof c.name !== 'object' || 
+           !c.name.hasOwnProperty('vi') || 
+           !c.name.hasOwnProperty('zh') ||
+           !c.name.vi;
   });
   
   if (problemProducts.length > 0) {
@@ -319,6 +474,32 @@ async function verifyMigration() {
   } else {
     console.log('✅ All order details migrated successfully!');
   }
+
+  if (problemPosts.length > 0) {
+    console.log(`⚠️  Found ${problemPosts.length} posts with issues:`);
+    problemPosts.slice(0, 5).forEach(p => {
+      console.log(`   - ${p._id}: title =`, JSON.stringify(p.title));
+    });
+    if (problemPosts.length > 5) {
+      console.log(`   ... and ${problemPosts.length - 5} more`);
+    }
+    console.log('');
+  } else {
+    console.log('✅ All posts migrated successfully!');
+  }
+  
+  if (problemPostCategories.length > 0) {
+    console.log(`⚠️  Found ${problemPostCategories.length} post categories with issues:`);
+    problemPostCategories.slice(0, 5).forEach(c => {
+      console.log(`   - ${c._id}: name =`, JSON.stringify(c.name));
+    });
+    if (problemPostCategories.length > 5) {
+      console.log(`   ... and ${problemPostCategories.length - 5} more`);
+    }
+    console.log('');
+  } else {
+    console.log('✅ All post categories migrated successfully!');
+  }
   
   console.log('');
 }
@@ -332,6 +513,8 @@ async function run() {
     await migrateProducts();
     await migrateCategories();
     await migrateOrders(); // ✅ THÊM
+    await migratePosts();
+    await migratePostCategories();
     await verifyMigration();
     
     console.log('🎉 All migrations completed!\n');

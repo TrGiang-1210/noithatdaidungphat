@@ -223,6 +223,221 @@ const sampleTranslations = [
   { key: 'orderTracking.statusShipping', namespace: 'orderTracking', viText: 'Đang giao hàng', category: 'UI' },
   { key: 'orderTracking.statusCompleted', namespace: 'orderTracking', viText: 'Hoàn thành', category: 'UI' },
   { key: 'orderTracking.statusCancelled', namespace: 'orderTracking', viText: 'Đã hủy', category: 'UI' },
+
+  // ========== ACCOUNT PAGE ==========
+  // Register Form
+  { key: 'auth.registerTitle', namespace: 'auth', viText: 'Đăng ký tài khoản', category: 'UI' },
+  { key: 'auth.registerSubtitle', namespace: 'auth', viText: 'Tạo tài khoản để mua sắm nhanh hơn!', category: 'UI' },
+  { key: 'auth.fullNamePlaceholder', namespace: 'auth', viText: 'Họ và tên', category: 'UI' },
+  { key: 'auth.phonePlaceholder', namespace: 'auth', viText: 'Số điện thoại', category: 'UI' },
+  { key: 'auth.emailPlaceholder', namespace: 'auth', viText: 'Email', category: 'UI' },
+  { key: 'auth.passwordPlaceholder', namespace: 'auth', viText: 'Mật khẩu', category: 'UI' },
+  { key: 'auth.confirmPasswordPlaceholder', namespace: 'auth', viText: 'Xác nhận mật khẩu', category: 'UI' },
+  { key: 'auth.registerButton', namespace: 'auth', viText: 'ĐĂNG KÝ', category: 'UI' },
+
+  // Login Form
+  { key: 'auth.loginTitle', namespace: 'auth', viText: 'Chào mừng quay lại!', category: 'UI' },
+  { key: 'auth.loginSubtitle', namespace: 'auth', viText: 'Đăng nhập để tiếp tục mua sắm', category: 'UI' },
+  { key: 'auth.emailOrPhonePlaceholder', namespace: 'auth', viText: 'Email hoặc số điện thoại', category: 'UI' },
+  { key: 'auth.loginButton', namespace: 'auth', viText: 'ĐĂNG NHẬP', category: 'UI' },
+  { key: 'auth.forgotPassword', namespace: 'auth', viText: 'Quên mật khẩu?', category: 'UI' },
+
+  // Error Messages
+  { key: 'auth.passwordMismatch', namespace: 'auth', viText: 'Mật khẩu xác nhận không khớp!', category: 'error' },
+  { key: 'auth.loginError', namespace: 'auth', viText: 'Email/số điện thoại hoặc mật khẩu không đúng!', category: 'error' },
+  { key: 'auth.registerError', namespace: 'auth', viText: 'Đăng ký thất bại!', category: 'error' },
+  { key: 'auth.noTokenError', namespace: 'auth', viText: 'Không lấy được token từ server', category: 'error' },
+  { key: 'auth.registerNoToken', namespace: 'auth', viText: 'Đăng ký thành công nhưng không nhận được token', category: 'error' },
+
+  // Success Messages
+  { key: 'auth.welcomeBack', namespace: 'auth', viText: 'Xin chào {name}!', category: 'notification' },
+  { key: 'auth.registerSuccess', namespace: 'auth', viText: 'Chào mừng {name}! Đăng ký thành công 🎉', category: 'notification' },
+
+  // Other
+  { key: 'auth.guest', namespace: 'auth', viText: 'khách', category: 'UI' },
+  { key: 'auth.you', namespace: 'auth', viText: 'bạn', category: 'UI' },
+
+  // ========== PROFILE PAGE ==========
+  // Page Title
+  { key: 'profile.pageTitle', namespace: 'profile', viText: 'CẬP NHẬT THÔNG TIN TÀI KHOẢN', category: 'UI' },
+
+  // Form Labels
+  { key: 'profile.fullName', namespace: 'profile', viText: 'Họ tên', category: 'UI' },
+  { key: 'profile.phone', namespace: 'profile', viText: 'Điện thoại', category: 'UI' },
+  { key: 'profile.email', namespace: 'profile', viText: 'Địa chỉ Email', category: 'UI' },
+  { key: 'profile.address', namespace: 'profile', viText: 'Địa chỉ giao hàng', category: 'UI' },
+  { key: 'profile.newPassword', namespace: 'profile', viText: 'Mật khẩu mới', category: 'UI' },
+  { key: 'profile.confirmPassword', namespace: 'profile', viText: 'Xác nhận mật khẩu', category: 'UI' },
+
+  // Placeholders
+  { key: 'profile.fullNamePlaceholder', namespace: 'profile', viText: 'Ví dụ: Nguyễn Văn A', category: 'UI' },
+  { key: 'profile.phonePlaceholder', namespace: 'profile', viText: '0901234567890', category: 'UI' },
+  { key: 'profile.emailPlaceholder', namespace: 'profile', viText: 'example@gmail.com', category: 'UI' },
+  { key: 'profile.addressPlaceholder', namespace: 'profile', viText: 'Ví dụ: 123 Đường Láng, Hà Nội', category: 'UI' },
+  { key: 'profile.newPasswordPlaceholder', namespace: 'profile', viText: 'Để trống nếu không đổi', category: 'UI' },
+  { key: 'profile.confirmPasswordPlaceholder', namespace: 'profile', viText: 'Nhập lại mật khẩu mới', category: 'UI' },
+
+  // Notes
+  { key: 'profile.passwordNote', namespace: 'profile', viText: '(Không cần nhập nếu giữ nguyên)', category: 'UI' },
+
+  // Buttons
+  { key: 'profile.updateButton', namespace: 'profile', viText: 'CẬP NHẬT', category: 'UI' },
+  { key: 'profile.updating', namespace: 'profile', viText: 'Đang cập nhật...', category: 'UI' },
+
+  // Error Messages
+  { key: 'profile.loadError', namespace: 'profile', viText: 'Không thể tải thông tin tài khoản', category: 'error' },
+  { key: 'profile.passwordMismatch', namespace: 'profile', viText: 'Mật khẩu xác nhận không khớp!', category: 'error' },
+  { key: 'profile.invalidPhone', namespace: 'profile', viText: 'Số điện thoại không hợp lệ (VD: 0901234567)', category: 'error' },
+  { key: 'profile.updateError', namespace: 'profile', viText: 'Cập nhật thất bại!', category: 'error' },
+
+  // Success Messages
+  { key: 'profile.updateSuccess', namespace: 'profile', viText: 'Cập nhật thông tin thành công! 🎉', category: 'notification' },
+
+  // Chat Header
+  { key: 'chat.companyName', namespace: 'chat', viText: 'Nội Thất Đại Dũng Phát', category: 'UI' },
+  { key: 'chat.support247', namespace: 'chat', viText: 'Hỗ trợ 24/7', category: 'UI' },
+  { key: 'chat.connecting', namespace: 'chat', viText: 'Đang kết nối...', category: 'UI' },
+
+  // Session Info
+  { key: 'chat.guestSession', namespace: 'chat', viText: '💭 Khách (Chưa đăng nhập)', category: 'UI' },
+
+  // Welcome Messages
+  { key: 'chat.welcomeGreeting', namespace: 'chat', viText: 'Xin chào! 👋', category: 'UI' },
+  { key: 'chat.welcomeQuestion', namespace: 'chat', viText: 'Em có thể giúp được gì cho Anh/Chị?', category: 'UI' },
+  { key: 'chat.loginHint', namespace: 'chat', viText: 'Đăng nhập để lưu lịch sử chat', category: 'UI' },
+
+  // Quick Actions
+  { key: 'chat.quickAction1', namespace: 'chat', viText: 'Cần mua hàng', category: 'UI' },
+  { key: 'chat.quickAction2', namespace: 'chat', viText: 'Gọi lại cho tôi', category: 'UI' },
+  { key: 'chat.quickAction3', namespace: 'chat', viText: 'Tư vấn dự án', category: 'UI' },
+
+  // Input
+  { key: 'chat.inputPlaceholder', namespace: 'chat', viText: 'Nhập tin nhắn...', category: 'UI' },
+
+  // ========== CHATBOT RESPONSES ==========
+  // Bot Greetings
+  { key: 'bot.greeting1', namespace: 'bot', viText: 'Xin chào! 👋 Tôi là bot tự động của Nội Thất Đại Dũng Phát. Tôi có thể giúp gì cho bạn?', category: 'UI' },
+  { key: 'bot.greeting2', namespace: 'bot', viText: 'Chào bạn! 😊 Cảm ơn bạn đã quan tâm đến sản phẩm của chúng tôi. Bạn cần tư vấn gì?', category: 'UI' },
+  { key: 'bot.greeting3', namespace: 'bot', viText: 'Hi! Rất vui được hỗ trợ bạn. Bạn đang tìm loại nội thất nào?', category: 'UI' },
+
+  // Bot Products
+  { key: 'bot.products1', namespace: 'bot', viText: 'Chúng tôi chuyên cung cấp:\n• Ghế văn phòng\n• Bàn làm việc\n• Tủ hồ sơ\n• Ghế giám đốc\n• Kệ sách\n• Sofa văn phòng\n\nBạn quan tâm loại nào ạ?', category: 'UI' },
+  { key: 'bot.products2', namespace: 'bot', viText: 'Shop có đầy đủ các loại nội thất văn phòng và gia đình:\n✓ Ghế xoay, ghế lưới\n✓ Bàn làm việc, bàn họp\n✓ Tủ tài liệu\n✓ Kệ trưng bày\n\nGiá cả cạnh tranh, chất lượng đảm bảo! 💪', category: 'UI' },
+
+  // Bot Categories
+  { key: 'bot.categoryChair', namespace: 'bot', viText: 'Về ghế, shop có nhiều loại:\n• Ghế văn phòng lưới\n• Ghế giám đốc cao cấp\n• Ghế chân quỳ\n• Ghế xoay 360°\n\nGiá từ 500k - 5tr. Bạn cần ghế loại nào?', category: 'UI' },
+  { key: 'bot.categoryDesk', namespace: 'bot', viText: 'Về bàn làm việc, có các dòng:\n• Bàn văn phòng cơ bản\n• Bàn giám đốc\n• Bàn họp\n• Bàn máy tính\n\nGiá từ 800k - 10tr tùy kích thước.', category: 'UI' },
+  { key: 'bot.categoryCabinet', namespace: 'bot', viText: 'Về tủ, shop có:\n• Tủ hồ sơ 2-4 ngăn\n• Tủ tài liệu gỗ\n• Tủ sắt\n• Tủ đồ cá nhân\n\nGiá từ 1tr - 8tr.', category: 'UI' },
+
+  // Bot Delivery
+  { key: 'bot.delivery1', namespace: 'bot', viText: 'Về vận chuyển:\n📦 FREE SHIP nội thành HCM cho đơn từ 2 triệu\n🚚 Giao hàng toàn quốc\n⏰ Giao hàng trong 1-3 ngày\n💯 Hỗ trợ lắp đặt tận nơi', category: 'UI' },
+  { key: 'bot.delivery2', namespace: 'bot', viText: 'Chúng tôi giao hàng:\n✓ HCM: 1-2 ngày\n✓ Các tỉnh: 3-5 ngày\n✓ Miễn phí ship đơn > 2tr\n✓ COD toàn quốc', category: 'UI' },
+
+  // Bot Contact
+  { key: 'bot.contact1', namespace: 'bot', viText: '📞 Hotline: 0941 038 839 - 0965 708 839\n📧 Email: noithatdaidungphat@gmail.com\n📍 Địa chỉ: 474 ĐT824, Mỹ Hạnh Nam, Đức Hòa, Long An\n💬 Zalo: 0965708839', category: 'UI' },
+  { key: 'bot.contact2', namespace: 'bot', viText: 'Liên hệ chúng tôi:\n📞 0941 038 839\n📞 0965 708 839\n📧 noithatdaidungphat@gmail.com\n🏢 474 ĐT824, Mỹ Hạnh Nam, Đức Hòa, Long An', category: 'UI' },
+
+  // Bot Support
+  { key: 'bot.support1', namespace: 'bot', viText: 'Để được tư vấn chi tiết, admin sẽ hỗ trợ bạn ngay! Vui lòng chờ trong giây lát... ⏰', category: 'UI' },
+  { key: 'bot.support2', namespace: 'bot', viText: 'Tôi đang kết nối bạn với nhân viên tư vấn. Xin vui lòng đợi 1-2 phút nhé! 😊', category: 'UI' },
+
+  // Bot Thanks
+  { key: 'bot.thanks1', namespace: 'bot', viText: 'Rất vui được hỗ trợ bạn! 😊 Nếu cần gì thêm cứ nhắn tin nhé!', category: 'UI' },
+  { key: 'bot.thanks2', namespace: 'bot', viText: 'Không có gì! Chúc bạn một ngày tốt lành! 🌟', category: 'UI' },
+  { key: 'bot.thanks3', namespace: 'bot', viText: 'Cảm ơn bạn đã quan tâm! Hẹn gặp lại! 👋', category: 'UI' },
+
+  // Bot Default
+  { key: 'bot.default1', namespace: 'bot', viText: 'Tôi chưa hiểu rõ câu hỏi của bạn. Bạn có thể hỏi về:\n• Sản phẩm\n• Giá cả\n• Giao hàng\n• Liên hệ\n\nHoặc đợi admin tư vấn chi tiết nhé!', category: 'UI' },
+  { key: 'bot.default2', namespace: 'bot', viText: 'Xin lỗi, tôi chưa có thông tin về vấn đề này. Admin sẽ hỗ trợ bạn sớm nhất! Hoặc gọi hotline: 0941 038 839 để được tư vấn ngay.', category: 'UI' },
+  { key: 'bot.default3', namespace: 'bot', viText: 'Để được tư vấn chính xác, vui lòng liên hệ hotline: 0941 038 839 hoặc đợi admin trả lời nhé! 🙏', category: 'UI' },
+
+  // Bot Name
+  { key: 'bot.botName', namespace: 'bot', viText: '🤖 Bot Tư Vấn', category: 'UI' },
+
+  // ========== SOCKET ERROR MESSAGES ==========
+  { key: 'chat.error.invalidSession', namespace: 'chat', viText: 'Session không hợp lệ', category: 'error' },
+  { key: 'chat.error.sessionExpired', namespace: 'chat', viText: 'Session đã hết hạn', category: 'error' },
+  { key: 'chat.error.noAccess', namespace: 'chat', viText: 'Không có quyền truy cập', category: 'error' },
+  { key: 'chat.error.missingRoomId', namespace: 'chat', viText: 'Thiếu roomId', category: 'error' },
+  { key: 'chat.error.cannotSend', namespace: 'chat', viText: 'Không thể gửi tin nhắn', category: 'error' },
+  { key: 'chat.error.cannotConnect', namespace: 'chat', viText: 'Không thể kết nối chat', category: 'error' },
+  { key: 'chat.sessionReplaced', namespace: 'chat', viText: 'Bạn đã đăng nhập từ thiết bị khác', category: 'notification' },
+
+    // ========== POSTS PAGE ==========
+  { key: 'posts.pageTitle', namespace: 'posts', viText: 'Tin Tức & Xu Hướng', category: 'UI' },
+  { key: 'posts.pageSubtitle', namespace: 'posts', viText: 'Khám phá các ý tưởng trang trí & xu hướng nội thất mới nhất', category: 'UI' },
+  { key: 'posts.categories', namespace: 'posts', viText: 'Danh Mục', category: 'UI' },
+  { key: 'posts.allCategories', namespace: 'posts', viText: 'Tất cả', category: 'UI' },
+  { key: 'posts.loading', namespace: 'posts', viText: 'Đang tải bài viết...', category: 'UI' },
+  { key: 'posts.noPosts', namespace: 'posts', viText: 'Chưa có bài viết nào.', category: 'UI' },
+  { key: 'posts.readMore', namespace: 'posts', viText: 'Đọc tiếp', category: 'UI' },
+  { key: 'posts.previous', namespace: 'posts', viText: 'Trước', category: 'UI' },
+  { key: 'posts.next', namespace: 'posts', viText: 'Sau', category: 'UI' },
+  
+  // ========== POST DETAIL PAGE ==========
+  { key: 'postDetail.notFound', namespace: 'posts', viText: '😢 Không tìm thấy bài viết', category: 'UI' },
+  { key: 'postDetail.notFoundDesc', namespace: 'posts', viText: 'Bài viết bạn đang tìm không tồn tại hoặc đã bị xóa.', category: 'UI' },
+  { key: 'postDetail.backToList', namespace: 'posts', viText: '← Quay lại danh sách bài viết', category: 'UI' },
+  { key: 'postDetail.loading', namespace: 'posts', viText: 'Đang tải bài viết...', category: 'UI' },
+  { key: 'postDetail.tags', namespace: 'posts', viText: 'Tags:', category: 'UI' },
+  { key: 'postDetail.backButton', namespace: 'posts', viText: 'Quay lại danh sách', category: 'UI' },
+  { key: 'postDetail.relatedPosts', namespace: 'posts', viText: 'Bài viết liên quan', category: 'UI' },
+  
+  // ========== BREADCRUMB ==========
+  { key: 'posts.breadcrumb.home', namespace: 'posts', viText: 'Trang chủ', category: 'UI' },
+  { key: 'posts.breadcrumb.news', namespace: 'posts', viText: 'Tin tức', category: 'UI' },
+  
+  // ========== ADMIN - POST MANAGER ==========
+  { key: 'admin.posts.title', namespace: 'admin', viText: 'Quản Lý Bài Viết', category: 'UI' },
+  { key: 'admin.posts.createPost', namespace: 'admin', viText: 'Tạo Bài Viết', category: 'UI' },
+  { key: 'admin.posts.editPost', namespace: 'admin', viText: 'Sửa Bài Viết', category: 'UI' },
+  { key: 'admin.posts.category', namespace: 'admin', viText: 'Danh Mục', category: 'UI' },
+  { key: 'admin.posts.createCategory', namespace: 'admin', viText: 'Danh Mục', category: 'UI' },
+  { key: 'admin.posts.thumbnail', namespace: 'admin', viText: 'Thumbnail', category: 'UI' },
+  { key: 'admin.posts.title', namespace: 'admin', viText: 'Tiêu đề', category: 'UI' },
+  { key: 'admin.posts.status', namespace: 'admin', viText: 'Trạng thái', category: 'UI' },
+  { key: 'admin.posts.createdAt', namespace: 'admin', viText: 'Ngày tạo', category: 'UI' },
+  { key: 'admin.posts.actions', namespace: 'admin', viText: 'Thao tác', category: 'UI' },
+  { key: 'admin.posts.draft', namespace: 'admin', viText: 'Nháp', category: 'UI' },
+  { key: 'admin.posts.published', namespace: 'admin', viText: 'Đã xuất bản', category: 'UI' },
+  { key: 'admin.posts.searchPlaceholder', namespace: 'admin', viText: 'Tìm kiếm bài viết...', category: 'UI' },
+  { key: 'admin.posts.allCategories', namespace: 'admin', viText: 'Tất cả danh mục', category: 'UI' },
+  { key: 'admin.posts.noPosts', namespace: 'admin', viText: 'Không có bài viết nào', category: 'UI' },
+  { key: 'admin.posts.titlePlaceholder', namespace: 'admin', viText: 'Nhập tiêu đề bài viết...', category: 'UI' },
+  { key: 'admin.posts.content', namespace: 'admin', viText: 'Nội dung bài viết', category: 'UI' },
+  { key: 'admin.posts.excerpt', namespace: 'admin', viText: 'Mô tả ngắn (Excerpt)', category: 'UI' },
+  { key: 'admin.posts.excerptPlaceholder', namespace: 'admin', viText: 'Mô tả ngắn gọn về bài viết, hiển thị trong danh sách bài viết...', category: 'UI' },
+  { key: 'admin.posts.publish', namespace: 'admin', viText: 'Xuất bản', category: 'UI' },
+  { key: 'admin.posts.featuredImage', namespace: 'admin', viText: 'Ảnh đại diện', category: 'UI' },
+  { key: 'admin.posts.addFeaturedImage', namespace: 'admin', viText: 'Thêm ảnh đại diện', category: 'UI' },
+  { key: 'admin.posts.selectCategory', namespace: 'admin', viText: '-- Chọn danh mục --', category: 'UI' },
+  { key: 'admin.posts.tagsPlaceholder', namespace: 'admin', viText: 'Nhập tag và nhấn Enter', category: 'UI' },
+  { key: 'admin.posts.seo', namespace: 'admin', viText: 'SEO', category: 'UI' },
+  { key: 'admin.posts.metaTitle', namespace: 'admin', viText: 'Meta Title', category: 'UI' },
+  { key: 'admin.posts.metaTitlePlaceholder', namespace: 'admin', viText: 'Tiêu đề SEO', category: 'UI' },
+  { key: 'admin.posts.metaDescription', namespace: 'admin', viText: 'Meta Description', category: 'UI' },
+  { key: 'admin.posts.metaDescPlaceholder', namespace: 'admin', viText: 'Mô tả SEO', category: 'UI' },
+  { key: 'admin.posts.slug', namespace: 'admin', viText: 'URL Slug', category: 'UI' },
+  { key: 'admin.posts.slugPlaceholder', namespace: 'admin', viText: 'url-bai-viet', category: 'UI' },
+  { key: 'admin.posts.saveDraft', namespace: 'admin', viText: 'Lưu Nháp', category: 'UI' },
+  { key: 'admin.posts.deleteConfirm', namespace: 'admin', viText: 'Bạn có chắc muốn xóa bài viết này?', category: 'UI' },
+  { key: 'admin.posts.createSuccess', namespace: 'admin', viText: 'Tạo bài viết thành công!', category: 'notification' },
+  { key: 'admin.posts.updateSuccess', namespace: 'admin', viText: 'Cập nhật bài viết thành công!', category: 'notification' },
+  { key: 'admin.posts.deleteSuccess', namespace: 'admin', viText: 'Xóa bài viết thành công!', category: 'notification' },
+  { key: 'admin.posts.createError', namespace: 'admin', viText: 'Lỗi khi tạo bài viết', category: 'error' },
+  { key: 'admin.posts.updateError', namespace: 'admin', viText: 'Lỗi khi cập nhật bài viết', category: 'error' },
+  { key: 'admin.posts.deleteError', namespace: 'admin', viText: 'Lỗi khi xóa bài viết', category: 'error' },
+  
+  // ========== ADMIN - CATEGORY MANAGER ==========
+  { key: 'admin.postCategories.createTitle', namespace: 'admin', viText: 'Tạo Danh Mục Mới', category: 'UI' },
+  { key: 'admin.postCategories.name', namespace: 'admin', viText: 'Tên danh mục *', category: 'UI' },
+  { key: 'admin.postCategories.namePlaceholder', namespace: 'admin', viText: 'Ví dụ: Xu hướng nội thất', category: 'UI' },
+  { key: 'admin.postCategories.slug', namespace: 'admin', viText: 'Slug *', category: 'UI' },
+  { key: 'admin.postCategories.slugPlaceholder', namespace: 'admin', viText: 'xu-huong-noi-that', category: 'UI' },
+  { key: 'admin.postCategories.cancel', namespace: 'admin', viText: 'Hủy', category: 'UI' },
+  { key: 'admin.postCategories.create', namespace: 'admin', viText: 'Tạo Danh Mục', category: 'UI' },
+  { key: 'admin.postCategories.createSuccess', namespace: 'admin', viText: 'Tạo danh mục thành công!', category: 'notification' },
+  { key: 'admin.postCategories.createError', namespace: 'admin', viText: 'Lỗi khi tạo danh mục', category: 'error' },
 ];
 
 async function seed() {
