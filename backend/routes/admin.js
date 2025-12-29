@@ -1,4 +1,4 @@
-// routes/admin.js - FIXED
+// routes/admin.js - UPDATED
 const express = require('express');
 const router = express.Router();
 const multer = require('multer');
@@ -13,7 +13,6 @@ const postCategoryController = require('../controllers/postCategoryController');
 const orderController = require('../controllers/orderController');
 const translationController = require('../controllers/translation.controller');
 const bulkTranslateController = require('../controllers/bulkTranslateController');
-
 
 const { protect: auth, admin } = require('../middlewares/auth');
 
@@ -109,15 +108,18 @@ router.post('/upload-product-images', auth, admin, productUpload.array('images',
 });
 
 // ==================== BULK TRANSLATION ROUTES ====================
+// ✅ CHỈ GIỮ PRODUCTS + CATEGORIES (Orders tự động dịch rồi)
 router.get('/bulk-translate/stats', auth, admin, bulkTranslateController.getTranslationStats);
 router.post('/bulk-translate/products', auth, admin, bulkTranslateController.translateAllProducts);
 router.post('/bulk-translate/categories', auth, admin, bulkTranslateController.translateAllCategories);
+
+// ⚠️ OPTIONAL: Giữ lại endpoint orders cho emergency (fix đơn cũ)
+// Nếu không cần, có thể comment lại dòng dưới
 router.post('/bulk-translate/orders', auth, admin, bulkTranslateController.translateAllOrders);
 
-// ==================== TRANSLATION ROUTES (ĐẶT TRƯỚC ĐỂ TRÁNH CONFLICT) ====================
-// ✅ IMPORTANT: Đặt các routes cụ thể TRƯỚC các routes có params động
+// ==================== TRANSLATION ROUTES ====================
 router.get('/translations/keys', auth, admin, translationController.getTranslationKeys);
-router.get('/translations/statistics', auth, admin, translationController.getStatistics); // ✅ FIX: stats -> statistics
+router.get('/translations/statistics', auth, admin, translationController.getStatistics);
 router.post('/translations/keys', auth, admin, translationController.createTranslationKey);
 router.post('/translations/ai-translate', auth, admin, translationController.requestAITranslation);
 router.post('/translations/batch-ai-translate', auth, admin, translationController.batchAITranslation);
@@ -148,7 +150,7 @@ router.post('/post-categories', auth, admin, postCategoryController.createCatego
 router.delete('/post-categories/:id', auth, admin, postCategoryController.deleteCategory);
 
 // ==================== ORDER ROUTES ====================
-router.get('/orders/stats/overview', auth, admin, orderController.getOrderStats); // Đặt trước /orders/:id
+router.get('/orders/stats/overview', auth, admin, orderController.getOrderStats);
 router.get('/orders', auth, admin, orderController.getAllOrdersAdmin);
 router.get('/orders/:id', auth, admin, orderController.getOrderByIdAdmin);
 router.patch('/orders/:id/status', auth, admin, orderController.updateOrderStatus);

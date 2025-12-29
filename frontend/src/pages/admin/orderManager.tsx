@@ -1,4 +1,4 @@
-// src/admin/pages/OrderManager.tsx - FIX LỖI OBJECT RENDERING
+// src/admin/pages/OrderManager.tsx - ✅ FIXED: SAFE RENDERING
 import { useState, useEffect, useMemo } from "react";
 import {
   Package,
@@ -55,9 +55,7 @@ export default function OrderManager() {
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [showDetailModal, setShowDetailModal] = useState(false);
   const [filterStatus, setFilterStatus] = useState<string>("all");
-  const [processingOrderId, setProcessingOrderId] = useState<string | null>(
-    null
-  );
+  const [processingOrderId, setProcessingOrderId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
@@ -74,33 +72,54 @@ export default function OrderManager() {
     return labels[method] || method;
   };
 
-  // ✅ FIX: Đảm bảo luôn trả về STRING, không phải object
+  // ✅ FIXED: SAFE STRING EXTRACTION - KHÔNG BAO GIỜ TRẢ VỀ OBJECT
   const getAttributeLabel = (
     attributeName: string,
-    value: string,
+    value: string | any,
     product: any
-  ) => {
-    if (!product || !product.attributes) return value;
+  ): string => {
+    // ✅ BƯỚC 1: CONVERT VALUE THÀNH STRING AN TOÀN
+    let valueStr: string;
+    
+    if (typeof value === 'string') {
+      valueStr = value;
+    } else if (typeof value === 'object' && value !== null) {
+      // ✅ Nếu value là {vi: "...", zh: "..."} → lấy .vi
+      valueStr = value.vi || value.zh || String(value);
+    } else {
+      valueStr = String(value || '');
+    }
+
+    // ✅ BƯỚC 2: TÌM LABEL TRONG PRODUCT ATTRIBUTES (nếu có)
+    if (!product || !product.attributes) {
+      return valueStr; // Không tìm thấy product → trả về value đã convert
+    }
 
     const attribute = product.attributes.find((attr: any) => {
-      const attrNameVi =
-        typeof attr.name === "object" ? attr.name.vi : attr.name;
-      return attrNameVi === attributeName;
+      if (!attr || !attr.name) return false;
+      const attrName = typeof attr.name === "object" ? attr.name.vi : attr.name;
+      return attrName === attributeName;
     });
 
-    if (!attribute || !attribute.options) return value;
+    if (!attribute || !attribute.options) {
+      return valueStr; // Không tìm thấy attribute → trả về value đã convert
+    }
 
-    const option = attribute.options.find((opt: any) => opt.value === value);
-    if (!option) return value;
+    // ✅ BƯỚC 3: TÌM OPTION THEO VALUE (không phải label)
+    const option = attribute.options.find((opt: any) => opt && opt.value === valueStr);
+    
+    if (!option || !option.label) {
+      return valueStr; // Không tìm thấy option → trả về value đã convert
+    }
 
-    // ✅ FIX: Nếu label là object {vi: "...", zh: "..."}, lấy .vi
-    // Nếu label là string, dùng luôn
+    // ✅ BƯỚC 4: LẤY LABEL AN TOÀN
     let label = option.label;
     if (typeof label === "object" && label !== null) {
-      label = label.vi || label.zh || value;
+      label = label.vi || label.zh || valueStr;
     }
     
-    return String(label || value); // ✅ Đảm bảo luôn trả về string
+    // ✅ ĐẢM BẢO LUÔN TRẢ VỀ STRING
+    return String(label || valueStr);
   };
 
   const fetchOrders = async () => {
@@ -189,23 +208,14 @@ export default function OrderManager() {
     );
   };
 
-  const handleStatusChange = async (
-    orderId: string,
-    newStatus: Order["status"]
-  ) => {
-    if (
-      !confirm(
-        `Xác nhận chuyển trạng thái sang "${getStatusInfo(newStatus).label}"?`
-      )
-    ) {
+  const handleStatusChange = async (orderId: string, newStatus: Order["status"]) => {
+    if (!confirm(`Xác nhận chuyển trạng thái sang "${getStatusInfo(newStatus).label}"?`)) {
       return;
     }
 
     try {
       setProcessingOrderId(orderId);
-      await axiosInstance.patch(`/admin/orders/${orderId}/status`, {
-        status: newStatus,
-      });
+      await axiosInstance.patch(`/admin/orders/${orderId}/status`, { status: newStatus });
       await fetchOrders();
       alert("Cập nhật trạng thái thành công!");
 
@@ -703,7 +713,7 @@ export default function OrderManager() {
         </div>
       )}
 
-      {/* ✅ MODAL CHI TIẾT - CHỈ FIX LỖI RENDER OBJECT */}
+      {/* ✅ MODAL CHI TIẾT - SAFE RENDERING */}
       {showDetailModal && selectedOrder && (
         <div
           className="modal-overlay"
@@ -731,7 +741,6 @@ export default function OrderManager() {
             </div>
 
             <div className="modal-content">
-              {/* Thông tin khách hàng */}
               <div className="info-section">
                 <h4>
                   <User size={18} /> Thông tin khách hàng
@@ -755,9 +764,7 @@ export default function OrderManager() {
                     <Calendar size={14} />
                     <strong>Ngày đặt:</strong>
                     <span>
-                      {new Date(selectedOrder.createdAt).toLocaleString(
-                        "vi-VN"
-                      )}
+                      {new Date(selectedOrder.createdAt).toLocaleString("vi-VN")}
                     </span>
                   </div>
                   <div className="info-item">
@@ -790,7 +797,6 @@ export default function OrderManager() {
                   )}
               </div>
 
-              {/* Danh sách sản phẩm */}
               <div className="info-section">
                 <h4>
                   <Package size={18} /> Sản phẩm đã đặt
@@ -816,21 +822,25 @@ export default function OrderManager() {
                             SKU: {item.product?.sku || "N/A"}
                           </div>
 
-                          {/* ✅ FIX: HIỂN THỊ THUỘC TÍNH - ĐẢM BẢO LUÔN LÀ STRING */}
+                          {/* ✅ SAFE RENDERING - LUÔN HIỂN THỊ STRING */}
                           {item.selectedAttributes &&
                             Object.keys(item.selectedAttributes).length > 0 && (
                               <div className="item-attributes">
                                 {Object.entries(item.selectedAttributes).map(
-                                  ([key, value]) => (
-                                    <span key={key} className="attribute-badge">
-                                      <strong>{key}:</strong>{" "}
-                                      {getAttributeLabel(
-                                        key,
-                                        value,
-                                        item.product
-                                      )}
-                                    </span>
-                                  )
+                                  ([key, value]) => {
+                                    // ✅ CONVERT VALUE → STRING AN TOÀN
+                                    const displayValue = getAttributeLabel(
+                                      key,
+                                      value,
+                                      item.product
+                                    );
+                                    
+                                    return (
+                                      <span key={key} className="attribute-badge">
+                                        <strong>{key}:</strong> {displayValue}
+                                      </span>
+                                    );
+                                  }
                                 )}
                               </div>
                             )}
