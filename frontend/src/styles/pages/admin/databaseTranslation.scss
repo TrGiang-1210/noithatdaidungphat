@@ -70,7 +70,7 @@
 
     .info-grid {
       display: grid;
-      grid-template-columns: 1fr 1fr;
+      grid-template-columns: repeat(2, 1fr);
       gap: 16px;
 
       @media (max-width: 768px) {
@@ -94,6 +94,14 @@
           line-height: 1.5;
           opacity: 0.95;
         }
+
+        code {
+          background: rgba(0, 0, 0, 0.2);
+          padding: 2px 6px;
+          border-radius: 4px;
+          font-family: 'Courier New', monospace;
+          font-size: 13px;
+        }
       }
     }
   }
@@ -101,11 +109,11 @@
   // ==================== STATISTICS ====================
   .stats-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(450px, 1fr));
+    grid-template-columns: repeat(2, 1fr);
     gap: 24px;
     margin-bottom: 32px;
 
-    @media (max-width: 768px) {
+    @media (max-width: 1024px) {
       grid-template-columns: 1fr;
     }
 
@@ -276,17 +284,6 @@
           }
         }
       }
-    }
-  }
-
-  // ✅ THÊM class cho orders card
-  .stat-card.orders {
-    .stat-icon {
-      // background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
-    }
-
-    .progress-fill.orders {
-      background: linear-gradient(90deg, #f093fb 0%, #f5576c 100%);
     }
   }
 
