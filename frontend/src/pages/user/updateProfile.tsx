@@ -4,9 +4,11 @@ import '@/styles/pages/user/updateProfile.scss';
 import { updateProfile, getCurrentUser } from '@/api/user/userAPI';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+import { useLanguage } from '@/context/LanguageContext'; // ✅ IMPORT
 
 const UpdateProfile: React.FC = () => {
   const navigate = useNavigate();
+  const { t } = useLanguage(); // ✅ SỬ DỤNG HOOK
 
   const [formData, setFormData] = useState({
     name: '',
@@ -33,12 +35,12 @@ const UpdateProfile: React.FC = () => {
           confirmPassword: '',
         });
       } catch (err) {
-        toast.error('Không thể tải thông tin tài khoản');
+        toast.error(t('profile.loadError'));
         navigate('/auth');
       }
     };
     fetchUser();
-  }, [navigate]);
+  }, [navigate, t]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({
@@ -48,86 +50,87 @@ const UpdateProfile: React.FC = () => {
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
-  e.preventDefault();
+    e.preventDefault();
 
-  if (formData.password && formData.password !== formData.confirmPassword) {
-    toast.error('Mật khẩu xác nhận không khớp!');
-    return;
-  }
+    if (formData.password && formData.password !== formData.confirmPassword) {
+      toast.error(t('profile.passwordMismatch'));
+      return;
+    }
 
-  if (formData.phone && !/^0[35789][0-9]{8}$/.test(formData.phone)) {
-    toast.error('Số điện thoại không hợp lệ (VD: 0901234567)');
-    return;
-  }
+    if (formData.phone && !/^0[35789][0-9]{8}$/.test(formData.phone)) {
+      toast.error(t('profile.invalidPhone'));
+      return;
+    }
 
-  setLoading(true);
+    setLoading(true);
 
-  try {
-    const updateData: any = {
-      name: formData.name,
-      phone: formData.phone,
-      email: formData.email,
-    };
+    try {
+      const updateData: any = {
+        name: formData.name,
+        phone: formData.phone,
+        email: formData.email,
+      };
 
-    if (formData.address) updateData.address = formData.address;
-    if (formData.password) updateData.password = formData.password;
+      if (formData.address) updateData.address = formData.address;
+      if (formData.password) updateData.password = formData.password;
 
-    await updateProfile(updateData);
+      await updateProfile(updateData);
 
-    toast.success('Cập nhật thông tin thành công! 🎉');
+      toast.success(t('profile.updateSuccess'));
 
-    // <<< LOAD LẠI THÔNG TIN MỚI NHẤT TỪ SERVER >>>
-    const refreshedUser = await getCurrentUser();
-    setFormData({
-      name: refreshedUser.name || '',
-      phone: refreshedUser.phone || '',
-      email: refreshedUser.email || '',
-      address: refreshedUser.address || '',
-      password: '',
-      confirmPassword: '',
-    });
+      // <<< LOAD LẠI THÔNG TIN MỚI NHẤT TỪ SERVER >>>
+      const refreshedUser = await getCurrentUser();
+      setFormData({
+        name: refreshedUser.name || '',
+        phone: refreshedUser.phone || '',
+        email: refreshedUser.email || '',
+        address: refreshedUser.address || '',
+        password: '',
+        confirmPassword: '',
+      });
 
-    // Cập nhật localStorage
-    localStorage.setItem('user', JSON.stringify(refreshedUser));
+      // Cập nhật localStorage
+      localStorage.setItem('user', JSON.stringify(refreshedUser));
 
-    // Không cần navigate nữa nếu muốn ở lại trang
-    // setTimeout(() => navigate('/'), 1500);
-
-  } catch (err: any) {
-    toast.error(err.response?.data?.message || 'Cập nhật thất bại!');
-  } finally {
-    setLoading(false);
-  }
-};
+    } catch (err: any) {
+      toast.error(err.response?.data?.message || t('profile.updateError'));
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div className="update-profile-container">
       <div className="update-profile-card">
-        <h2>CẬP NHẬT THÔNG TIN TÀI KHOẢN</h2>
+        <h2>{t('profile.pageTitle')}</h2>
 
         <form onSubmit={handleSubmit} className="update-form">
           <div className="form-row">
             <div className="form-group">
-              <label>Họ tên <span className="required">*</span></label>
+              <label>
+                {t('profile.fullName')} <span className="required">*</span>
+              </label>
               <input
                 type="text"
                 name="name"
                 value={formData.name}
                 onChange={handleChange}
                 required
-                placeholder="Ví dụ: Nguyễn Văn A"
+                placeholder={t('profile.fullNamePlaceholder')}
               />
             </div>
 
             <div className="form-group">
-              <label>Điện thoại <span className="required">*</span></label>
+              <label>
+                {t('profile.phone')} <span className="required">*</span>
+              </label>
               <input
                 type="tel"
                 name="phone"
                 value={formData.phone}
                 onChange={handleChange}
                 required
-                placeholder="0901234567890"
+                placeholder={t('profile.phonePlaceholder')}
                 maxLength={10}
               />
             </div>
@@ -135,55 +138,59 @@ const UpdateProfile: React.FC = () => {
 
           <div className="form-row">
             <div className="form-group">
-              <label>Địa chỉ Email <span className="required">*</span></label>
+              <label>
+                {t('profile.email')} <span className="required">*</span>
+              </label>
               <input
                 type="email"
                 name="email"
                 value={formData.email}
                 onChange={handleChange}
                 required
-                placeholder="example@gmail.com"
+                placeholder={t('profile.emailPlaceholder')}
               />
             </div>
 
             <div className="form-group">
-              <label>Địa chỉ giao hàng</label>
+              <label>{t('profile.address')}</label>
               <input
                 type="text"
                 name="address"
                 value={formData.address}
                 onChange={handleChange}
-                placeholder="Ví dụ: 123 Đường Láng, Hà Nội"
+                placeholder={t('profile.addressPlaceholder')}
               />
             </div>
           </div>
 
           <div className="form-row">
             <div className="form-group">
-              <label>Mật khẩu mới <span className="note">(Không cần nhập nếu giữ nguyên)</span></label>
+              <label>
+                {t('profile.newPassword')} <span className="note">{t('profile.passwordNote')}</span>
+              </label>
               <input
                 type="password"
                 name="password"
                 value={formData.password}
                 onChange={handleChange}
-                placeholder="Để trống nếu không đổi"
+                placeholder={t('profile.newPasswordPlaceholder')}
               />
             </div>
 
             <div className="form-group">
-              <label>Xác nhận mật khẩu</label>
+              <label>{t('profile.confirmPassword')}</label>
               <input
                 type="password"
                 name="confirmPassword"
                 value={formData.confirmPassword}
                 onChange={handleChange}
-                placeholder="Nhập lại mật khẩu mới"
+                placeholder={t('profile.confirmPasswordPlaceholder')}
               />
             </div>
           </div>
 
           <button type="submit" className="submit-btn" disabled={loading}>
-            {loading ? 'Đang cập nhật...' : 'CẬP NHẬT'}
+            {loading ? t('profile.updating') : t('profile.updateButton')}
           </button>
         </form>
       </div>

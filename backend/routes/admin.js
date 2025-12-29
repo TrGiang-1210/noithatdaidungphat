@@ -1,4 +1,4 @@
-// routes/admin.js - UPDATED
+// routes/admin.js - ✅ UPDATED WITH POSTS TRANSLATION
 const express = require('express');
 const router = express.Router();
 const multer = require('multer');
@@ -108,13 +108,22 @@ router.post('/upload-product-images', auth, admin, productUpload.array('images',
 });
 
 // ==================== BULK TRANSLATION ROUTES ====================
-// ✅ CHỈ GIỮ PRODUCTS + CATEGORIES (Orders tự động dịch rồi)
+// Get statistics
 router.get('/bulk-translate/stats', auth, admin, bulkTranslateController.getTranslationStats);
+
+// Products
 router.post('/bulk-translate/products', auth, admin, bulkTranslateController.translateAllProducts);
+
+// Categories
 router.post('/bulk-translate/categories', auth, admin, bulkTranslateController.translateAllCategories);
 
-// ⚠️ OPTIONAL: Giữ lại endpoint orders cho emergency (fix đơn cũ)
-// Nếu không cần, có thể comment lại dòng dưới
+// ✅ NEW: Posts
+router.post('/bulk-translate/posts', auth, admin, bulkTranslateController.translateAllPosts);
+
+// ✅ NEW: Post Categories
+router.post('/bulk-translate/post-categories', auth, admin, bulkTranslateController.translateAllPostCategories);
+
+// ⚠️ OPTIONAL: Orders (for emergency fix of old orders)
 router.post('/bulk-translate/orders', auth, admin, bulkTranslateController.translateAllOrders);
 
 // ==================== TRANSLATION ROUTES ====================

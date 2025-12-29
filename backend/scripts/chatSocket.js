@@ -316,7 +316,8 @@ module.exports = (io) => {
           const botResponse = await handleUserMessage(
             data.content,
             data.roomId,
-            activeAdmins
+            activeAdmins,
+            data.language || 'vi'
           );
 
           if (botResponse) {

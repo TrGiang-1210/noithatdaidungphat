@@ -51,23 +51,6 @@ const AppContent: React.FC = () => {
           userEmail={user.email}
         />
       )}
-      
-      {/* ✅ DEBUG: Hiển thị trạng thái user (chỉ trong development) */}
-      {process.env.NODE_ENV === 'development' && (
-        <div style={{
-          position: 'fixed',
-          bottom: '10px',
-          left: '10px',
-          padding: '5px 10px',
-          background: 'rgba(0,0,0,0.7)',
-          color: 'white',
-          fontSize: '11px',
-          borderRadius: '4px',
-          zIndex: 999999
-        }}>
-          User: {user?.id || 'null'} | Chat: {shouldShowChat ? '✅' : '❌'}
-        </div>
-      )}
     </>
   );
 };

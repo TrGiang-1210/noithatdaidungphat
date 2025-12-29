@@ -1,20 +1,21 @@
 import { useState, useEffect, useRef } from 'react';
 import { useChatClient } from '/hooks/useChatClient';
+import { useLanguage } from '@/context/LanguageContext'; // ✅ IMPORT
 import "@/styles/components/user/chatWidget.scss";
 
 interface ChatWidgetProps {
-  userId?: string; // ✅ User ID nếu đã login
+  userId?: string;
   userName?: string;
   userEmail?: string;
 }
 
 const ChatWidget = ({ userId, userName, userEmail }: ChatWidgetProps) => {
+  const { t, language } = useLanguage(); // ✅ LẤY CẢ LANGUAGE
   const [isOpen, setIsOpen] = useState(false);
   const [newMessage, setNewMessage] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const typingTimeoutRef = useRef<NodeJS.Timeout>();
 
-  // ✅ SỬ DỤNG CUSTOM HOOK
   const {
     isConnected,
     messages,
@@ -24,13 +25,17 @@ const ChatWidget = ({ userId, userName, userEmail }: ChatWidgetProps) => {
     startTyping,
     stopTyping,
     isGuest
-  } = useChatClient({ userId, userName, userEmail });
+  } = useChatClient({ 
+    userId, 
+    userName, 
+    userEmail,
+    language // ✅ PASS LANGUAGE
+  });
 
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
 
-  // ✅ LOG SESSION INFO
   useEffect(() => {
     console.log('💬 ChatWidget session:', {
       userId,
@@ -102,20 +107,20 @@ const ChatWidget = ({ userId, userName, userEmail }: ChatWidgetProps) => {
                 </svg>
               </div>
               <div>
-                <h3>Nội Thất Đại Dũng Phát</h3>
+                <h3>{t('chat.companyName')}</h3>
                 <p className="chat-status">
                   {isConnected ? (
                     <>
                       <span className="status-dot"></span>
-                      Hỗ trợ 24/7
+                      {t('chat.support247')}
                     </>
                   ) : (
-                    'Đang kết nối...'
+                    t('chat.connecting')
                   )}
                 </p>
-                {/* ✅ SESSION INFO */}
+                {/* SESSION INFO */}
                 {isGuest && (
-                  <p className="session-info">💭 Khách (Chưa đăng nhập)</p>
+                  <p className="session-info">{t('chat.guestSession')}</p>
                 )}
                 {!isGuest && userName && (
                   <p className="session-info">👤 {userName}</p>
@@ -131,11 +136,11 @@ const ChatWidget = ({ userId, userName, userEmail }: ChatWidgetProps) => {
           <div className="chat-messages">
             {messages.length === 0 ? (
               <div className="chat-welcome">
-                <p>Xin chào! 👋</p>
-                <p>Em có thể giúp được gì cho Anh/Chị?</p>
+                <p>{t('chat.welcomeGreeting')}</p>
+                <p>{t('chat.welcomeQuestion')}</p>
                 {isGuest && (
                   <p className="login-hint">
-                    💡 <a href="/tai-khoan-ca-nhan">Đăng nhập</a> để lưu lịch sử chat
+                    💡 <a href="/tai-khoan-ca-nhan">{t('chat.loginHint')}</a>
                   </p>
                 )}
               </div>
@@ -171,14 +176,14 @@ const ChatWidget = ({ userId, userName, userEmail }: ChatWidgetProps) => {
 
           {/* Quick Actions */}
           <div className="chat-quick-actions">
-            <button onClick={() => setNewMessage('Cần mua hàng')}>
-              Cần mua hàng
+            <button onClick={() => setNewMessage(t('chat.quickAction1'))}>
+              {t('chat.quickAction1')}
             </button>
-            <button onClick={() => setNewMessage('Gọi lại cho tôi')}>
-              Gọi lại cho tôi
+            <button onClick={() => setNewMessage(t('chat.quickAction2'))}>
+              {t('chat.quickAction2')}
             </button>
-            <button onClick={() => setNewMessage('Tư vấn dự án')}>
-              Tư vấn dự án
+            <button onClick={() => setNewMessage(t('chat.quickAction3'))}>
+              {t('chat.quickAction3')}
             </button>
           </div>
 
@@ -186,7 +191,7 @@ const ChatWidget = ({ userId, userName, userEmail }: ChatWidgetProps) => {
           <form className="chat-input" onSubmit={handleSendMessage}>
             <input
               type="text"
-              placeholder="Nhập tin nhắn..."
+              placeholder={t('chat.inputPlaceholder')}
               value={newMessage}
               onChange={(e) => {
                 setNewMessage(e.target.value);

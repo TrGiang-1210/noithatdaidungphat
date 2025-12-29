@@ -1,4 +1,4 @@
-// frontend/src/pages/admin/DatabaseTranslation.scss
+// frontend/src/pages/admin/DatabaseTranslation.scss - ✅ UPDATED
 
 .database-translation {
   padding: 24px;
@@ -53,63 +53,10 @@
     }
   }
 
-  // ==================== INFO BOX ====================
-  .info-box {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    color: white;
-    padding: 24px;
-    border-radius: 12px;
-    margin-bottom: 24px;
-    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
-
-    h3 {
-      font-size: 18px;
-      font-weight: 600;
-      margin-bottom: 16px;
-    }
-
-    .info-grid {
-      display: grid;
-      grid-template-columns: repeat(2, 1fr);
-      gap: 16px;
-
-      @media (max-width: 768px) {
-        grid-template-columns: 1fr;
-      }
-
-      .info-item {
-        background: rgba(255, 255, 255, 0.15);
-        padding: 16px;
-        border-radius: 8px;
-        backdrop-filter: blur(10px);
-
-        strong {
-          display: block;
-          margin-bottom: 8px;
-          font-size: 15px;
-        }
-
-        p {
-          font-size: 14px;
-          line-height: 1.5;
-          opacity: 0.95;
-        }
-
-        code {
-          background: rgba(0, 0, 0, 0.2);
-          padding: 2px 6px;
-          border-radius: 4px;
-          font-family: 'Courier New', monospace;
-          font-size: 13px;
-        }
-      }
-    }
-  }
-
   // ==================== STATISTICS ====================
   .stats-grid {
     display: grid;
-    grid-template-columns: repeat(2, 1fr);
+    grid-template-columns: repeat(2, 1fr); // ✅ 2 columns for 4 cards
     gap: 24px;
     margin-bottom: 32px;
 
@@ -135,6 +82,16 @@
 
       &.categories {
         border-left: 5px solid #10b981;
+      }
+
+      // ✅ NEW: Posts styling
+      &.posts {
+        border-left: 5px solid #f59e0b;
+      }
+
+      // ✅ NEW: Post Categories styling
+      &.post-categories {
+        border-left: 5px solid #8b5cf6;
       }
 
       .stat-header {
@@ -214,6 +171,16 @@
 
           &.categories {
             background: linear-gradient(90deg, #10b981, #059669);
+          }
+
+          // ✅ NEW: Posts progress bar
+          &.posts {
+            background: linear-gradient(90deg, #f59e0b, #d97706);
+          }
+
+          // ✅ NEW: Post Categories progress bar
+          &.post-categories {
+            background: linear-gradient(90deg, #8b5cf6, #7c3aed);
           }
 
           .progress-text {

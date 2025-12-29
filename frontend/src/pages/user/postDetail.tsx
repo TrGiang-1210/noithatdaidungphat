@@ -2,36 +2,64 @@ import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import axios from 'axios';
 import { getImageUrl } from "@/utils/imageUrl";
+import { useLanguage } from "@/context/LanguageContext"; // ✅ NEW
 import "@/styles/pages/user/postDetail.scss";
 
+// ✅ UPDATED: Multilingual fields
 interface PostCategory {
   _id: string;
-  name: string;
+  name: {
+    vi: string;
+    zh: string;
+  };
   slug: string;
 }
 
 interface Post {
   _id: string;
-  title: string;
+  title: {
+    vi: string;
+    zh: string;
+  };
   slug: string;
   thumbnail: string;
-  description: string;
-  content: string;
+  description: {
+    vi: string;
+    zh: string;
+  };
+  content: {
+    vi: string;
+    zh: string;
+  };
   category_id: PostCategory;
   tags: string[];
-  meta_title?: string;
-  meta_description?: string;
+  meta_title?: {
+    vi: string;
+    zh: string;
+  };
+  meta_description?: {
+    vi: string;
+    zh: string;
+  };
   created_at: string;
   updated_at: string;
 }
 
 const PostDetail: React.FC = () => {
   const { slug } = useParams<{ slug: string }>();
+  const { language, t } = useLanguage(); // ✅ NEW
   const [post, setPost] = useState<Post | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
 
   const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+
+  // ✅ Helper: Get text by language
+  const getText = (field: any): string => {
+    if (!field) return '';
+    if (typeof field === 'string') return field;
+    return field[language] || field.vi || '';
+  };
 
   useEffect(() => {
     const fetchPost = async () => {
@@ -45,10 +73,13 @@ const PostDetail: React.FC = () => {
         setPost(res.data);
         
         // Update page title & meta
-        if (res.data.meta_title) {
-          document.title = res.data.meta_title;
+        const metaTitle = getText(res.data.meta_title);
+        const postTitle = getText(res.data.title);
+        
+        if (metaTitle) {
+          document.title = metaTitle;
         } else {
-          document.title = `${res.data.title} - Nội Thất Đại Dũng Phát`;
+          document.title = `${postTitle} - Nội Thất Đại Dũng Phát`;
         }
       } catch (error) {
         console.error('Error fetching post:', error);
@@ -59,11 +90,11 @@ const PostDetail: React.FC = () => {
     };
 
     fetchPost();
-  }, [slug]);
+  }, [slug, language]); // ✅ Re-fetch when language changes
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
-    return date.toLocaleDateString('vi-VN', {
+    return date.toLocaleDateString(language === 'vi' ? 'vi-VN' : 'zh-CN', {
       year: 'numeric',
       month: 'long',
       day: 'numeric'
@@ -74,7 +105,7 @@ const PostDetail: React.FC = () => {
     return (
       <div className="post-detail-loading">
         <div className="spinner"></div>
-        <p>Đang tải bài viết...</p>
+        <p>{t('postDetail.loading')}</p>
       </div>
     );
   }
@@ -82,10 +113,10 @@ const PostDetail: React.FC = () => {
   if (error || !post) {
     return (
       <div className="post-detail-error">
-        <h1>😢 Không tìm thấy bài viết</h1>
-        <p>Bài viết bạn đang tìm không tồn tại hoặc đã bị xóa.</p>
+        <h1>{t('postDetail.notFound')}</h1>
+        <p>{t('postDetail.notFoundDesc')}</p>
         <Link to="/posts" className="btn-back">
-          ← Quay lại danh sách bài viết
+          {t('postDetail.backToList')}
         </Link>
       </div>
     );
@@ -93,25 +124,6 @@ const PostDetail: React.FC = () => {
 
   return (
     <div className="post-detail-page">
-      {/* Breadcrumb */}
-      {/* <div className="breadcrumb">
-        <div className="container">
-          <Link to="/">Trang chủ</Link>
-          <span>/</span>
-          <Link to="/posts">Tin tức</Link>
-          <span>/</span>
-          {post.category_id && (
-            <>
-              <Link to={`/posts?category=${post.category_id._id}`}>
-                {post.category_id.name}
-              </Link>
-              <span>/</span>
-            </>
-          )}
-          <span className="current">{post.title}</span>
-        </div>
-      </div> */}
-
       {/* Main Content */}
       <article className="post-detail">
         <div className="container">
@@ -122,11 +134,11 @@ const PostDetail: React.FC = () => {
                 to={`/posts?category=${post.category_id._id}`}
                 className="post-category"
               >
-                {post.category_id.name}
+                {getText(post.category_id.name)}
               </Link>
             )}
             
-            <h1 className="post-title">{post.title}</h1>
+            <h1 className="post-title">{getText(post.title)}</h1>
             
             <div className="post-meta">
               <time className="post-date">
@@ -139,7 +151,7 @@ const PostDetail: React.FC = () => {
             </div>
 
             {post.description && (
-              <p className="post-description">{post.description}</p>
+              <p className="post-description">{getText(post.description)}</p>
             )}
           </header>
 
@@ -148,7 +160,7 @@ const PostDetail: React.FC = () => {
             <div className="post-featured-image">
               <img
                 src={getImageUrl(post.thumbnail)}
-                alt={post.title}
+                alt={getText(post.title)}
                 onError={(e) => {
                   e.currentTarget.style.display = 'none';
                 }}
@@ -159,13 +171,13 @@ const PostDetail: React.FC = () => {
           {/* Content */}
           <div 
             className="post-content"
-            dangerouslySetInnerHTML={{ __html: post.content }}
+            dangerouslySetInnerHTML={{ __html: getText(post.content) }}
           />
 
           {/* Tags */}
           {post.tags && post.tags.length > 0 && (
             <div className="post-tags">
-              <h3>Tags:</h3>
+              <h3>{t('postDetail.tags')}</h3>
               <div className="tags-list">
                 {post.tags.map((tag, index) => (
                   <span key={index} className="tag">
@@ -182,7 +194,7 @@ const PostDetail: React.FC = () => {
               <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
                 <path d="M12 16L6 10L12 4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
               </svg>
-              Quay lại danh sách
+              {t('postDetail.backButton')}
             </Link>
           </div>
         </div>
