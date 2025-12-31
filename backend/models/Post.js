@@ -1,22 +1,44 @@
 const mongoose = require("mongoose");
 
 const postSchema = new mongoose.Schema({
-  title: { type: String, required: true },
+  // ✅ MULTILINGUAL FIELDS
+  title: {
+    vi: { type: String, default: '' },
+    zh: { type: String, default: '' }
+  },
+  
   slug: { type: String, required: true, unique: true },
   thumbnail: { type: String }, 
-  description: { type: String }, // mô tả ngắn
-  content: { type: String }, // nội dung bài viết (HTML)
+  
+  description: {
+    vi: { type: String, default: '' },
+    zh: { type: String, default: '' }
+  },
+  
+  content: {
+    vi: { type: String, default: '' },
+    zh: { type: String, default: '' }
+  },
+  
   category_id: { type: mongoose.Schema.Types.ObjectId, ref: "PostCategory" },
   
-  // ✅ THÊM CÁC FIELD MỚI
   status: { 
     type: String, 
     enum: ['draft', 'published'], 
     default: 'draft' 
   },
-  tags: [{ type: String }], // Mảng tags
-  meta_title: { type: String }, // SEO title
-  meta_description: { type: String }, // SEO description
+  
+  tags: [{ type: String }],
+  
+  meta_title: {
+    vi: { type: String, default: '' },
+    zh: { type: String, default: '' }
+  },
+  
+  meta_description: {
+    vi: { type: String, default: '' },
+    zh: { type: String, default: '' }
+  },
   
   created_at: { type: Date, default: Date.now },
   updated_at: { type: Date, default: Date.now },
