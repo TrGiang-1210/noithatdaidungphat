@@ -1,4 +1,4 @@
-// PostManager.scss - WordPress Style - FIXED
+// PostManager.scss - WordPress Style - UPDATED WITH CATEGORY MANAGER & SEARCH
 
 .post-manager {
   padding: 30px;
@@ -52,7 +52,7 @@
     display: flex;
     align-items: center;
     gap: 8px;
-    padding: 12px 40px;
+    padding: 12px 24px;
     border: none;
     border-radius: 10px;
     font-size: 1rem;
@@ -73,7 +73,7 @@
     &:hover {
       background: #059669;
       transform: translateY(-2px);
-      box-shadow: 0 4px 12px rgba(44, 62, 80, 0.3);
+      box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
     }
   }
 
@@ -114,7 +114,7 @@
     }
 
     input {
-      width: 96.3%;
+      width: 95%;
       padding: 12px 16px 12px 48px;
       border: 2px solid #e0e0e0;
       border-radius: 10px;
@@ -131,7 +131,7 @@
   .category-filter {
     min-width: 200px;
     padding: 12px 16px;
-    margin: 12px 0px;
+    margin: 12px 16px;
     border: 2px solid #e0e0e0;
     border-radius: 10px;
     font-size: 1rem;
@@ -331,7 +331,6 @@
 
       &:hover {
         background: #2563eb;
-        color: white;
         transform: translateY(-2px);
       }
     }
@@ -342,7 +341,6 @@
 
       &:hover {
         background: #dc2626;
-        color: white;
         transform: translateY(-2px);
       }
     }
@@ -356,7 +354,7 @@
   }
 }
 
-// Modal WordPress Style
+// Modal Base
 .modal-overlay {
   position: fixed;
   top: 0;
@@ -378,15 +376,18 @@
   width: 100%;
   max-width: 700px;
   max-height: 90vh;
-  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
 
   &.modal-wordpress {
     max-width: 1400px;
+    overflow-y: auto;
   }
 
-  &.modal-small {
-    max-width: 500px;
+  &.modal-category-manager {
+    max-width: 900px;
+    overflow: hidden;
   }
 
   @media (max-width: 768px) {
@@ -438,7 +439,283 @@
   }
 }
 
-// WordPress Editor Layout
+// ==================== CATEGORY MANAGER MODAL ====================
+.category-manager-body {
+  padding: 30px;
+  overflow-y: auto;
+  flex: 1;
+
+  .category-form {
+    background: #f8f9fa;
+    border: 2px solid #e0e0e0;
+    border-radius: 12px;
+    padding: 24px;
+    margin-bottom: 30px;
+
+    .form-title {
+      font-size: 1.2rem;
+      font-weight: 700;
+      color: #1a1a1a;
+      margin: 0 0 20px 0;
+      padding-bottom: 12px;
+      border-bottom: 2px solid #e0e0e0;
+    }
+
+    .form-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      margin-bottom: 20px;
+
+      @media (max-width: 768px) {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .form-group {
+      label {
+        display: block;
+        font-weight: 600;
+        color: #1a1a1a;
+        margin-bottom: 8px;
+        font-size: 0.9rem;
+      }
+
+      input {
+        width: 100%;
+        padding: 12px 16px;
+        border: 2px solid #e0e0e0;
+        border-radius: 10px;
+        font-size: 1rem;
+        transition: all 0.2s ease;
+
+        &:focus {
+          outline: none;
+          border-color: #2c3e50;
+        }
+
+        &::placeholder {
+          color: #999;
+        }
+      }
+    }
+
+    .form-actions {
+      display: flex;
+      gap: 12px;
+
+      button {
+        padding: 12px 24px;
+        border: none;
+        border-radius: 10px;
+        font-size: 1rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s ease;
+      }
+
+      .btn-cancel {
+        background: #e0e0e0;
+        color: #4a4a4a;
+
+        &:hover {
+          background: #d0d0d0;
+        }
+      }
+
+      .btn-submit {
+        flex: 1;
+        background: #2c3e50;
+        color: white;
+
+        &:hover {
+          background: #1a252f;
+          transform: translateY(-2px);
+          box-shadow: 0 4px 12px rgba(44, 62, 80, 0.3);
+        }
+      }
+    }
+  }
+
+  .categories-list-section {
+    .list-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 20px;
+      gap: 16px;
+
+      @media (max-width: 768px) {
+        flex-direction: column;
+        align-items: stretch;
+      }
+    }
+
+    .list-title {
+      font-size: 1.2rem;
+      font-weight: 700;
+      color: #1a1a1a;
+      margin: 0;
+      flex-shrink: 0;
+    }
+
+    .search-box-small {
+      position: relative;
+      width: 240px;
+      flex-shrink: 0;
+
+      @media (max-width: 768px) {
+        width: 100%;
+      }
+
+      svg {
+        position: absolute;
+        left: 12px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: #999;
+        width: 16px;
+        height: 16px;
+      }
+
+      input {
+        width: 73%;
+        padding: 8px 12px 8px 36px;
+        border: 2px solid #e0e0e0;
+        border-radius: 8px;
+        font-size: 0.9rem;
+        transition: all 0.2s ease;
+
+        &:focus {
+          outline: none;
+          border-color: #2c3e50;
+        }
+
+        &::placeholder {
+          color: #999;
+        }
+      }
+    }
+
+    .categories-list-scrollable {
+      max-height: 240px;
+      overflow-y: auto;
+      padding-right: 4px;
+
+      &::-webkit-scrollbar {
+        width: 8px;
+      }
+
+      &::-webkit-scrollbar-track {
+        background: #f0f0f0;
+        border-radius: 4px;
+      }
+
+      &::-webkit-scrollbar-thumb {
+        background: #d0d0d0;
+        border-radius: 4px;
+
+        &:hover {
+          background: #b0b0b0;
+        }
+      }
+    }
+
+    .empty-categories {
+      text-align: center;
+      padding: 60px 20px;
+      color: #999;
+      font-size: 1.1rem;
+    }
+
+    .categories-grid {
+      display: grid;
+      gap: 12px;
+    }
+
+    .category-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 16px 20px;
+      background: white;
+      border: 2px solid #e0e0e0;
+      border-radius: 10px;
+      transition: all 0.2s ease;
+
+      &:hover {
+        border-color: #d0d0d0;
+      }
+
+      &.editing {
+        background: #e3f2fd;
+        border-color: #2196f3;
+      }
+
+      .category-info {
+        flex: 1;
+
+        .category-name {
+          font-weight: 600;
+          color: #1a1a1a;
+          margin: 0 0 4px 0;
+          font-size: 1rem;
+        }
+
+        .category-slug {
+          font-size: 0.85rem;
+          color: #999;
+          font-family: 'Courier New', monospace;
+          margin: 0;
+        }
+      }
+
+      .category-actions {
+        display: flex;
+        gap: 8px;
+
+        button {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          width: 36px;
+          height: 36px;
+          border: none;
+          border-radius: 8px;
+          cursor: pointer;
+          transition: all 0.2s ease;
+
+          svg {
+            width: 16px;
+            height: 16px;
+          }
+        }
+
+        .btn-edit-cat {
+          background: #3b82f6;
+          color: white;
+
+          &:hover {
+            background: #2563eb;
+            transform: translateY(-2px);
+          }
+        }
+
+        .btn-delete-cat {
+          background: #ef4444;
+          color: white;
+
+          &:hover {
+            background: #dc2626;
+            transform: translateY(-2px);
+          }
+        }
+      }
+    }
+  }
+}
+
+// ==================== WORDPRESS EDITOR ====================
 .wordpress-editor {
   display: grid;
   grid-template-columns: 1fr 320px;
@@ -488,7 +765,7 @@
 
       input,
       textarea {
-        width: 96.5%;
+        width: 100%;
         padding: 12px 16px;
         border: 2px solid #e0e0e0;
         border-radius: 10px;
@@ -513,7 +790,6 @@
       }
     }
 
-    // TinyMCE Editor
     .tox-tinymce {
       border: 2px solid #e0e0e0 !important;
       border-radius: 10px !important;
@@ -559,7 +835,7 @@
         input,
         textarea,
         select {
-          width: 90%;
+          width: 100%;
           padding: 10px 12px;
           border: 2px solid #e0e0e0;
           border-radius: 8px;
@@ -723,7 +999,6 @@
 
         .url-input {
           font-size: 0.85rem;
-          width: 100%;
         }
       }
 
@@ -731,7 +1006,6 @@
       .tags-input-box {
         input {
           margin-bottom: 12px;
-          width: 100%;
         }
 
         .tags-list {
@@ -772,102 +1046,6 @@
           }
         }
       }
-    }
-  }
-}
-
-.modal-body {
-  padding: 30px;
-
-  .form-group {
-    margin-bottom: 24px;
-
-    label {
-      display: block;
-      font-weight: 600;
-      color: #1a1a1a;
-      margin-bottom: 8px;
-      font-size: 0.95rem;
-    }
-
-    input,
-    textarea,
-    select {
-      width: 100%;
-      padding: 12px 16px;
-      border: 2px solid #e0e0e0;
-      border-radius: 10px;
-      font-size: 1rem;
-      font-family: inherit;
-      transition: all 0.2s ease;
-
-      &:focus {
-        outline: none;
-        border-color: #2c3e50;
-      }
-
-      &::placeholder {
-        color: #999;
-      }
-    }
-
-    textarea {
-      resize: vertical;
-      min-height: 100px;
-      line-height: 1.6;
-    }
-
-    select {
-      cursor: pointer;
-    }
-  }
-}
-
-.modal-footer {
-  display: flex;
-  justify-content: flex-end;
-  gap: 12px;
-  padding: 24px 30px;
-  border-top: 2px solid #f0f0f0;
-  position: sticky;
-  bottom: 0;
-  background: white;
-
-  @media (max-width: 576px) {
-    flex-direction: column-reverse;
-
-    button {
-      width: 100%;
-    }
-  }
-
-  button {
-    padding: 12px 28px;
-    border: none;
-    border-radius: 10px;
-    font-size: 1rem;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.2s ease;
-  }
-
-  .btn-cancel {
-    background: #f0f0f0;
-    color: #4a4a4a;
-
-    &:hover {
-      background: #e0e0e0;
-    }
-  }
-
-  .btn-submit {
-    background: #2c3e50;
-    color: white;
-
-    &:hover {
-      background: #1a252f;
-      transform: translateY(-2px);
-      box-shadow: 0 4px 12px rgba(44, 62, 80, 0.3);
     }
   }
 }

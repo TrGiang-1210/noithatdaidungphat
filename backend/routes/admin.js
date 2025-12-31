@@ -155,7 +155,9 @@ router.put("/posts/:id", auth, admin, postController.updatePost);
 router.delete("/posts/:id", auth, admin, postController.deletePost);
 
 // ==================== POST CATEGORY ROUTES ====================
+router.get('/post-categories', postCategoryController.getAllCategories); // ← Thêm GET nếu chưa có
 router.post('/post-categories', auth, admin, postCategoryController.createCategory);
+router.put('/post-categories/:id', auth, admin, postCategoryController.updateCategory); // ← Dòng này PHẢI CÓ
 router.delete('/post-categories/:id', auth, admin, postCategoryController.deleteCategory);
 
 // ==================== ORDER ROUTES ====================
