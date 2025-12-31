@@ -1,20 +1,25 @@
-// backend/scripts/migrateToMultilang.js - ✅ WITH ORDERS MIGRATION
+// backend/scripts/migrateToMultilang.js - ✅ FIXED ALL-IN-ONE
 const mongoose = require('mongoose');
 const Product = require('../models/Product');
 const Category = require('../models/Category');
-const OrderDetail = require('../models/OrderDetail'); // ✅ THÊM
+const OrderDetail = require('../models/OrderDetail');
 const Post = require('../models/Post');
 const PostCategory = require('../models/PostCategory');
 require('dotenv').config();
 
 /**
- * Helper: Normalize field to multilingual format
+ * ✅ FIXED: Helper: Normalize field to multilingual format
  */
 function normalizeField(field, fieldName = 'field') {
+  // ✅ Case 1: String → Convert to { vi: string, zh: '' }
   if (typeof field === 'string') {
-    return { vi: field, zh: '' };
+    return { 
+      vi: field,  // ← Keep original string value
+      zh: '' 
+    };
   }
   
+  // ✅ Case 2: Object → Ensure has vi & zh
   if (typeof field === 'object' && field !== null) {
     return {
       vi: field.vi || field.en || field.default || '',
@@ -22,6 +27,7 @@ function normalizeField(field, fieldName = 'field') {
     };
   }
   
+  // ✅ Case 3: Null/undefined → Empty object
   return { vi: '', zh: '' };
 }
 
@@ -29,19 +35,23 @@ function normalizeField(field, fieldName = 'field') {
  * Check if field needs migration
  */
 function needsMigration(field) {
+  // String needs migration
   if (typeof field === 'string') return true;
   
+  // Object without vi/zh needs migration
   if (typeof field === 'object' && field !== null) {
     if (!field.hasOwnProperty('vi') || !field.hasOwnProperty('zh')) {
       return true;
     }
   }
   
+  // Null/undefined needs migration
   if (!field) return true;
   
   return false;
 }
 
+// ==================== PRODUCTS ====================
 async function migrateProducts() {
   try {
     console.log('📄 Migrating Products to multilingual format...\n');
@@ -124,6 +134,7 @@ async function migrateProducts() {
   }
 }
 
+// ==================== CATEGORIES ====================
 async function migrateCategories() {
   try {
     console.log('📄 Migrating Categories to multilingual format...\n');
@@ -183,7 +194,7 @@ async function migrateCategories() {
   }
 }
 
-// ✅ NEW: Migrate OrderDetails
+// ==================== ORDERS ====================
 async function migrateOrders() {
   try {
     console.log('📦 Migrating Order Details to multilingual format...\n');
@@ -249,6 +260,7 @@ async function migrateOrders() {
   }
 }
 
+// ==================== POSTS ✅ FIXED ====================
 async function migratePosts() {
   try {
     console.log('📄 Migrating Posts to multilingual format...\n');
@@ -259,35 +271,44 @@ async function migratePosts() {
     
     for (const post of posts) {
       let needSave = false;
-      const postTitle = post.title?.vi || post.title || post._id;
       
-      // Migrate title
+      // ✅ Get safe title for logging (before migration)
+      let safeTitle;
+      if (typeof post.title === 'string') {
+        safeTitle = post.title;
+      } else if (typeof post.title === 'object' && post.title?.vi) {
+        safeTitle = post.title.vi;
+      } else {
+        safeTitle = post._id.toString();
+      }
+      
+      // ✅ Migrate title
       if (needsMigration(post.title)) {
-        const oldTitle = post.title;
+        const oldTitle = typeof post.title === 'string' ? post.title : JSON.stringify(post.title);
         post.title = normalizeField(post.title, 'title');
         console.log(`📝 Title: "${oldTitle}" → {vi: "${post.title.vi}", zh: "${post.title.zh}"}`);
         needSave = true;
       }
       
-      // Migrate description
+      // ✅ Migrate description
       if (needsMigration(post.description)) {
         post.description = normalizeField(post.description, 'description');
         needSave = true;
       }
       
-      // Migrate content
+      // ✅ Migrate content
       if (needsMigration(post.content)) {
         post.content = normalizeField(post.content, 'content');
         needSave = true;
       }
       
-      // Migrate meta_title
+      // ✅ Migrate meta_title
       if (needsMigration(post.meta_title)) {
         post.meta_title = normalizeField(post.meta_title, 'meta_title');
         needSave = true;
       }
       
-      // Migrate meta_description
+      // ✅ Migrate meta_description
       if (needsMigration(post.meta_description)) {
         post.meta_description = normalizeField(post.meta_description, 'meta_description');
         needSave = true;
@@ -308,13 +329,13 @@ async function migratePosts() {
             }
           );
           migrated++;
-          console.log(`✅ Migrated: ${postTitle}\n`);
+          console.log(`✅ Migrated: ${safeTitle}\n`);
         } catch (saveError) {
           console.error(`❌ Error saving post ${post._id}:`, saveError.message);
         }
       } else {
         skipped++;
-        console.log(`⭐️ Skipped (already migrated): ${postTitle}`);
+        console.log(`⭐️ Skipped (already migrated): ${safeTitle}`);
       }
     }
     
@@ -331,6 +352,7 @@ async function migratePosts() {
   }
 }
 
+// ==================== POST CATEGORIES ✅ FIXED ====================
 async function migratePostCategories() {
   try {
     console.log('📁 Migrating Post Categories to multilingual format...\n');
@@ -341,10 +363,20 @@ async function migratePostCategories() {
     
     for (const category of categories) {
       let needSave = false;
-      const categoryName = category.name?.vi || category.name || category._id;
       
+      // ✅ Get safe name for logging (before migration)
+      let safeName;
+      if (typeof category.name === 'string') {
+        safeName = category.name;
+      } else if (typeof category.name === 'object' && category.name?.vi) {
+        safeName = category.name.vi;
+      } else {
+        safeName = category._id.toString();
+      }
+      
+      // ✅ Migrate name
       if (needsMigration(category.name)) {
-        const oldName = category.name;
+        const oldName = typeof category.name === 'string' ? category.name : JSON.stringify(category.name);
         category.name = normalizeField(category.name, 'name');
         console.log(`📝 Name: "${oldName}" → {vi: "${category.name.vi}", zh: "${category.name.zh}"}`);
         needSave = true;
@@ -361,13 +393,13 @@ async function migratePostCategories() {
             }
           );
           migrated++;
-          console.log(`✅ Migrated: ${categoryName}\n`);
+          console.log(`✅ Migrated: ${safeName}\n`);
         } catch (saveError) {
           console.error(`❌ Error saving post category ${category._id}:`, saveError.message);
         }
       } else {
         skipped++;
-        console.log(`⭐️ Skipped (already migrated): ${categoryName}`);
+        console.log(`⭐️ Skipped (already migrated): ${safeName}`);
       }
     }
     
@@ -384,57 +416,61 @@ async function migratePostCategories() {
   }
 }
 
-/**
- * Verify migration results
- */
+// ==================== VERIFY ✅ FIXED ====================
 async function verifyMigration() {
   console.log('🔍 Verifying migration results...\n');
   
   // Check products
   const productsWithIssues = await Product.find({}).lean();
   const problemProducts = productsWithIssues.filter(p => {
-    return typeof p.name !== 'object' || 
-           !p.name.hasOwnProperty('vi') || 
-           !p.name.hasOwnProperty('zh') ||
-           !p.name.vi;
+    if (typeof p.name === 'string') return true;
+    if (!p.name || typeof p.name !== 'object') return true;
+    if (!p.name.hasOwnProperty('vi') || !p.name.hasOwnProperty('zh')) return true;
+    if (!p.name.vi || p.name.vi === 'undefined') return true; // ✅ Check string "undefined"
+    return false;
   });
   
-  // Check categories and post categories
+  // Check categories
   const categoriesWithIssues = await Category.find({}).lean();
   const problemCategories = categoriesWithIssues.filter(c => {
-    return typeof c.name !== 'object' || 
-           !c.name.hasOwnProperty('vi') || 
-           !c.name.hasOwnProperty('zh') ||
-           !c.name.vi;
+    if (typeof c.name === 'string') return true;
+    if (!c.name || typeof c.name !== 'object') return true;
+    if (!c.name.hasOwnProperty('vi') || !c.name.hasOwnProperty('zh')) return true;
+    if (!c.name.vi || c.name.vi === 'undefined') return true;
+    return false;
   });
   
-  // ✅ Check order details
+  // Check order details
   const orderDetailsWithIssues = await OrderDetail.find({}).lean();
   const problemOrderDetails = orderDetailsWithIssues.filter(od => {
-    return typeof od.name !== 'object' || 
-           !od.name.hasOwnProperty('vi') || 
-           !od.name.hasOwnProperty('zh') ||
-           !od.name.vi;
+    if (typeof od.name === 'string') return true;
+    if (!od.name || typeof od.name !== 'object') return true;
+    if (!od.name.hasOwnProperty('vi') || !od.name.hasOwnProperty('zh')) return true;
+    if (!od.name.vi || od.name.vi === 'undefined') return true;
+    return false;
   });
 
-   // Check posts
+  // ✅ Check posts
   const postsWithIssues = await Post.find({}).lean();
   const problemPosts = postsWithIssues.filter(p => {
-    return typeof p.title !== 'object' || 
-           !p.title.hasOwnProperty('vi') || 
-           !p.title.hasOwnProperty('zh') ||
-           !p.title.vi;
+    if (typeof p.title === 'string') return true;
+    if (!p.title || typeof p.title !== 'object') return true;
+    if (!p.title.hasOwnProperty('vi') || !p.title.hasOwnProperty('zh')) return true;
+    if (!p.title.vi || p.title.vi === 'undefined') return true; // ✅ Check string "undefined"
+    return false;
   });
   
-  // Check post categories
+  // ✅ Check post categories
   const postCategoriesWithIssues = await PostCategory.find({}).lean();
   const problemPostCategories = postCategoriesWithIssues.filter(c => {
-    return typeof c.name !== 'object' || 
-           !c.name.hasOwnProperty('vi') || 
-           !c.name.hasOwnProperty('zh') ||
-           !c.name.vi;
+    if (typeof c.name === 'string') return true;
+    if (!c.name || typeof c.name !== 'object') return true;
+    if (!c.name.hasOwnProperty('vi') || !c.name.hasOwnProperty('zh')) return true;
+    if (!c.name.vi || c.name.vi === 'undefined') return true; // ✅ Check string "undefined"
+    return false;
   });
   
+  // Print results
   if (problemProducts.length > 0) {
     console.log(`⚠️  Found ${problemProducts.length} products with issues:`);
     problemProducts.slice(0, 5).forEach(p => {
@@ -461,7 +497,6 @@ async function verifyMigration() {
     console.log('✅ All categories migrated successfully!');
   }
   
-  // ✅ NEW
   if (problemOrderDetails.length > 0) {
     console.log(`⚠️  Found ${problemOrderDetails.length} order details with issues:`);
     problemOrderDetails.slice(0, 5).forEach(od => {
@@ -475,6 +510,7 @@ async function verifyMigration() {
     console.log('✅ All order details migrated successfully!');
   }
 
+  // ✅ Posts
   if (problemPosts.length > 0) {
     console.log(`⚠️  Found ${problemPosts.length} posts with issues:`);
     problemPosts.slice(0, 5).forEach(p => {
@@ -488,6 +524,7 @@ async function verifyMigration() {
     console.log('✅ All posts migrated successfully!');
   }
   
+  // ✅ Post Categories
   if (problemPostCategories.length > 0) {
     console.log(`⚠️  Found ${problemPostCategories.length} post categories with issues:`);
     problemPostCategories.slice(0, 5).forEach(c => {
@@ -504,6 +541,7 @@ async function verifyMigration() {
   console.log('');
 }
 
+// ==================== MAIN ====================
 async function run() {
   try {
     console.log('🔌 Connecting to MongoDB...');
@@ -512,10 +550,10 @@ async function run() {
     
     await migrateProducts();
     await migrateCategories();
-    await migrateOrders(); // ✅ THÊM
-    await migratePosts();
-    await migratePostCategories();
-    await verifyMigration();
+    await migrateOrders();
+    await migratePosts(); // ✅ FIXED
+    await migratePostCategories(); // ✅ FIXED
+    await verifyMigration(); // ✅ FIXED
     
     console.log('🎉 All migrations completed!\n');
     console.log('📋 Next steps:');

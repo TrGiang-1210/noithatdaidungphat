@@ -2,31 +2,39 @@ import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import { Editor } from '@tinymce/tinymce-react';
 import { getImageUrl } from "@/utils/imageUrl";
+import { useLanguage } from "@/context/LanguageContext";
 import "@/styles/pages/admin/postManager.scss";
+
+// ✅ Multilingual interfaces
+interface MultilangString {
+  vi: string;
+  zh: string;
+}
 
 interface PostCategory {
   _id: string;
-  name: string;
+  name: MultilangString | string;
   slug: string;
 }
 
 interface Post {
   _id: string;
-  title: string;
+  title: MultilangString | string;
   slug: string;
   thumbnail: string;
-  description: string;
-  content: string;
+  description: MultilangString | string;
+  content: MultilangString | string;
   category_id: PostCategory | string;
   status: 'draft' | 'published';
   tags: string[];
-  meta_title?: string;
-  meta_description?: string;
+  meta_title?: MultilangString | string;
+  meta_description?: MultilangString | string;
   created_at: string;
   updated_at: string;
 }
 
 const PostManager: React.FC = () => {
+  const { language } = useLanguage();
   const [posts, setPosts] = useState<Post[]>([]);
   const [categories, setCategories] = useState<PostCategory[]>([]);
   const [loading, setLoading] = useState(true);
@@ -40,24 +48,31 @@ const PostManager: React.FC = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const editorRef = useRef<any>(null);
 
+  // ✅ Helper: Get text from multilang field
+  const getText = (field: MultilangString | string | undefined, lang: string = 'vi'): string => {
+    if (!field) return '';
+    if (typeof field === 'string') return field;
+    return field[lang as keyof MultilangString] || field.vi || '';
+  };
+
   const [formData, setFormData] = useState({
-    title: '',
+    title: { vi: '', zh: '' },
     slug: '',
     thumbnail: '',
-    description: '',
-    content: '',
+    description: { vi: '', zh: '' },
+    content: { vi: '', zh: '' },
     category_id: '',
     status: 'draft' as 'draft' | 'published',
     tags: [] as string[],
-    meta_title: '',
-    meta_description: ''
+    meta_title: { vi: '', zh: '' },
+    meta_description: { vi: '', zh: '' }
   });
 
   const [tagInput, setTagInput] = useState('');
   const [categorySearchTerm, setCategorySearchTerm] = useState('');
 
   const [categoryForm, setCategoryForm] = useState({
-    name: '',
+    name: { vi: '', zh: '' },
     slug: ''
   });
 
@@ -109,20 +124,46 @@ const PostManager: React.FC = () => {
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
-
-    if (name === 'title' && !editingPost) {
-      const slug = generateSlug(value);
-      setFormData(prev => ({ 
-        ...prev, 
-        slug,
-        meta_title: value
+    
+    // ✅ Handle multilang fields
+    if (name === 'title_vi') {
+      setFormData(prev => ({
+        ...prev,
+        title: { ...prev.title, vi: value }
       }));
+      if (!editingPost) {
+        const slug = generateSlug(value);
+        setFormData(prev => ({
+          ...prev,
+          slug,
+          meta_title: { ...prev.meta_title, vi: value }
+        }));
+      }
+    } else if (name === 'description_vi') {
+      setFormData(prev => ({
+        ...prev,
+        description: { ...prev.description, vi: value }
+      }));
+    } else if (name === 'meta_title_vi') {
+      setFormData(prev => ({
+        ...prev,
+        meta_title: { ...prev.meta_title, vi: value }
+      }));
+    } else if (name === 'meta_description_vi') {
+      setFormData(prev => ({
+        ...prev,
+        meta_description: { ...prev.meta_description, vi: value }
+      }));
+    } else {
+      setFormData(prev => ({ ...prev, [name]: value }));
     }
   };
 
   const handleEditorChange = (content: string) => {
-    setFormData(prev => ({ ...prev, content }));
+    setFormData(prev => ({
+      ...prev,
+      content: { ...prev.content, vi: content }
+    }));
   };
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -218,30 +259,30 @@ const PostManager: React.FC = () => {
     if (post) {
       setEditingPost(post);
       setFormData({
-        title: post.title,
+        title: typeof post.title === 'object' ? post.title : { vi: post.title, zh: '' },
         slug: post.slug,
         thumbnail: post.thumbnail || '',
-        description: post.description || '',
-        content: post.content || '',
+        description: typeof post.description === 'object' ? post.description : { vi: post.description || '', zh: '' },
+        content: typeof post.content === 'object' ? post.content : { vi: post.content || '', zh: '' },
         category_id: typeof post.category_id === 'object' ? post.category_id._id : post.category_id,
         status: post.status || 'draft',
         tags: post.tags || [],
-        meta_title: post.meta_title || post.title,
-        meta_description: post.meta_description || post.description || ''
+        meta_title: typeof post.meta_title === 'object' ? post.meta_title : { vi: post.meta_title || getText(post.title, 'vi'), zh: '' },
+        meta_description: typeof post.meta_description === 'object' ? post.meta_description : { vi: post.meta_description || getText(post.description, 'vi') || '', zh: '' }
       });
     } else {
       setEditingPost(null);
       setFormData({
-        title: '',
+        title: { vi: '', zh: '' },
         slug: '',
         thumbnail: '',
-        description: '',
-        content: '',
+        description: { vi: '', zh: '' },
+        content: { vi: '', zh: '' },
         category_id: '',
         status: 'draft',
         tags: [],
-        meta_title: '',
-        meta_description: ''
+        meta_title: { vi: '', zh: '' },
+        meta_description: { vi: '', zh: '' }
       });
     }
     setShowModal(true);
@@ -257,10 +298,15 @@ const PostManager: React.FC = () => {
 
   const handleCategoryInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
-    setCategoryForm(prev => ({ ...prev, [name]: value }));
-
-    if (name === 'name') {
-      setCategoryForm(prev => ({ ...prev, slug: generateSlug(value) }));
+    
+    if (name === 'name_vi') {
+      setCategoryForm(prev => ({
+        ...prev,
+        name: { ...prev.name, vi: value },
+        slug: generateSlug(value)
+      }));
+    } else if (name === 'slug') {
+      setCategoryForm(prev => ({ ...prev, slug: value }));
     }
   };
 
@@ -277,7 +323,7 @@ const PostManager: React.FC = () => {
       }
       
       fetchCategories();
-      setCategoryForm({ name: '', slug: '' });
+      setCategoryForm({ name: { vi: '', zh: '' }, slug: '' });
       setEditingCategory(null);
     } catch (error: any) {
       console.error('Error saving category:', error);
@@ -288,14 +334,14 @@ const PostManager: React.FC = () => {
   const handleEditCategory = (category: PostCategory) => {
     setEditingCategory(category);
     setCategoryForm({
-      name: category.name,
+      name: typeof category.name === 'object' ? category.name : { vi: category.name, zh: '' },
       slug: category.slug
     });
   };
 
   const handleCancelEditCategory = () => {
     setEditingCategory(null);
-    setCategoryForm({ name: '', slug: '' });
+    setCategoryForm({ name: { vi: '', zh: '' }, slug: '' });
   };
 
   const handleDeleteCategory = async (id: string) => {
@@ -311,13 +357,18 @@ const PostManager: React.FC = () => {
     }
   };
 
-  const filteredCategories = categories.filter(category =>
-    category.name.toLowerCase().includes(categorySearchTerm.toLowerCase()) ||
-    category.slug.toLowerCase().includes(categorySearchTerm.toLowerCase())
-  );
+  // ✅ FIX: Use getText() helper for filtering
+  const filteredCategories = categories.filter(category => {
+    const categoryName = getText(category.name, 'vi').toLowerCase();
+    const categorySlug = category.slug.toLowerCase();
+    const search = categorySearchTerm.toLowerCase();
+    return categoryName.includes(search) || categorySlug.includes(search);
+  });
 
+  // ✅ FIX: Use getText() helper for filtering
   const filteredPosts = posts.filter(post => {
-    const matchSearch = post.title.toLowerCase().includes(searchTerm.toLowerCase());
+    const postTitle = getText(post.title, 'vi').toLowerCase();
+    const matchSearch = postTitle.includes(searchTerm.toLowerCase());
     const matchCategory = !selectedCategory || 
       (typeof post.category_id === 'object' && post.category_id._id === selectedCategory);
     return matchSearch && matchCategory;
@@ -374,7 +425,7 @@ const PostManager: React.FC = () => {
         >
           <option value="">Tất cả danh mục</option>
           {categories.map(cat => (
-            <option key={cat._id} value={cat._id}>{cat.name}</option>
+            <option key={cat._id} value={cat._id}>{getText(cat.name, 'vi')}</option>
           ))}
         </select>
       </div>
@@ -412,7 +463,7 @@ const PostManager: React.FC = () => {
                         {post.thumbnail ? (
                           <img 
                             src={getImageUrl(post.thumbnail)} 
-                            alt={post.title}
+                            alt={getText(post.title, 'vi')}
                             onError={(e) => {
                               e.currentTarget.src = 'https://via.placeholder.com/150?text=Error';
                             }}
@@ -424,13 +475,13 @@ const PostManager: React.FC = () => {
                     </td>
                     <td>
                       <div className="title-cell">
-                        <strong>{post.title}</strong>
+                        <strong>{getText(post.title, 'vi')}</strong>
                         <span className="slug">{post.slug}</span>
                       </div>
                     </td>
                     <td>
                       {typeof post.category_id === 'object' ? (
-                        <span className="category-badge">{post.category_id.name}</span>
+                        <span className="category-badge">{getText(post.category_id.name, 'vi')}</span>
                       ) : (
                         <span className="category-badge">-</span>
                       )}
@@ -493,11 +544,11 @@ const PostManager: React.FC = () => {
                 
                 <div className="form-row">
                   <div className="form-group">
-                    <label>Tên danh mục *</label>
+                    <label>Tên danh mục (Tiếng Việt) *</label>
                     <input
                       type="text"
-                      name="name"
-                      value={categoryForm.name}
+                      name="name_vi"
+                      value={categoryForm.name.vi}
                       onChange={handleCategoryInputChange}
                       required
                       placeholder="Ví dụ: Xu hướng nội thất"
@@ -537,7 +588,7 @@ const PostManager: React.FC = () => {
               <div className="categories-list-section">
                 <div className="list-header">
                   <h3 className="list-title">
-                    📁 Danh Sách Danh Mục ({filteredCategories.length})
+                    📂 Danh Sách Danh Mục ({filteredCategories.length})
                   </h3>
                   <div className="search-box-small">
                     <svg width="16" height="16" viewBox="0 0 20 20" fill="none">
@@ -566,7 +617,7 @@ const PostManager: React.FC = () => {
                           className={`category-item ${editingCategory?._id === category._id ? 'editing' : ''}`}
                         >
                           <div className="category-info">
-                            <h4 className="category-name">{category.name}</h4>
+                            <h4 className="category-name">{getText(category.name, 'vi')}</h4>
                             <p className="category-slug">{category.slug}</p>
                           </div>
                           <div className="category-actions">
@@ -620,22 +671,22 @@ const PostManager: React.FC = () => {
                   <div className="form-group">
                     <input
                       type="text"
-                      name="title"
+                      name="title_vi"
                       className="title-input"
-                      value={formData.title}
+                      value={formData.title.vi}
                       onChange={handleInputChange}
                       required
-                      placeholder="Nhập tiêu đề bài viết..."
+                      placeholder="Nhập tiêu đề bài viết (Tiếng Việt)..."
                     />
                     <p className="helper-text">Permalink: {formData.slug || 'auto-generate-from-title'}</p>
                   </div>
 
                   <div className="form-group">
-                    <label>Nội dung bài viết</label>
+                    <label>Nội dung bài viết (Tiếng Việt)</label>
                     <Editor
                       apiKey="6xggb1bi1xu937evzkkxhjl8469qlt2l03hg1zpep5c4a6i7"
                       onInit={(evt, editor) => editorRef.current = editor}
-                      value={formData.content}
+                      value={formData.content.vi}
                       onEditorChange={handleEditorChange}
                       init={{
                         height: 500,
@@ -658,10 +709,10 @@ const PostManager: React.FC = () => {
                   </div>
 
                   <div className="form-group">
-                    <label>Mô tả ngắn (Excerpt)</label>
+                    <label>Mô tả ngắn (Excerpt - Tiếng Việt)</label>
                     <textarea
-                      name="description"
-                      value={formData.description}
+                      name="description_vi"
+                      value={formData.description.vi}
                       onChange={handleInputChange}
                       rows={3}
                       placeholder="Mô tả ngắn gọn về bài viết, hiển thị trong danh sách bài viết..."
@@ -757,7 +808,7 @@ const PostManager: React.FC = () => {
                     >
                       <option value="">-- Chọn danh mục --</option>
                       {categories.map(cat => (
-                        <option key={cat._id} value={cat._id}>{cat.name}</option>
+                        <option key={cat._id} value={cat._id}>{getText(cat.name, 'vi')}</option>
                       ))}
                     </select>
                   </div>
@@ -788,28 +839,28 @@ const PostManager: React.FC = () => {
                   <div className="sidebar-box">
                     <h3>SEO</h3>
                     <div className="form-group">
-                      <label>Meta Title</label>
+                      <label>Meta Title (Tiếng Việt)</label>
                       <input
                         type="text"
-                        name="meta_title"
-                        value={formData.meta_title}
+                        name="meta_title_vi"
+                        value={formData.meta_title.vi}
                         onChange={handleInputChange}
                         placeholder="Tiêu đề SEO"
                         maxLength={60}
                       />
-                      <p className="char-count">{formData.meta_title.length}/60 ký tự</p>
+                      <p className="char-count">{formData.meta_title.vi.length}/60 ký tự</p>
                     </div>
                     <div className="form-group">
-                      <label>Meta Description</label>
+                      <label>Meta Description (Tiếng Việt)</label>
                       <textarea
-                        name="meta_description"
-                        value={formData.meta_description}
+                        name="meta_description_vi"
+                        value={formData.meta_description.vi}
                         onChange={handleInputChange}
                         rows={3}
                         placeholder="Mô tả SEO"
                         maxLength={160}
                       />
-                      <p className="char-count">{formData.meta_description.length}/160 ký tự</p>
+                      <p className="char-count">{formData.meta_description.vi.length}/160 ký tự</p>
                     </div>
                   </div>
 
@@ -835,4 +886,4 @@ const PostManager: React.FC = () => {
   );
 };
 
-export default PostManager;
+export default PostManager
