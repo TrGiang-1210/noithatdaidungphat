@@ -11,7 +11,7 @@ exports.getAllCategories = async (req, res) => {
   }
 };
 
-// Lấy bài viết theo danh mục - THÊM METHOD NÀY
+// Lấy bài viết theo danh mục
 exports.getPostsByCategory = async (req, res) => {
   try {
     const category = await PostCategory.findOne({ slug: req.params.slug });
@@ -40,10 +40,48 @@ exports.createCategory = async (req, res) => {
   }
 };
 
+// ✅ THÊM MỚI: Cập nhật danh mục
+exports.updateCategory = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { name, slug } = req.body;
+    
+    const category = await PostCategory.findByIdAndUpdate(
+      id,
+      { name, slug },
+      { new: true, runValidators: true }
+    );
+    
+    if (!category) {
+      return res.status(404).json({ message: "Category not found" });
+    }
+    
+    res.json({ message: "Category updated", category });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
 // Xóa danh mục
 exports.deleteCategory = async (req, res) => {
   try {
-    await PostCategory.findByIdAndDelete(req.params.id);
+    const { id } = req.params;
+    
+    // ✅ Kiểm tra xem có bài viết nào đang dùng category này không
+    const postsUsingCategory = await Post.countDocuments({ category_id: id });
+    
+    if (postsUsingCategory > 0) {
+      return res.status(400).json({ 
+        error: `Không thể xóa danh mục này vì có ${postsUsingCategory} bài viết đang sử dụng` 
+      });
+    }
+    
+    const category = await PostCategory.findByIdAndDelete(id);
+    
+    if (!category) {
+      return res.status(404).json({ message: "Category not found" });
+    }
+    
     res.json({ message: "Category deleted" });
   } catch (err) {
     res.status(500).json({ error: err.message });

@@ -33,6 +33,7 @@ const PostManager: React.FC = () => {
   const [showModal, setShowModal] = useState(false);
   const [showCategoryModal, setShowCategoryModal] = useState(false);
   const [editingPost, setEditingPost] = useState<Post | null>(null);
+  const [editingCategory, setEditingCategory] = useState<PostCategory | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('');
   const [uploadingImage, setUploadingImage] = useState(false);
@@ -53,6 +54,7 @@ const PostManager: React.FC = () => {
   });
 
   const [tagInput, setTagInput] = useState('');
+  const [categorySearchTerm, setCategorySearchTerm] = useState('');
 
   const [categoryForm, setCategoryForm] = useState({
     name: '',
@@ -75,7 +77,6 @@ const PostManager: React.FC = () => {
     setLoading(true);
     try {
       const res = await axios.get(`${API_URL}/admin/posts`, axiosConfig);
-      console.log('Posts fetched:', res.data); // Debug
       setPosts(res.data);
     } catch (error) {
       console.error('Error fetching posts:', error);
@@ -185,16 +186,14 @@ const PostManager: React.FC = () => {
     
     try {
       if (editingPost) {
-        const res = await axios.put(`${API_URL}/admin/posts/${editingPost._id}`, formData, axiosConfig);
-        console.log('Post updated:', res.data); // Debug
+        await axios.put(`${API_URL}/admin/posts/${editingPost._id}`, formData, axiosConfig);
         alert('Cập nhật bài viết thành công!');
       } else {
-        const res = await axios.post(`${API_URL}/admin/posts`, formData, axiosConfig);
-        console.log('Post created:', res.data); // Debug
+        await axios.post(`${API_URL}/admin/posts`, formData, axiosConfig);
         alert('Tạo bài viết thành công!');
       }
       
-      await fetchPosts(); // Reload lại danh sách
+      await fetchPosts();
       closeModal();
     } catch (error: any) {
       console.error('Error saving post:', error);
@@ -225,7 +224,7 @@ const PostManager: React.FC = () => {
         description: post.description || '',
         content: post.content || '',
         category_id: typeof post.category_id === 'object' ? post.category_id._id : post.category_id,
-        status: post.status || 'draft', // ✅ Fix: Đảm bảo lấy đúng status
+        status: post.status || 'draft',
         tags: post.tags || [],
         meta_title: post.meta_title || post.title,
         meta_description: post.meta_description || post.description || ''
@@ -254,20 +253,7 @@ const PostManager: React.FC = () => {
     setTagInput('');
   };
 
-  const handleCategorySubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    try {
-      await axios.post(`${API_URL}/admin/post-categories`, categoryForm, axiosConfig);
-      alert('Tạo danh mục thành công!');
-      fetchCategories();
-      setShowCategoryModal(false);
-      setCategoryForm({ name: '', slug: '' });
-    } catch (error) {
-      console.error('Error creating category:', error);
-      alert('Lỗi khi tạo danh mục');
-    }
-  };
+  // ==================== CATEGORY MANAGEMENT ====================
 
   const handleCategoryInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -277,6 +263,58 @@ const PostManager: React.FC = () => {
       setCategoryForm(prev => ({ ...prev, slug: generateSlug(value) }));
     }
   };
+
+  const handleCategorySubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    try {
+      if (editingCategory) {
+        await axios.put(`${API_URL}/admin/post-categories/${editingCategory._id}`, categoryForm, axiosConfig);
+        alert('Cập nhật danh mục thành công!');
+      } else {
+        await axios.post(`${API_URL}/admin/post-categories`, categoryForm, axiosConfig);
+        alert('Tạo danh mục thành công!');
+      }
+      
+      fetchCategories();
+      setCategoryForm({ name: '', slug: '' });
+      setEditingCategory(null);
+    } catch (error: any) {
+      console.error('Error saving category:', error);
+      alert(error.response?.data?.error || 'Lỗi khi lưu danh mục');
+    }
+  };
+
+  const handleEditCategory = (category: PostCategory) => {
+    setEditingCategory(category);
+    setCategoryForm({
+      name: category.name,
+      slug: category.slug
+    });
+  };
+
+  const handleCancelEditCategory = () => {
+    setEditingCategory(null);
+    setCategoryForm({ name: '', slug: '' });
+  };
+
+  const handleDeleteCategory = async (id: string) => {
+    if (!window.confirm('Bạn có chắc muốn xóa danh mục này?')) return;
+    
+    try {
+      await axios.delete(`${API_URL}/admin/post-categories/${id}`, axiosConfig);
+      alert('Xóa danh mục thành công!');
+      fetchCategories();
+    } catch (error: any) {
+      console.error('Error deleting category:', error);
+      alert(error.response?.data?.error || 'Lỗi khi xóa danh mục');
+    }
+  };
+
+  const filteredCategories = categories.filter(category =>
+    category.name.toLowerCase().includes(categorySearchTerm.toLowerCase()) ||
+    category.slug.toLowerCase().includes(categorySearchTerm.toLowerCase())
+  );
 
   const filteredPosts = posts.filter(post => {
     const matchSearch = post.title.toLowerCase().includes(searchTerm.toLowerCase());
@@ -302,9 +340,9 @@ const PostManager: React.FC = () => {
         <div className="header-actions">
           <button className="btn-category" onClick={() => setShowCategoryModal(true)}>
             <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-              <path d="M10 4V16M4 10H16" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+              <path d="M4 6h12M4 10h12M4 14h12" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
             </svg>
-            Danh Mục
+            Quản Lý Danh Mục
           </button>
           <button className="btn-primary" onClick={() => openModal()}>
             <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
@@ -398,7 +436,6 @@ const PostManager: React.FC = () => {
                       )}
                     </td>
                     <td>
-                      {/* ✅ Fix: Hiển thị đúng status */}
                       <span className={`status-badge status-${post.status || 'draft'}`}>
                         {post.status === 'published' ? 'Đã xuất bản' : 'Nháp'}
                       </span>
@@ -431,6 +468,135 @@ const PostManager: React.FC = () => {
               )}
             </tbody>
           </table>
+        </div>
+      )}
+
+      {/* Category Management Modal */}
+      {showCategoryModal && (
+        <div className="modal-overlay" onClick={() => setShowCategoryModal(false)}>
+          <div className="modal-content modal-category-manager" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h2>Quản Lý Danh Mục Bài Viết</h2>
+              <button className="modal-close" onClick={() => setShowCategoryModal(false)}>
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                  <path d="M18 6L6 18M6 6L18 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+                </svg>
+              </button>
+            </div>
+
+            <div className="modal-body category-manager-body">
+              {/* Add/Edit Form */}
+              <form className="category-form" onSubmit={handleCategorySubmit}>
+                <h3 className="form-title">
+                  {editingCategory ? '✏️ Chỉnh Sửa Danh Mục' : '➕ Thêm Danh Mục Mới'}
+                </h3>
+                
+                <div className="form-row">
+                  <div className="form-group">
+                    <label>Tên danh mục *</label>
+                    <input
+                      type="text"
+                      name="name"
+                      value={categoryForm.name}
+                      onChange={handleCategoryInputChange}
+                      required
+                      placeholder="Ví dụ: Xu hướng nội thất"
+                    />
+                  </div>
+
+                  <div className="form-group">
+                    <label>Slug *</label>
+                    <input
+                      type="text"
+                      name="slug"
+                      value={categoryForm.slug}
+                      onChange={handleCategoryInputChange}
+                      required
+                      placeholder="xu-huong-noi-that"
+                    />
+                  </div>
+                </div>
+
+                <div className="form-actions">
+                  {editingCategory && (
+                    <button
+                      type="button"
+                      className="btn-cancel"
+                      onClick={handleCancelEditCategory}
+                    >
+                      Hủy
+                    </button>
+                  )}
+                  <button type="submit" className="btn-submit">
+                    {editingCategory ? 'Cập Nhật' : 'Tạo Danh Mục'}
+                  </button>
+                </div>
+              </form>
+
+              {/* Categories List */}
+              <div className="categories-list-section">
+                <div className="list-header">
+                  <h3 className="list-title">
+                    📁 Danh Sách Danh Mục ({filteredCategories.length})
+                  </h3>
+                  <div className="search-box-small">
+                    <svg width="16" height="16" viewBox="0 0 20 20" fill="none">
+                      <circle cx="9" cy="9" r="5" stroke="currentColor" strokeWidth="2"/>
+                      <path d="M13 13L17 17" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+                    </svg>
+                    <input
+                      type="text"
+                      placeholder="Tìm danh mục..."
+                      value={categorySearchTerm}
+                      onChange={(e) => setCategorySearchTerm(e.target.value)}
+                    />
+                  </div>
+                </div>
+                
+                <div className="categories-list-scrollable">
+                  {filteredCategories.length === 0 ? (
+                    <div className="empty-categories">
+                      {categorySearchTerm ? 'Không tìm thấy danh mục' : 'Chưa có danh mục nào'}
+                    </div>
+                  ) : (
+                    <div className="categories-grid">
+                      {filteredCategories.map(category => (
+                        <div
+                          key={category._id}
+                          className={`category-item ${editingCategory?._id === category._id ? 'editing' : ''}`}
+                        >
+                          <div className="category-info">
+                            <h4 className="category-name">{category.name}</h4>
+                            <p className="category-slug">{category.slug}</p>
+                          </div>
+                          <div className="category-actions">
+                            <button
+                              className="btn-edit-cat"
+                              onClick={() => handleEditCategory(category)}
+                              title="Sửa"
+                            >
+                              <svg width="16" height="16" viewBox="0 0 18 18" fill="none">
+                                <path d="M12.5 2.5L15.5 5.5L5.5 15.5H2.5V12.5L12.5 2.5Z" stroke="currentColor" strokeWidth="1.5"/>
+                              </svg>
+                            </button>
+                            <button
+                              className="btn-delete-cat"
+                              onClick={() => handleDeleteCategory(category._id)}
+                              title="Xóa"
+                            >
+                              <svg width="16" height="16" viewBox="0 0 18 18" fill="none">
+                                <path d="M3 5H15M7 8V13M11 8V13M4 5L5 15C5 15.5 5.5 16 6 16H12C12.5 16 13 15.5 13 15L14 5M7 5V3C7 2.5 7.5 2 8 2H10C10.5 2 11 2.5 11 3V5" stroke="currentColor" strokeWidth="1.5"/>
+                              </svg>
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       )}
 
@@ -660,57 +826,6 @@ const PostManager: React.FC = () => {
                     />
                   </div>
                 </div>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* Category Modal */}
-      {showCategoryModal && (
-        <div className="modal-overlay" onClick={() => setShowCategoryModal(false)}>
-          <div className="modal-content modal-small" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-header">
-              <h2>Tạo Danh Mục Mới</h2>
-              <button className="modal-close" onClick={() => setShowCategoryModal(false)}>
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-                  <path d="M18 6L6 18M6 6L18 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-                </svg>
-              </button>
-            </div>
-
-            <form className="modal-body" onSubmit={handleCategorySubmit}>
-              <div className="form-group">
-                <label>Tên danh mục *</label>
-                <input
-                  type="text"
-                  name="name"
-                  value={categoryForm.name}
-                  onChange={handleCategoryInputChange}
-                  required
-                  placeholder="Ví dụ: Xu hướng nội thất"
-                />
-              </div>
-
-              <div className="form-group">
-                <label>Slug *</label>
-                <input
-                  type="text"
-                  name="slug"
-                  value={categoryForm.slug}
-                  onChange={handleCategoryInputChange}
-                  required
-                  placeholder="xu-huong-noi-that"
-                />
-              </div>
-
-              <div className="modal-footer">
-                <button type="button" className="btn-cancel" onClick={() => setShowCategoryModal(false)}>
-                  Hủy
-                </button>
-                <button type="submit" className="btn-submit">
-                  Tạo Danh Mục
-                </button>
               </div>
             </form>
           </div>
