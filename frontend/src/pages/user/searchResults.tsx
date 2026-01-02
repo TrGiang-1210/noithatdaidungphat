@@ -6,6 +6,7 @@ import { FaShoppingCart } from "react-icons/fa";
 import "@/styles/pages/user/searchResults.scss";
 import { getFirstImageUrl } from "@/utils/imageUrl";
 import { useCart } from "@/context/CartContext";
+import { useLanguage } from "@/context/LanguageContext"; // ✅ IMPORT
 
 const SearchResult: React.FC = () => {
   const [searchParams] = useSearchParams();
@@ -14,6 +15,7 @@ const SearchResult: React.FC = () => {
   const [loading, setLoading] = useState<boolean>(true);
   const { addToCart } = useCart();
   const navigate = useNavigate();
+  const { t, language } = useLanguage(); // ✅ SỬ DỤNG HOOK
 
   useEffect(() => {
     if (!query.trim()) {
@@ -24,8 +26,8 @@ const SearchResult: React.FC = () => {
 
     setLoading(true);
 
-    // ĐÃ SỬA: Gọi đúng hàm searchProducts (dùng fetch, không 404)
-    searchProducts(query)
+    // ✅ Gọi API với language parameter
+    searchProducts(query, language)
       .then((data) => {
         setProducts(Array.isArray(data) ? data : []);
       })
@@ -36,7 +38,7 @@ const SearchResult: React.FC = () => {
       .finally(() => {
         setLoading(false);
       });
-  }, [query]);
+  }, [query, language]); // ✅ THÊM language vào dependencies
 
   const formatCurrency = (amount: number): string =>
     new Intl.NumberFormat("vi-VN", {
@@ -44,13 +46,10 @@ const SearchResult: React.FC = () => {
       currency: "VND",
     }).format(amount);
 
-  // Tạm disable nút thêm giỏ hàng nếu chưa có context
   const handleAddToCart = async (product: Product) => {
-    // Thêm vào giỏ hàng trước
     const success = await addToCart(product, 1);
 
     if (success) {
-      // Sau đó chuyển đến trang thanh toán
       setTimeout(() => {
         navigate("/thanh-toan");
       }, 300);
@@ -62,7 +61,7 @@ const SearchResult: React.FC = () => {
       <div
         style={{ textAlign: "center", padding: "60px 20px", fontSize: "18px" }}
       >
-        Đang tìm kiếm sản phẩm...
+        {t('search.loading')} {/* ✅ DỊCH */}
       </div>
     );
   }
@@ -73,7 +72,7 @@ const SearchResult: React.FC = () => {
         <main className="product-content">
           <div className="product-header">
             <h2 style={{ textAlign: "center" }}>
-              Kết quả tìm kiếm cho:{" "}
+              {t('search.pageTitle')}{" "} {/* ✅ DỊCH */}
               <em style={{ color: "#d6a041" }}>{query}</em>
             </h2>
             <p
@@ -84,31 +83,28 @@ const SearchResult: React.FC = () => {
                 color: "#666",
               }}
             >
-              Tìm thấy{" "}
+              {t('search.resultsFound')}{" "} {/* ✅ DỊCH */}
               <strong style={{ color: "#d6a041" }}>{products.length}</strong>{" "}
-              sản phẩm
+              {t('search.products')} {/* ✅ DỊCH */}
             </p>
           </div>
 
           <div className="product-grid">
             {products.length > 0 ? (
               products.map((product) => {
-                const isOutOfStock = product.quantity <= 0; // ✅ THÊM DÒNG NÀY
+                const isOutOfStock = product.quantity <= 0;
 
                 return (
                   <div
                     className={`product-card ${
                       isOutOfStock ? "out-of-stock" : ""
-                    }`} // ✅ SỬA CLASS
+                    }`}
                     key={product._id}
                   >
                     <div style={{ position: "relative" }}>
-                      {" "}
-                      {/* ✅ WRAP IMG */}
-                      {/* ✅ THÊM BADGE HẾT HÀNG */}
                       {isOutOfStock && (
                         <span className="badge out-of-stock-badge">
-                          Hết hàng
+                          {t('search.outOfStock')} {/* ✅ DỊCH */}
                         </span>
                       )}
                       <img
@@ -129,7 +125,7 @@ const SearchResult: React.FC = () => {
                       />
                     </div>
 
-                    <p className="product-brand">Nội thất cao cấp</p>
+                    <p className="product-brand">{t('search.brand')}</p> {/* ✅ DỊCH */}
                     <h4 className="product-name">{product.name}</h4>
 
                     <div className="price-block">
@@ -165,11 +161,10 @@ const SearchResult: React.FC = () => {
                     <button
                       className="add-to-cart"
                       onClick={() => handleAddToCart(product)}
-                      disabled={isOutOfStock} // ✅ DISABLE NÚT KHI HẾT HÀNG
+                      disabled={isOutOfStock}
                     >
                       <FaShoppingCart />
-                      {isOutOfStock ? "Hết hàng" : "Thêm vào giỏ"}{" "}
-                      {/* ✅ ĐỔI TEXT */}
+                      {isOutOfStock ? t('search.outOfStock') : t('search.addToCart')} {/* ✅ DỊCH */}
                     </button>
                   </div>
                 );
@@ -183,10 +178,10 @@ const SearchResult: React.FC = () => {
                 }}
               >
                 <p style={{ fontSize: "18px" }}>
-                  Không tìm thấy sản phẩm nào phù hợp với "
+                  {t('search.noResults')} " {/* ✅ DỊCH */}
                   <strong>{query}</strong>"
                 </p>
-                <p>Gợi ý: Thử tìm "giường", "tủ", "bàn ăn", "ghế sofa"...</p>
+                <p>{t('search.suggestions')}</p> {/* ✅ DỊCH */}
               </div>
             )}
           </div>

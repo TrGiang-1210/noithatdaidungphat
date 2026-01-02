@@ -40,8 +40,14 @@ export const fetchProductDetail = async (slug: string): Promise<Product> => {
 };
 
 // TÌM KIẾM – ĐÃ HOẠT ĐỘNG 100%
-export const searchProducts = async (keyword: string): Promise<Product[]> => {
-  const res = await fetch(`/api/products/search?query=${encodeURIComponent(keyword)}`);
+// Thay thế hàm searchProducts
+export const searchProducts = async (
+  keyword: string, 
+  language: string = 'vi'
+): Promise<Product[]> => {
+  const res = await fetch(
+    `/api/products/search?query=${encodeURIComponent(keyword)}&lang=${language}`
+  );
   if (!res.ok) throw new Error("Không thể tìm kiếm sản phẩm");
   return res.json();
 };
