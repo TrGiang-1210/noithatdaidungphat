@@ -1,6 +1,6 @@
 // src/admin/pages/ProductBulkCategory.tsx
 import { useState, useEffect, useMemo } from "react";
-import { Search, Package, Folders, Loader2, CheckCircle } from "lucide-react";
+import { Search, Package, Folders, Loader2, CheckCircle, ToggleLeft, ToggleRight } from "lucide-react";
 import "@/styles/pages/admin/productBulkCategory.scss";
 import { getImageUrl, getFirstImageUrl } from "@/utils/imageUrl";
 import axiosInstance from "../../axios";
@@ -9,7 +9,7 @@ interface Product {
   _id: string;
   name: string;
   images: string[];
-  categories?: Array<string | { _id: string; name?: string; slug?: string }>; // Có thể là string hoặc object
+  categories?: Array<string | { _id: string; name?: string; slug?: string }>;
 }
 
 interface CategoryNode {
@@ -18,7 +18,6 @@ interface CategoryNode {
   children?: CategoryNode[];
 }
 
-// Helper: Chuyển categories thành array string ID
 const normalizeCategoryIds = (
   categories?: Array<string | { _id: string }>
 ): string[] => {
@@ -33,7 +32,6 @@ const normalizeCategoryIds = (
     .filter(Boolean);
 };
 
-// Component cây danh mục
 const CategoryTreeItem: React.FC<{
   node: CategoryNode;
   level: number;
@@ -106,6 +104,8 @@ export default function ProductBulkCategory() {
   const [saving, setSaving] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [savedProductCount, setSavedProductCount] = useState(0);
+  const [selectionMode, setSelectionMode] = useState<"single" | "multiple">("single");
 
   // Fetch data
   useEffect(() => {
@@ -118,8 +118,6 @@ export default function ProductBulkCategory() {
         ]);
 
         const productsData = prodRes.data || [];
-        console.log("Products loaded:", productsData[0]); // Debug
-
         setProducts(productsData);
         setCategories(catRes.data || []);
       } catch (err: any) {
@@ -138,16 +136,13 @@ export default function ProductBulkCategory() {
     fetchData();
   }, []);
 
-  // Load danh mục của sản phẩm được chọn
+  // Load danh mục của sản phẩm (chỉ ở chế độ single)
   useEffect(() => {
-    if (selectedProducts.length === 1) {
+    if (selectionMode === "single" && selectedProducts.length === 1) {
       const product = products.find((p) => p._id === selectedProducts[0]);
 
       if (product) {
-        // Normalize categories thành array string ID
         const categoryIds = normalizeCategoryIds(product.categories);
-
-        console.log("Selected product categories:", categoryIds); // Debug
 
         if (categoryIds.length > 0) {
           setSelectedCategories(categoryIds);
@@ -156,12 +151,11 @@ export default function ProductBulkCategory() {
           setSelectedCategories([]);
         }
       }
-    } else if (selectedProducts.length === 0) {
+    } else if (selectionMode === "multiple" && selectedProducts.length === 0) {
       setSelectedCategories([]);
     }
-  }, [selectedProducts, products]);
+  }, [selectedProducts, products, selectionMode]);
 
-  // Hàm expand các nhánh cha của danh mục
   const expandParentCategories = (categoryIds: string[]) => {
     const toExpand: string[] = [];
 
@@ -239,10 +233,34 @@ export default function ProductBulkCategory() {
     }
   };
 
+  const handleProductSelect = (productId: string, checked: boolean) => {
+    if (selectionMode === "single") {
+      setSelectedProducts(checked ? [productId] : []);
+    } else {
+      setSelectedProducts((prev) =>
+        checked ? [...prev, productId] : prev.filter((id) => id !== productId)
+      );
+    }
+  };
+
+  const toggleSelectionMode = () => {
+    const newMode = selectionMode === "single" ? "multiple" : "single";
+    setSelectionMode(newMode);
+    
+    if (newMode === "single") {
+      if (selectedProducts.length > 1) {
+        setSelectedProducts([selectedProducts[0]]);
+      }
+    } else {
+      setSelectedCategories([]);
+    }
+  };
+
   const handleSave = async () => {
     if (selectedProducts.length === 0 || selectedCategories.length === 0)
       return;
 
+    const productCount = selectedProducts.length;
     setSaving(true);
     try {
       await axiosInstance.post("/admin/products/bulk-categories", {
@@ -250,7 +268,6 @@ export default function ProductBulkCategory() {
         categoryIds: selectedCategories,
       });
 
-      // Cập nhật state local với categories mới (dạng string ID)
       setProducts((prevProducts) =>
         prevProducts.map((p) =>
           selectedProducts.includes(p._id)
@@ -259,9 +276,13 @@ export default function ProductBulkCategory() {
         )
       );
 
+      setSavedProductCount(productCount);
       setShowSuccess(true);
       setTimeout(() => setShowSuccess(false), 4000);
       window.dispatchEvent(new Event("categories-updated"));
+      
+      setSelectedProducts([]);
+      setSelectedCategories([]);
     } catch (err: any) {
       console.error("Lỗi gán danh mục:", err);
       alert("Lỗi: " + (err.response?.data?.message || err.message));
@@ -290,13 +311,12 @@ export default function ProductBulkCategory() {
         <div className="success-banner">
           <CheckCircle size={20} />
           <span>
-            Đã lưu danh mục cho {selectedProducts.length} sản phẩm vào database!
+            Đã lưu danh mục cho {savedProductCount} sản phẩm vào database!
           </span>
         </div>
       )}
 
       <div className="bulk-grid">
-        {/* Bên trái: Sản phẩm */}
         <div className="bulk-card">
           <div className="card-header">
             <div className="header-left">
@@ -306,12 +326,33 @@ export default function ProductBulkCategory() {
                 {selectedProducts.length} đã chọn
               </span>
             </div>
-            <button onClick={toggleSelectAllProducts} className="link-btn">
-              {selectedProducts.length === filteredProducts.length &&
-              filteredProducts.length > 0
-                ? "Bỏ chọn tất cả"
-                : "Chọn tất cả"}
-            </button>
+            <div className="header-right">
+              <button 
+                onClick={toggleSelectionMode} 
+                className="mode-toggle-btn"
+                title={selectionMode === "single" ? "Chuyển sang chế độ chọn nhiều" : "Chuyển sang chế độ xem"}
+              >
+                {selectionMode === "single" ? (
+                  <>
+                    <ToggleLeft size={18} />
+                    <span>Xem danh mục</span>
+                  </>
+                ) : (
+                  <>
+                    <ToggleRight size={18} />
+                    <span>Gán hàng loạt</span>
+                  </>
+                )}
+              </button>
+              {selectionMode === "multiple" && (
+                <button onClick={toggleSelectAllProducts} className="link-btn">
+                  {selectedProducts.length === filteredProducts.length &&
+                  filteredProducts.length > 0
+                    ? "Bỏ chọn tất cả"
+                    : "Chọn tất cả"}
+                </button>
+              )}
+            </div>
           </div>
 
           <div className="search-box">
@@ -336,13 +377,7 @@ export default function ProductBulkCategory() {
                     <input
                       type="checkbox"
                       checked={selectedProducts.includes(p._id)}
-                      onChange={(e) => {
-                        if (e.target.checked) {
-                          setSelectedProducts([p._id]);
-                        } else {
-                          setSelectedProducts([]);
-                        }
-                      }}
+                      onChange={(e) => handleProductSelect(p._id, e.target.checked)}
                     />
                     <img 
                       src={getFirstImageUrl(p.images)} 
@@ -362,7 +397,6 @@ export default function ProductBulkCategory() {
           </div>
         </div>
 
-        {/* Bên phải: Danh mục */}
         <div className="bulk-card">
           <div className="card-header">
             <div className="header-left">
@@ -372,7 +406,7 @@ export default function ProductBulkCategory() {
                 {selectedCategories.length} danh mục
               </span>
             </div>
-            {selectedProducts.length === 1 && (
+            {selectionMode === "single" && selectedProducts.length === 1 && (
               <span className="hint-text">
                 {normalizeCategoryIds(
                   products.find((p) => p._id === selectedProducts[0])
@@ -380,6 +414,11 @@ export default function ProductBulkCategory() {
                 ).length > 0
                   ? "Đang xem danh mục đã lưu"
                   : "Chưa có danh mục"}
+              </span>
+            )}
+            {selectionMode === "multiple" && selectedProducts.length > 0 && (
+              <span className="hint-text-multiple">
+                Chọn danh mục để gán cho {selectedProducts.length} sản phẩm
               </span>
             )}
           </div>

@@ -55,6 +55,17 @@ const sampleTranslations = [
   { key: 'footer.workingHours', namespace: 'footer', viText: 'Giờ làm việc: 8:00 – 21:00 (T2–CN)', category: 'UI' },
   { key: 'footer.copyright', namespace: 'footer', viText: 'Đại Dũng Phát – All rights reserved.', category: 'UI' },
   
+  // ========== SEARCH RESULTS PAGE ==========
+  { key: 'search.pageTitle', namespace: 'search', viText: 'Kết quả tìm kiếm cho:', category: 'UI' },
+  { key: 'search.resultsFound', namespace: 'search', viText: 'Tìm thấy', category: 'UI' },
+  { key: 'search.products', namespace: 'search', viText: 'sản phẩm', category: 'UI' },
+  { key: 'search.loading', namespace: 'search', viText: 'Đang tìm kiếm sản phẩm...', category: 'UI' },
+  { key: 'search.noResults', namespace: 'search', viText: 'Không tìm thấy sản phẩm nào phù hợp với', category: 'UI' },
+  { key: 'search.suggestions', namespace: 'search', viText: 'Gợi ý: Thử tìm "giường", "tủ", "bàn ăn", "ghế sofa"...', category: 'UI' },
+  { key: 'search.brand', namespace: 'search', viText: 'Nội thất cao cấp', category: 'UI' },
+  { key: 'search.addToCart', namespace: 'search', viText: 'Thêm vào giỏ', category: 'UI' },
+  { key: 'search.outOfStock', namespace: 'search', viText: 'Hết hàng', category: 'UI' },
+
   // ========== PRODUCT (GENERAL) ==========
   { key: 'product.buyNow', namespace: 'products', viText: 'Mua ngay', category: 'UI' },
   { key: 'product.addToCart', namespace: 'products', viText: 'Thêm vào giỏ', category: 'UI' },
