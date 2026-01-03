@@ -1,4 +1,3 @@
-// src/admin/pages/Dashboard.tsx - ✅ CLEANED (no inline styles)
 import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { 
@@ -8,11 +7,8 @@ import {
   AlertCircle, 
   Package, 
   DollarSign,
-  CheckCircle,
-  XCircle,
-  Truck,
-  Eye,
-  BarChart3
+  BarChart3,
+  Calendar
 } from "lucide-react";
 import { 
   LineChart, 
@@ -24,10 +20,21 @@ import {
   CartesianGrid, 
   Tooltip, 
   ResponsiveContainer, 
-  Legend 
+  Legend,
+  Area,
+  ComposedChart
 } from "recharts";
 import axiosInstance from "../../axios";
+import { getImageUrl } from "../../utils/imageUrl";
 import "@/styles/pages/admin/dashboard.scss";
+
+interface Product {
+  name: string;
+  quantity: number;
+  revenue: number;
+  image: string;
+  slug: string;
+}
 
 interface DashboardStats {
   totalProducts: number;
@@ -65,22 +72,93 @@ interface DashboardStats {
     totalOrders7Days: number;
     average7Days: number;
     growth: number;
-    topProducts: Array<{
-      name: string;
-      quantity: number;
-      revenue: number;
-      image: string;
-    }>;
+    topProducts: Product[];
   };
 }
+
+type DateRange = '7days' | '30days' | '3months' | '6months' | '1year' | 'custom';
+
+interface DateRangeOption {
+  value: DateRange;
+  label: string;
+  days: number;
+}
+
+const dateRangeOptions: DateRangeOption[] = [
+  { value: '7days', label: '7 ngày qua', days: 7 },
+  { value: '30days', label: '30 ngày qua', days: 30 },
+  { value: '3months', label: '3 tháng qua', days: 90 },
+  { value: '6months', label: '6 tháng qua', days: 180 },
+  { value: '1year', label: '1 năm qua', days: 365 },
+  { value: 'custom', label: 'Tùy chỉnh', days: 0 }
+];
+
+// Custom Tooltip Component
+const CustomTooltip = ({ active, payload, label }: any) => {
+  if (active && payload && payload.length) {
+    return (
+      <div className="custom-tooltip">
+        <p className="tooltip-label">{label}</p>
+        <div className="tooltip-content">
+          {payload.map((entry: any, index: number) => (
+            <div key={index} className="tooltip-item" style={{ color: entry.color }}>
+              <span className="tooltip-name">{entry.name}:</span>
+              <span className="tooltip-value">
+                {entry.name.includes('Doanh thu') 
+                  ? `${entry.value.toLocaleString()} ₫`
+                  : entry.value.toLocaleString()
+                }
+              </span>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
+  return null;
+};
+
+// Custom Dot Component
+const CustomDot = (props: any) => {
+  const { cx, cy, stroke, value } = props;
+  
+  if (value === 0) {
+    return (
+      <circle
+        cx={cx}
+        cy={cy}
+        r={4}
+        fill="#e2e8f0"
+        stroke={stroke}
+        strokeWidth={2}
+      />
+    );
+  }
+  
+  return (
+    <circle
+      cx={cx}
+      cy={cy}
+      r={5}
+      fill={stroke}
+      stroke="#fff"
+      strokeWidth={2}
+      className="pulse-dot"
+    />
+  );
+};
 
 export default function Dashboard() {
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [dateRange, setDateRange] = useState<DateRange>('7days');
+  const [customStartDate, setCustomStartDate] = useState('');
+  const [customEndDate, setCustomEndDate] = useState('');
+  const [showCustomDatePicker, setShowCustomDatePicker] = useState(false);
   const navigate = useNavigate();
 
-  const fetchDashboardStats = async () => {
+  const fetchDashboardStats = async (range: DateRange = dateRange) => {
     try {
       setLoading(true);
       setError(null);
@@ -92,7 +170,20 @@ export default function Dashboard() {
         return;
       }
       
-      const res = await axiosInstance.get("/admin/dashboard/stats");
+      // Build query params based on date range
+      let params: any = {};
+      
+      if (range === 'custom' && customStartDate && customEndDate) {
+        params.startDate = customStartDate;
+        params.endDate = customEndDate;
+      } else {
+        const option = dateRangeOptions.find(opt => opt.value === range);
+        if (option) {
+          params.days = option.days;
+        }
+      }
+      
+      const res = await axiosInstance.get("/admin/dashboard/stats", { params });
       setStats(res.data);
     } catch (err: any) {
       console.error("Lỗi tải thống kê dashboard:", err);
@@ -114,9 +205,33 @@ export default function Dashboard() {
 
   useEffect(() => {
     fetchDashboardStats();
-    const interval = setInterval(fetchDashboardStats, 5 * 60 * 1000);
+    const interval = setInterval(() => fetchDashboardStats(), 5 * 60 * 1000);
     return () => clearInterval(interval);
-  }, []);
+  }, [dateRange, customStartDate, customEndDate]);
+
+  const handleDateRangeChange = (range: DateRange) => {
+    setDateRange(range);
+    if (range === 'custom') {
+      setShowCustomDatePicker(true);
+    } else {
+      setShowCustomDatePicker(false);
+      fetchDashboardStats(range);
+    }
+  };
+
+  const handleCustomDateApply = () => {
+    if (customStartDate && customEndDate) {
+      fetchDashboardStats('custom');
+      setShowCustomDatePicker(false);
+    }
+  };
+
+  const getDateRangeLabel = () => {
+    if (dateRange === 'custom' && customStartDate && customEndDate) {
+      return `${new Date(customStartDate).toLocaleDateString('vi-VN')} - ${new Date(customEndDate).toLocaleDateString('vi-VN')}`;
+    }
+    return dateRangeOptions.find(opt => opt.value === dateRange)?.label || '7 ngày qua';
+  };
 
   if (loading) {
     return (
@@ -132,7 +247,7 @@ export default function Dashboard() {
       <div className="admin-content dashboard-error">
         <AlertCircle size={48} />
         <p>{error}</p>
-        <button onClick={fetchDashboardStats} className="btn-retry">
+        <button onClick={() => fetchDashboardStats()} className="btn-retry">
           Thử lại
         </button>
       </div>
@@ -162,18 +277,18 @@ export default function Dashboard() {
 
   const revenueChart = stats.revenueChart;
   const chartData = revenueChart?.data || [];
-  const hasRevenueData = chartData.length > 0 && revenueChart.total7Days > 0;
+  const hasRevenueData = chartData.length > 0;
+  
+  const formattedChartData = chartData.map(item => ({
+    ...item,
+    displayDate: item.date,
+    fullDate: item.fullDate,
+    revenue: item.revenue || 0,
+    orders: item.orders || 0,
+    confirmedOrders: item.confirmedOrders || 0
+  }));
 
-  // Calculate translation UI percentage for progress bar
   const translationUIPercentage = ((stats.translationUI.translated / stats.translationUI.total) * 100) || 0;
-
-  // Debug log for topProducts
-  console.log('🔍 Revenue Chart Data:', {
-    hasRevenueData,
-    total7Days: revenueChart?.total7Days,
-    topProducts: revenueChart?.topProducts,
-    topProductsLength: revenueChart?.topProducts?.length
-  });
 
   return (
     <div className="admin-content">
@@ -257,7 +372,7 @@ export default function Dashboard() {
             <div className="mini-progress">
               <div 
                 className="mini-progress-bar"
-                data-percentage={translationUIPercentage}
+                style={{ width: `${translationUIPercentage}%` }}
               />
             </div>
           </Link>
@@ -286,11 +401,74 @@ export default function Dashboard() {
       {/* Revenue Chart Section */}
       <div className="revenue-section">
         <div className="revenue-header">
-          <div className="revenue-title">
-            <DollarSign size={28} className="icon-revenue" />
-            <div>
-              <h2>Doanh thu & Đơn hàng</h2>
-              <p className="subtitle">7 ngày gần nhất</p>
+          <div className="revenue-title-row">
+            <div className="revenue-title">
+              <DollarSign size={28} className="icon-revenue" />
+              <div>
+                <h2>Doanh thu & Đơn hàng</h2>
+                <p className="subtitle">{getDateRangeLabel()}</p>
+              </div>
+            </div>
+
+            {/* Date Range Filter */}
+            <div className="date-range-filter">
+              <div className="filter-buttons">
+                {dateRangeOptions.map(option => (
+                  <button
+                    key={option.value}
+                    className={`filter-btn ${dateRange === option.value ? 'active' : ''}`}
+                    onClick={() => handleDateRangeChange(option.value)}
+                  >
+                    {option.value === 'custom' && <Calendar size={16} />}
+                    {option.label}
+                  </button>
+                ))}
+              </div>
+
+              {/* Custom Date Picker */}
+              {showCustomDatePicker && (
+                <div className="custom-date-picker">
+                  <div className="date-inputs">
+                    <div className="input-group">
+                      <label>Từ ngày:</label>
+                      <input
+                        type="date"
+                        value={customStartDate}
+                        onChange={(e) => setCustomStartDate(e.target.value)}
+                        max={customEndDate || undefined}
+                      />
+                    </div>
+                    <div className="input-group">
+                      <label>Đến ngày:</label>
+                      <input
+                        type="date"
+                        value={customEndDate}
+                        onChange={(e) => setCustomEndDate(e.target.value)}
+                        min={customStartDate || undefined}
+                        max={new Date().toISOString().split('T')[0]}
+                      />
+                    </div>
+                  </div>
+                  <div className="picker-actions">
+                    <button 
+                      className="btn-apply"
+                      onClick={handleCustomDateApply}
+                      disabled={!customStartDate || !customEndDate}
+                    >
+                      Áp dụng
+                    </button>
+                    <button 
+                      className="btn-cancel"
+                      onClick={() => {
+                        setShowCustomDatePicker(false);
+                        setDateRange('7days');
+                      }}
+                    >
+                      Hủy
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
           
@@ -342,53 +520,71 @@ export default function Dashboard() {
         {hasRevenueData ? (
           <>
             <div className="charts-container">
-              {/* Revenue Bar Chart */}
-              <div className="chart-box">
+              {/* Combined Revenue Chart */}
+              <div className="chart-box chart-featured">
                 <h3 className="chart-title">
                   <DollarSign size={18} />
                   Biểu đồ doanh thu (₫)
                 </h3>
                 <ResponsiveContainer width="100%" height={320}>
-                  <BarChart data={chartData} margin={{ top: 10, right: 10, left: 10, bottom: 5 }}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                  <ComposedChart data={formattedChartData} margin={{ top: 10, right: 10, left: 10, bottom: 5 }}>
+                    <defs>
+                      <linearGradient id="revenueGradient" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor="#3b82f6" stopOpacity={0.8} />
+                        <stop offset="100%" stopColor="#3b82f6" stopOpacity={0.1} />
+                      </linearGradient>
+                      <linearGradient id="barGradient" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor="#3b82f6" stopOpacity={1} />
+                        <stop offset="100%" stopColor="#60a5fa" stopOpacity={0.9} />
+                      </linearGradient>
+                      <filter id="shadow" height="200%">
+                        <feGaussianBlur in="SourceAlpha" stdDeviation="3"/>
+                        <feOffset dx="0" dy="4" result="offsetblur"/>
+                        <feComponentTransfer>
+                          <feFuncA type="linear" slope="0.2"/>
+                        </feComponentTransfer>
+                        <feMerge>
+                          <feMergeNode/>
+                          <feMergeNode in="SourceGraphic"/>
+                        </feMerge>
+                      </filter>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" vertical={false} />
                     <XAxis 
-                      dataKey="date" 
+                      dataKey="displayDate" 
                       tick={{ fill: '#64748b', fontSize: 12 }}
                       axisLine={{ stroke: '#e2e8f0' }}
+                      tickLine={false}
                     />
                     <YAxis 
                       tick={{ fill: '#64748b', fontSize: 12 }}
                       axisLine={{ stroke: '#e2e8f0' }}
+                      tickLine={false}
                       tickFormatter={(value) => {
                         if (value >= 1000000) return `${(value / 1000000).toFixed(1)}M`;
                         if (value >= 1000) return `${(value / 1000).toFixed(0)}K`;
                         return value;
                       }}
                     />
-                    <Tooltip
-                      contentStyle={{
-                        backgroundColor: '#fff',
-                        border: '1px solid #e2e8f0',
-                        borderRadius: '8px',
-                        padding: '12px',
-                        boxShadow: '0 4px 12px rgba(0,0,0,0.1)'
-                      }}
-                      formatter={(value: any) => [`${value.toLocaleString()} ₫`, 'Doanh thu']}
-                      labelStyle={{ fontWeight: 600, marginBottom: '4px' }}
+                    <Tooltip content={<CustomTooltip />} />
+                    <Area
+                      type="monotone"
+                      dataKey="revenue"
+                      fill="url(#revenueGradient)"
+                      stroke="#3b82f6"
+                      strokeWidth={0}
+                      name="Doanh thu"
                     />
                     <Bar 
                       dataKey="revenue" 
-                      fill="url(#revenueGradient)" 
+                      fill="url(#barGradient)" 
                       radius={[8, 8, 0, 0]}
                       maxBarSize={60}
+                      minPointSize={5}
+                      filter="url(#shadow)"
+                      name="Doanh thu"
                     />
-                    <defs>
-                      <linearGradient id="revenueGradient" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="0%" stopColor="#3b82f6" stopOpacity={1} />
-                        <stop offset="100%" stopColor="#60a5fa" stopOpacity={0.8} />
-                      </linearGradient>
-                    </defs>
-                  </BarChart>
+                  </ComposedChart>
                 </ResponsiveContainer>
               </div>
 
@@ -399,45 +595,50 @@ export default function Dashboard() {
                   Số lượng đơn hàng
                 </h3>
                 <ResponsiveContainer width="100%" height={320}>
-                  <LineChart data={chartData} margin={{ top: 10, right: 10, left: 10, bottom: 5 }}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                  <LineChart data={formattedChartData} margin={{ top: 10, right: 10, left: 10, bottom: 5 }}>
+                    <defs>
+                      <filter id="glow" height="300%" width="300%" x="-75%" y="-75%">
+                        <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
+                        <feMerge>
+                          <feMergeNode in="coloredBlur"/>
+                          <feMergeNode in="SourceGraphic"/>
+                        </feMerge>
+                      </filter>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" vertical={false} />
                     <XAxis 
-                      dataKey="date" 
+                      dataKey="displayDate" 
                       tick={{ fill: '#64748b', fontSize: 12 }}
                       axisLine={{ stroke: '#e2e8f0' }}
+                      tickLine={false}
                     />
                     <YAxis 
                       tick={{ fill: '#64748b', fontSize: 12 }}
                       axisLine={{ stroke: '#e2e8f0' }}
+                      tickLine={false}
+                      allowDecimals={false}
                     />
-                    <Tooltip
-                      contentStyle={{
-                        backgroundColor: '#fff',
-                        border: '1px solid #e2e8f0',
-                        borderRadius: '8px',
-                        padding: '12px',
-                        boxShadow: '0 4px 12px rgba(0,0,0,0.1)'
-                      }}
-                      labelStyle={{ fontWeight: 600, marginBottom: '4px' }}
-                    />
+                    <Tooltip content={<CustomTooltip />} />
                     <Line 
                       type="monotone" 
                       dataKey="orders" 
                       stroke="#10b981" 
                       strokeWidth={3}
-                      dot={{ fill: '#10b981', r: 5, strokeWidth: 2, stroke: '#fff' }}
-                      activeDot={{ r: 7 }}
+                      dot={<CustomDot />}
+                      activeDot={{ r: 8, filter: "url(#glow)" }}
                       name="Tổng đơn"
+                      connectNulls
                     />
                     <Line 
                       type="monotone" 
                       dataKey="confirmedOrders" 
                       stroke="#8b5cf6" 
                       strokeWidth={2}
-                      dot={{ fill: '#8b5cf6', r: 4, strokeWidth: 2, stroke: '#fff' }}
-                      activeDot={{ r: 6 }}
+                      dot={<CustomDot />}
+                      activeDot={{ r: 7 }}
                       name="Đã xác nhận"
                       strokeDasharray="5 5"
+                      connectNulls
                     />
                     <Legend 
                       wrapperStyle={{ paddingTop: '20px' }}
@@ -454,24 +655,24 @@ export default function Dashboard() {
                 <h3 className="section-title">
                   <Package size={22} />
                   <span>Top 5 sản phẩm bán chạy</span>
-                  <span className="subtitle-small">(7 ngày qua)</span>
+                  <span className="subtitle-small">({getDateRangeLabel()})</span>
                 </h3>
                 <div className="products-grid">
                   {revenueChart.topProducts.map((product, idx) => (
-                    <div key={idx} className="product-card">
+                    <Link 
+                      key={idx} 
+                      to={`/san-pham/${product.slug}`}
+                      className="product-card"
+                    >
                       <div className={`rank-badge rank-${idx + 1}`}>{idx + 1}</div>
                       <div className="product-image">
                         {product.image ? (
                           <img 
-                            src={product.image} 
+                            src={getImageUrl(product.image)} 
                             alt={product.name}
                             onError={(e) => {
                               const target = e.target as HTMLImageElement;
-                              target.style.display = 'none';
-                              const parent = target.parentElement;
-                              if (parent) {
-                                parent.innerHTML = '<div class="no-image"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg></div>';
-                              }
+                              target.src = 'https://via.placeholder.com/150?text=No+Image';
                             }}
                           />
                         ) : (
@@ -493,24 +694,22 @@ export default function Dashboard() {
                           </div>
                         </div>
                       </div>
-                    </div>
+                    </Link>
                   ))}
                 </div>
               </div>
             )}
             
-            {/* Debug: Show if topProducts is empty or undefined */}
             {hasRevenueData && (!revenueChart?.topProducts || revenueChart.topProducts.length === 0) && (
               <div className="top-products-section">
                 <h3 className="section-title">
                   <Package size={22} />
                   <span>Top 5 sản phẩm bán chạy</span>
-                  <span className="subtitle-small">(7 ngày qua)</span>
+                  <span className="subtitle-small">({getDateRangeLabel()})</span>
                 </h3>
                 <div className="no-products-data">
                   <Package size={48} />
                   <p>Chưa có dữ liệu sản phẩm bán chạy</p>
-                  <small>Backend chưa trả về topProducts hoặc mảng rỗng</small>
                 </div>
               </div>
             )}

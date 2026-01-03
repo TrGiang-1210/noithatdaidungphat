@@ -3,10 +3,12 @@ import { FaSearch } from "react-icons/fa";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useCart } from "@/context/CartContext";
 import { AuthContext } from "@/context/AuthContext";
-import { useLanguage } from "@/context/LanguageContext"; // ✅ THÊM
+import { useLanguage } from "@/context/LanguageContext";
 import { getImageUrl, getFirstImageUrl } from "@/utils/imageUrl";
 import { triggerUserLogout } from "@/utils/authEvents";
 import "@/styles/components/user/header.scss";
+// ✅ Import logo như một module
+import logoImage from "@/assets/logo-ddp-removebg.png";
 
 interface Category {
   _id: string;
@@ -24,7 +26,7 @@ interface CurrentUser {
 }
 
 const Header: React.FC = () => {
-  const { t, language } = useLanguage(); // ✅ Lấy cả language
+  const { t, language } = useLanguage();
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
   const [isAtTop, setIsAtTop] = useState(true);
@@ -50,7 +52,6 @@ const Header: React.FC = () => {
   useEffect(() => {
     const fetchCategories = async () => {
       try {
-        // ✅ Thêm ?lang=${language}
         const response = await fetch(`http://localhost:5000/api/categories?lang=${language}`);
         const data = await response.json();
         setCategories(data);
@@ -77,9 +78,8 @@ const Header: React.FC = () => {
     handleScroll();
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
-  }, [language]); // ✅ Re-fetch khi language thay đổi
+  }, [language]);
 
-  // Cập nhật vị trí dropdown khi scroll/resize
   useEffect(() => {
     const updateDropdownPosition = () => {
       if (
@@ -106,7 +106,6 @@ const Header: React.FC = () => {
     }
   }, [user]);
 
-  // DEBOUNCE SEARCH
   useEffect(() => {
     if (searchQuery.trim().trim().length < 1) {
       setSuggestions([]);
@@ -121,7 +120,6 @@ const Header: React.FC = () => {
       setShowSuggestions(true);
 
       try {
-        // ✅ Thêm ?lang=${language}
         const res = await fetch(
           `http://localhost:5000/api/products/search-suggestions?q=${encodeURIComponent(
             searchQuery
@@ -140,9 +138,8 @@ const Header: React.FC = () => {
     return () => {
       if (searchTimeoutRef.current) clearTimeout(searchTimeoutRef.current);
     };
-  }, [searchQuery, language]); // ✅ Thêm language dependency
+  }, [searchQuery, language]);
 
-  // ĐÓNG DROPDOWN KHI CLICK RA NGOÀI
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
       if (
@@ -169,7 +166,6 @@ const Header: React.FC = () => {
     };
   }, [isHomePage]);
 
-  // Hover handlers
   const handleMouseEnter = () => {
     if (user) userBoxRef.current?.classList.add("show-dropdown");
   };
@@ -190,11 +186,11 @@ const Header: React.FC = () => {
   };
 
   const handleLogout = () => {
-    console.log('🔓 User logging out...');
+    console.log('🔒 User logging out...');
     
     try {
       triggerUserLogout();
-      console.log('🔓 Chat: User logout event triggered');
+      console.log('🔒 Chat: User logout event triggered');
       logout();
       
       setTimeout(() => {
@@ -221,8 +217,9 @@ const Header: React.FC = () => {
       <div className="header-main container">
         <div className="logo">
           <Link to="/">
+            {/* ✅ FIXED: Dùng import thay vì đường dẫn tương đối */}
             <img
-              src="./src/assets/logo-ddp-removebg.png"
+              src={logoImage}
               alt="Nội Thất Đại Dũng Phát"
             />
           </Link>
@@ -244,7 +241,6 @@ const Header: React.FC = () => {
               <FaSearch className="search-icon" />
             </button>
 
-            {/* DROPDOWN Gợi ý */}
             {showSuggestions && suggestions.length > 0 && (
               <div className="search-suggestions" ref={suggestionsRef}>
                 {suggestions.map((product) => (
@@ -307,7 +303,6 @@ const Header: React.FC = () => {
               </div>
             )}
 
-            {/* Loading skeleton */}
             {showSuggestions && loadingSuggestions && (
               <div className="search-suggestions loading" ref={suggestionsRef}>
                 {[1, 2, 3, 4].map((i) => (
@@ -325,7 +320,6 @@ const Header: React.FC = () => {
         </div>
 
         <div className="actions">
-          {/* USER BOX */}
           <div
             className="user-box"
             ref={userBoxRef}
@@ -338,7 +332,6 @@ const Header: React.FC = () => {
                 <span className="user-name">{getLastName(user.name)}</span>
                 <span className="arrow-down">▼</span>
 
-                {/* DROPDOWN */}
                 <div className="user-dropdown" ref={dropdownRef}>
                   <div className="dropdown-item phone">
                     <span>{user?.phone || t('header.noPhone')}</span>
@@ -397,7 +390,6 @@ const Header: React.FC = () => {
         </div>
       </div>
 
-      {/* NAV MENU */}
       <nav className={`nav-menu ${!isAtTop ? "fixed-when-scrolled" : ""}`}>
         <div className="container nav-container">
           <div className="tree-menu-wrapper">
@@ -428,7 +420,6 @@ const Header: React.FC = () => {
                         )}
                       </Link>
 
-                      {/* MEGA MENU */}
                       {hoveredParent === cat._id &&
                         cat.children &&
                         cat.children.length > 0 && (

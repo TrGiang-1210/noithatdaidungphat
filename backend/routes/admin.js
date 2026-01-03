@@ -72,7 +72,7 @@ const postUpload = multer({
   fileFilter: fileFilter
 });
 
-// ==================== DASHBOARD STATS ROUTE ====================
+// ==================== DASHBOARD STATS ROUTE WITH DATE FILTER ====================
 router.get('/dashboard/stats', auth, admin, async (req, res) => {
   try {
     const Product = require('../models/Product');
@@ -83,14 +83,44 @@ router.get('/dashboard/stats', auth, admin, async (req, res) => {
     const ChatRoom = require('../models/ChatRoom');
     const OrderDetail = require('../models/OrderDetail');
     
-    console.log('📊 Fetching dashboard stats...');
+    console.log('📊 Fetching dashboard stats with filters:', req.query);
     
-    // ==================== EXISTING STATS ====================
+    // ==================== DATE RANGE LOGIC ====================
+    let startDate, endDate;
+    let days = 7; // default
     
-    // Tổng sản phẩm
+    if (req.query.startDate && req.query.endDate) {
+      // Custom date range
+      startDate = new Date(req.query.startDate);
+      startDate.setHours(0, 0, 0, 0);
+      
+      endDate = new Date(req.query.endDate);
+      endDate.setHours(23, 59, 59, 999);
+      
+      // Calculate days for this range
+      days = Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24)) + 1;
+    } else {
+      // Preset range (7, 30, 90, 180, 365 days)
+      days = parseInt(req.query.days) || 7;
+      
+      endDate = new Date();
+      endDate.setHours(23, 59, 59, 999);
+      
+      startDate = new Date();
+      startDate.setDate(startDate.getDate() - (days - 1));
+      startDate.setHours(0, 0, 0, 0);
+    }
+    
+    console.log('📅 Date Range:', {
+      startDate: startDate.toISOString(),
+      endDate: endDate.toISOString(),
+      days
+    });
+    
+    // ==================== STATIC STATS (unchanged) ====================
+    
     const totalProducts = await Product.countDocuments();
     
-    // Sản phẩm tuần trước
     const lastWeek = new Date();
     lastWeek.setDate(lastWeek.getDate() - 7);
     const productsLastWeek = await Product.countDocuments({
@@ -98,7 +128,6 @@ router.get('/dashboard/stats', auth, admin, async (req, res) => {
     });
     const newProductsThisWeek = totalProducts - productsLastWeek;
     
-    // Đơn hàng hôm nay
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     const tomorrow = new Date(today);
@@ -108,19 +137,16 @@ router.get('/dashboard/stats', auth, admin, async (req, res) => {
       created_at: { $gte: today, $lt: tomorrow }
     });
     
-    // Đơn hàng chưa xác nhận (Pending)
     const pendingOrders = await Order.countDocuments({
       status: 'Pending'
     });
     
-    // Doanh thu hôm nay
     const ordersDataToday = await Order.find({
       created_at: { $gte: today, $lt: tomorrow },
       status: { $in: ['Confirmed', 'Shipping', 'Completed'] }
     });
     const revenueToday = ordersDataToday.reduce((sum, order) => sum + (order.total || 0), 0);
     
-    // Sản phẩm chưa gắn danh mục
     const uncategorized = await Product.countDocuments({
       $or: [
         { categories: { $exists: false } },
@@ -128,33 +154,25 @@ router.get('/dashboard/stats', auth, admin, async (req, res) => {
       ]
     });
     
-    // Sản phẩm hot
     const hotProducts = await Product.countDocuments({ hot: true });
-    
-    // ==================== EXISTING NEW STATS ====================
-    
-    // 1. Tổng danh mục
     const totalCategories = await Category.countDocuments();
     
-    // 2. Tin nhắn mới
     const activeRooms = await ChatRoom.find({ status: 'active' });
     const newMessages = activeRooms.reduce((sum, room) => sum + (room.unreadCount || 0), 0);
     const totalConversations = await ChatRoom.countDocuments({ status: 'active' });
     
-    // 3. Tổng bài viết
     const totalPosts = await Post.countDocuments();
     const postsToday = await Post.countDocuments({
       created_at: { $gte: today, $lt: tomorrow }
     });
     
-    // 4. Thống kê dịch UI
+    // Translation stats
     const totalUIKeys = await Translation.countDocuments();
     const translatedUIKeys = await Translation.countDocuments({
       'translations.zh.value': { $exists: true, $ne: '' }
     });
     const pendingUIKeys = totalUIKeys - translatedUIKeys;
     
-    // 5. Thống kê dịch DB
     const totalProductsDB = await Product.countDocuments();
     const translatedProductsDB = await Product.countDocuments({
       'name.zh': { $exists: true, $ne: '' }
@@ -188,101 +206,114 @@ router.get('/dashboard/stats', auth, admin, async (req, res) => {
       ? Math.round((translatedPostCategoriesDB / totalPostCategoriesDB) * 100) 
       : 0;
     
-    // ==================== 🆕 REVENUE CHART DATA (7 DAYS) ====================
+    // ==================== 🆕 DYNAMIC REVENUE CHART DATA ====================
     const revenueData = [];
+    const currentDate = new Date(startDate);
     
-    for (let i = 6; i >= 0; i--) {
-      const date = new Date();
-      date.setDate(date.getDate() - i);
-      date.setHours(0, 0, 0, 0);
+    // Helper function to format Vietnamese day names
+    const formatVietnameseDate = (date) => {
+      const dayNames = ['CN', 'Th 2', 'Th 3', 'Th 4', 'Th 5', 'Th 6', 'Th 7'];
+      const dayName = dayNames[date.getDay()];
+      const day = String(date.getDate()).padStart(2, '0');
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const year = date.getFullYear();
       
-      const nextDate = new Date(date);
-      nextDate.setDate(nextDate.getDate() + 1);
+      return {
+        date: `${dayName} ${day}/${month}`,
+        fullDate: `${dayName}, ${day}/${month}/${year}`
+      };
+    };
+    
+    // Generate data for each day in range
+    while (currentDate <= endDate) {
+      const dayStart = new Date(currentDate);
+      dayStart.setHours(0, 0, 0, 0);
       
-      // Đếm tổng đơn hàng trong ngày (tất cả trạng thái)
+      const dayEnd = new Date(currentDate);
+      dayEnd.setHours(23, 59, 59, 999);
+      
+      // Count all orders in this day
       const dayOrderCount = await Order.countDocuments({
-        created_at: { $gte: date, $lt: nextDate }
+        created_at: { $gte: dayStart, $lte: dayEnd }
       });
       
-      // Lấy các đơn đã xác nhận trở lên để tính doanh thu
+      // Get confirmed orders for revenue calculation
       const dayOrders = await Order.find({
-        created_at: { $gte: date, $lt: nextDate },
+        created_at: { $gte: dayStart, $lte: dayEnd },
         status: { $in: ['Confirmed', 'Shipping', 'Completed'] }
       });
       
       const dayRevenue = dayOrders.reduce((sum, order) => sum + (order.total || 0), 0);
       
-      // Format ngày theo locale Việt Nam
-      const dayName = date.toLocaleDateString('vi-VN', { weekday: 'short' });
-      const dayMonth = date.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit' });
+      const dateFormat = formatVietnameseDate(currentDate);
       
       revenueData.push({
-        date: `${dayName} ${dayMonth}`,
-        fullDate: date.toISOString(),
-        revenue: dayRevenue,
-        orders: dayOrderCount,
-        confirmedOrders: dayOrders.length
+        date: dateFormat.date,
+        fullDate: dateFormat.fullDate,
+        revenue: dayRevenue || 0, // ✅ Always return 0, not null
+        orders: dayOrderCount || 0,
+        confirmedOrders: dayOrders.length || 0
       });
+      
+      // Move to next day
+      currentDate.setDate(currentDate.getDate() + 1);
     }
     
-    // Tính tổng doanh thu 7 ngày
-    const total7DaysRevenue = revenueData.reduce((sum, day) => sum + day.revenue, 0);
-    const total7DaysOrders = revenueData.reduce((sum, day) => sum + day.orders, 0);
+    // Calculate totals for the selected period
+    const totalRevenue = revenueData.reduce((sum, day) => sum + day.revenue, 0);
+    const totalOrders = revenueData.reduce((sum, day) => sum + day.orders, 0);
+    const averageRevenue = days > 0 ? Math.round(totalRevenue / days) : 0;
     
-    // Tính trung bình
-    const avg7DaysRevenue = Math.round(total7DaysRevenue / 7);
+    // ==================== 🆕 GROWTH CALCULATION ====================
+    // Compare with previous period of same length
+    const prevStartDate = new Date(startDate);
+    prevStartDate.setDate(prevStartDate.getDate() - days);
     
-    // Tính tăng trưởng so với 7 ngày trước
-    const prev7DaysStart = new Date();
-    prev7DaysStart.setDate(prev7DaysStart.getDate() - 14);
-    prev7DaysStart.setHours(0, 0, 0, 0);
+    const prevEndDate = new Date(startDate);
+    prevEndDate.setDate(prevEndDate.getDate() - 1);
+    prevEndDate.setHours(23, 59, 59, 999);
     
-    const prev7DaysEnd = new Date();
-    prev7DaysEnd.setDate(prev7DaysEnd.getDate() - 7);
-    prev7DaysEnd.setHours(0, 0, 0, 0);
-    
-    const prev7DaysOrders = await Order.find({
-      created_at: { $gte: prev7DaysStart, $lt: prev7DaysEnd },
+    const prevOrders = await Order.find({
+      created_at: { $gte: prevStartDate, $lte: prevEndDate },
       status: { $in: ['Confirmed', 'Shipping', 'Completed'] }
     });
     
-    const prev7DaysRevenue = prev7DaysOrders.reduce((sum, order) => sum + (order.total || 0), 0);
+    const prevRevenue = prevOrders.reduce((sum, order) => sum + (order.total || 0), 0);
     
     let revenueGrowth = 0;
-    if (prev7DaysRevenue > 0) {
-      revenueGrowth = Math.round(((total7DaysRevenue - prev7DaysRevenue) / prev7DaysRevenue) * 100);
-    } else if (total7DaysRevenue > 0) {
+    if (prevRevenue > 0) {
+      revenueGrowth = Math.round(((totalRevenue - prevRevenue) / prevRevenue) * 100 * 10) / 10;
+    } else if (totalRevenue > 0) {
       revenueGrowth = 100;
     }
     
-    // ==================== 🆕 TOP SELLING PRODUCTS (7 DAYS) ====================
-    const last7Days = new Date();
-    last7Days.setDate(last7Days.getDate() - 7);
-    last7Days.setHours(0, 0, 0, 0);
+    console.log('📈 Growth calculation:', {
+      currentPeriod: `${totalRevenue.toLocaleString('vi-VN')} ₫`,
+      previousPeriod: `${prevRevenue.toLocaleString('vi-VN')} ₫`,
+      growth: `${revenueGrowth}%`
+    });
     
-    // Lấy tất cả đơn hàng đã xác nhận trong 7 ngày
-    const recent7DaysOrders = await Order.find({
-      created_at: { $gte: last7Days },
+    // ==================== 🆕 TOP SELLING PRODUCTS (DYNAMIC PERIOD) ====================
+    const periodOrders = await Order.find({
+      created_at: { $gte: startDate, $lte: endDate },
       status: { $in: ['Confirmed', 'Shipping', 'Completed'] }
     }).select('_id');
     
-    const orderIds = recent7DaysOrders.map(o => o._id);
+    const orderIds = periodOrders.map(o => o._id);
     
-    // Lấy chi tiết đơn hàng
     const orderDetails = await OrderDetail.find({
       order_id: { $in: orderIds }
-    }).populate('product_id', 'name images');
+    }).populate('product_id', 'name images slug');
     
-    // Tính tổng số lượng bán cho mỗi sản phẩm
     const productSales = {};
     
     for (const detail of orderDetails) {
-      if (!detail.product_id) continue; // Skip nếu sản phẩm đã bị xóa
+      if (!detail.product_id) continue;
       
       const productId = detail.product_id._id.toString();
       
       if (!productSales[productId]) {
-        // Lấy tên tiếng Việt
+        // Get Vietnamese name
         let productName = 'N/A';
         if (detail.name) {
           if (typeof detail.name === 'object') {
@@ -303,7 +334,8 @@ router.get('/dashboard/stats', auth, admin, async (req, res) => {
           name: productName,
           quantity: 0,
           revenue: 0,
-          image: detail.img_url || (detail.product_id.images && detail.product_id.images[0]) || ''
+          image: detail.img_url || (detail.product_id.images && detail.product_id.images[0]) || '',
+          slug: detail.product_id.slug || ''
         };
       }
       
@@ -311,7 +343,6 @@ router.get('/dashboard/stats', auth, admin, async (req, res) => {
       productSales[productId].revenue += (detail.quantity || 0) * (detail.price || 0);
     }
     
-    // Sắp xếp theo số lượng bán và lấy top 5
     const topProducts = Object.values(productSales)
       .sort((a, b) => b.quantity - a.quantity)
       .slice(0, 5)
@@ -319,12 +350,12 @@ router.get('/dashboard/stats', auth, admin, async (req, res) => {
         name: item.name,
         quantity: item.quantity,
         revenue: item.revenue,
-        image: item.image
+        image: item.image,
+        slug: item.slug
       }));
     
     // ==================== RESPONSE ====================
     const stats = {
-      // Existing stats
       totalProducts,
       newProductsThisWeek,
       ordersToday,
@@ -364,20 +395,21 @@ router.get('/dashboard/stats', auth, admin, async (req, res) => {
           percentage: postCategoriesDBPercentage
         }
       },
-      
-      // 🆕 NEW: Revenue chart data
       revenueChart: {
         data: revenueData,
-        total7Days: total7DaysRevenue,
-        totalOrders7Days: total7DaysOrders,
-        average7Days: avg7DaysRevenue,
+        total7Days: totalRevenue, // Keep this name for backward compatibility
+        totalOrders7Days: totalOrders,
+        average7Days: averageRevenue,
         growth: revenueGrowth,
         topProducts: topProducts
       }
     };
     
-    console.log('✅ Dashboard stats with revenue chart:', {
-      total7Days: total7DaysRevenue.toLocaleString('vi-VN'),
+    console.log('✅ Dashboard stats generated:', {
+      dateRange: `${startDate.toLocaleDateString('vi-VN')} - ${endDate.toLocaleDateString('vi-VN')}`,
+      days,
+      totalRevenue: totalRevenue.toLocaleString('vi-VN'),
+      totalOrders,
       growth: `${revenueGrowth}%`,
       topProductsCount: topProducts.length,
       dataPoints: revenueData.length

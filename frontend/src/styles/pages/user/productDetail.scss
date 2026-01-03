@@ -1,4 +1,3 @@
-/* src/styles/pages/user/productDetail.scss */
 .product-detail-page {
   background: #f9f9f9;
   font-family: Arial, Helvetica, sans-serif;
@@ -9,7 +8,6 @@
     margin: 0 auto;
   }
 
-  /* ==================== LAYOUT CHÍNH - GIỐNG HỆT ẢNH ==================== */
   .new-layout {
     display: flex;
     gap: 50px;
@@ -19,7 +17,6 @@
     box-shadow: 0 10px 40px rgba(0, 0, 0, 0.08);
   }
 
-  /* TRÁI: Ảnh + Thumbnail + Mô tả dưới ảnh */
   .left-column {
     flex: 1;
     min-width: 0;
@@ -85,7 +82,6 @@
       }
     }
 
-    /* Mô tả nằm dưới ảnh */
     .description-under-image {
       padding: 40px 30px 30px;
 
@@ -120,7 +116,6 @@
     }
   }
 
-  /* PHẢI: Thông tin mua hàng - sticky */
   .right-column {
     flex: 0 0 420px;
     background: #fff;
@@ -187,14 +182,12 @@
           margin-bottom: 12px;
         }
 
-        // ✅ Container cho các nút lựa chọn
         .option-buttons {
           display: flex;
           flex-wrap: wrap;
           gap: 12px;
         }
 
-        // ✅ Style cho button lựa chọn ĐỘNG
         .option-btn {
           display: flex;
           align-items: center;
@@ -223,7 +216,6 @@
             box-shadow: 0 2px 8px rgba(59, 130, 246, 0.2);
           }
 
-          // ✅ Ảnh trong button (nếu có)
           .option-image {
             width: 32px;
             height: 32px;
@@ -237,7 +229,6 @@
           }
         }
 
-        // ✅ Style cũ cho backward compatibility (nếu không có attributes)
         button:not(.option-btn) {
           padding: 10px 18px;
           background: #f3f4f6;
@@ -262,7 +253,6 @@
       }
     }
 
-    // ==================== RESPONSIVE ====================
     @media (max-width: 768px) {
       .options-group {
         .option-item {
@@ -485,7 +475,7 @@
     }
   }
 
-  /* ==================== SECTION SẢN PHẨM LIÊN QUAN - Y CHANG HOME ==================== */
+  /* ==================== SECTION SẢN PHẨM LIÊN QUAN - FIXED IMAGE RATIO ==================== */
   .related-products-section {
     padding: 50px 0;
     background: #fff;
@@ -497,7 +487,6 @@
       padding: 0 16px;
     }
 
-    /* SECTION HEADER với nút "Xem tất cả" */
     .section-header {
       display: flex;
       justify-content: space-between;
@@ -557,7 +546,6 @@
       }
     }
 
-    /* PRODUCT GRID - 4 CỘT DESKTOP, 2 CỘT MOBILE */
     .product-grid {
       display: grid;
       grid-template-columns: repeat(4, 1fr);
@@ -579,7 +567,7 @@
       }
     }
 
-    /* PRODUCT CARD - GIỐNG HỆT HOME */
+    /* ✅ FIXED: Product card với aspect ratio linh hoạt */
     .product-card {
       background: #fff;
       border-radius: 12px;
@@ -598,30 +586,28 @@
         border-color: #d6a041;
       }
 
-      /* PRODUCT IMAGE */
+      /* ✅ FIXED: Container ảnh linh hoạt, không force tỷ lệ cứng */
       .product-image {
         position: relative;
         width: 100%;
-        padding-top: 100%;
         overflow: hidden;
         background: #f8f8f8;
-
+        /* ✅ THAY ĐỔI: Không dùng padding-top 100% nữa */
+        
         img {
-          position: absolute;
-          top: 0;
-          left: 0;
           width: 100%;
-          height: 100%;
-          object-fit: cover;
+          height: auto; /* ✅ Để ảnh tự nhiên theo tỷ lệ gốc */
+          display: block;
+          object-fit: contain; /* ✅ Hiển thị toàn bộ ảnh không bị crop */
           transition: transform 0.4s ease;
+          max-height: 400px; /* ✅ Giới hạn chiều cao tối đa */
         }
       }
 
       &:hover .product-image img {
-        transform: scale(1.08);
+        transform: scale(1.05); /* ✅ Zoom nhẹ hơn để tránh bị lỗi */
       }
 
-      /* PRODUCT INFO */
       .product-info {
         padding: 15px;
         flex: 1;
@@ -648,7 +634,6 @@
         color: #d6a041;
       }
 
-      /* PRODUCT PRICE - GIÁ BÊN TRÁI, % BÊN PHẢI */
       .product-price {
         display: flex;
         justify-content: space-between;
@@ -687,6 +672,10 @@
       }
 
       @media (max-width: 768px) {
+        .product-image img {
+          max-height: 300px;
+        }
+
         .product-name {
           font-size: 14px;
           min-height: 38px;
@@ -712,7 +701,6 @@
     }
   }
 
-  /* ==================== RESPONSIVE ==================== */
   @media (max-width: 992px) {
     .new-layout {
       flex-direction: column;
@@ -747,9 +735,7 @@
   }
 }
 
-/* ==================== LIGHTBOX STYLES ==================== */
-/* Thêm đoạn này vào cuối file productDetail.scss */
-
+/* ==================== LIGHTBOX - KHÔNG THAY ĐỔI ==================== */
 .lightbox-overlay {
   position: fixed;
   top: 0;
@@ -773,7 +759,6 @@
   }
 }
 
-/* Nút đóng */
 .lightbox-close {
   position: fixed;
   top: 20px;
@@ -800,7 +785,6 @@
   }
 }
 
-/* Nút Previous/Next */
 .lightbox-nav {
   position: fixed;
   top: 50%;
@@ -849,10 +833,9 @@
   }
 }
 
-/* Content area */
 .lightbox-content {
   position: relative;
-  max-width: calc(100% - 250px); /* Để chỗ cho thumbnail sidebar */
+  max-width: calc(100% - 250px);
   max-height: 90vh;
   display: flex;
   align-items: center;
@@ -867,11 +850,10 @@
   @media (max-width: 768px) {
     max-width: calc(100% - 40px);
     margin-right: 0;
-    margin-bottom: 100px; /* Để chỗ cho thumbnails ở dưới */
+    margin-bottom: 100px;
   }
 }
 
-/* Ảnh chính trong lightbox */
 .lightbox-main-image {
   max-width: 100%;
   max-height: 90vh;
@@ -892,7 +874,6 @@
   }
 }
 
-/* Số thứ tự ảnh */
 .lightbox-counter {
   position: absolute;
   bottom: -40px;
@@ -907,7 +888,6 @@
   white-space: nowrap;
 }
 
-/* Thumbnail sidebar bên phải */
 .lightbox-thumbnails {
   position: fixed;
   right: 20px;
@@ -923,7 +903,6 @@
   border-radius: 12px;
   z-index: 10001;
 
-  /* Custom scrollbar */
   &::-webkit-scrollbar {
     width: 6px;
   }
@@ -962,7 +941,6 @@
   }
 }
 
-/* Thumbnail item */
 .lightbox-thumb {
   width: 80px;
   height: 80px;
@@ -1001,7 +979,6 @@
   }
 }
 
-/* Responsive adjustments */
 @media (max-width: 768px) {
   .lightbox-close {
     top: 15px;
@@ -1017,7 +994,6 @@
   }
 }
 
-// CSS cho badge hết hàng
 .badge.out-of-stock-badge {
   position: absolute;
   top: 10px;
@@ -1032,7 +1008,6 @@
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
 }
 
-// CSS cho card hết hàng
 .product-card.out-of-stock {
   opacity: 0.7;
   position: relative;
@@ -1049,7 +1024,6 @@
   pointer-events: none;
 }
 
-// Disable button khi hết hàng
 button:disabled,
 button.disabled {
   background: #bdc3c7 !important;
@@ -1057,7 +1031,6 @@ button.disabled {
   opacity: 0.6;
 }
 
-// Overlay cho product detail
 .out-of-stock-overlay {
   position: absolute;
   top: 0;
