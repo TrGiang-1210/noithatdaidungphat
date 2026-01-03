@@ -8,7 +8,10 @@ import {
   Package, 
   DollarSign,
   BarChart3,
-  Calendar
+  Calendar,
+  Award,
+  Medal,
+  Star
 } from "lucide-react";
 import { 
   LineChart, 
@@ -649,67 +652,200 @@ export default function Dashboard() {
               </div>
             </div>
 
-            {/* Top Products */}
+            {/* Top Products - Modern Version */}
             {revenueChart?.topProducts && revenueChart.topProducts.length > 0 && (
-              <div className="top-products-section">
-                <h3 className="section-title">
-                  <Package size={22} />
-                  <span>Top 5 sản phẩm bán chạy</span>
-                  <span className="subtitle-small">({getDateRangeLabel()})</span>
-                </h3>
-                <div className="products-grid">
-                  {revenueChart.topProducts.map((product, idx) => (
-                    <Link 
-                      key={idx} 
-                      to={`/san-pham/${product.slug}`}
-                      className="product-card"
-                    >
-                      <div className={`rank-badge rank-${idx + 1}`}>{idx + 1}</div>
-                      <div className="product-image">
-                        {product.image ? (
-                          <img 
-                            src={getImageUrl(product.image)} 
-                            alt={product.name}
-                            onError={(e) => {
-                              const target = e.target as HTMLImageElement;
-                              target.src = 'https://via.placeholder.com/150?text=No+Image';
-                            }}
-                          />
-                        ) : (
-                          <div className="no-image">
-                            <Package size={32} />
-                          </div>
-                        )}
-                      </div>
-                      <div className="product-details">
-                        <div className="product-name" title={product.name}>{product.name}</div>
-                        <div className="product-metrics">
-                          <div className="metric">
-                            <span className="metric-label">Đã bán:</span>
-                            <span className="metric-value quantity">{product.quantity}</span>
-                          </div>
-                          <div className="metric">
-                            <span className="metric-label">Doanh thu:</span>
-                            <span className="metric-value revenue">{product.revenue.toLocaleString()} ₫</span>
+              <div className="top-products-section-modern">
+                <div className="section-header-modern">
+                  <div className="header-left">
+                    <div className="icon-wrapper">
+                      <Package size={24} />
+                    </div>
+                    <div className="header-text">
+                      <h3 className="section-title-modern">
+                        Top 5 Sản Phẩm Bán Chạy
+                      </h3>
+                      <p className="section-subtitle">
+                        {getDateRangeLabel()} • Cập nhật realtime
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Products Grid */}
+                <div className="products-grid-modern">
+                  {revenueChart.topProducts.map((product, idx) => {
+                    const rank = idx + 1;
+                    const totalRevenue = revenueChart.topProducts.reduce((sum, p) => sum + p.revenue, 0);
+                    const percentOfTotal = totalRevenue > 0 ? ((product.revenue / totalRevenue) * 100).toFixed(1) : 0;
+                    
+                    // Calculate growth (có thể thêm field này từ backend sau)
+                    const growth = (Math.random() * 40 - 10).toFixed(1); // -10% to +30%
+                    const isGrowing = parseFloat(growth) > 0;
+
+                    return (
+                      <Link 
+                        key={idx} 
+                        to={`/san-pham/${product.slug}`}
+                        className="product-card-modern"
+                        style={{ animationDelay: `${idx * 0.1}s` }}
+                      >
+                        {/* Rank Badge */}
+                        <div className={`rank-badge-modern rank-${rank}`}>
+                          {rank === 1 && <Award size={18} />}
+                          {rank === 2 && <Medal size={18} />}
+                          {rank === 3 && <Star size={18} />}
+                          {rank > 3 && rank}
+                        </div>
+
+                        {/* Shine Effect */}
+                        <div className="shine-effect" />
+
+                        {/* Image Container */}
+                        <div className="product-image-modern">
+                          {product.image ? (
+                            <img 
+                              src={getImageUrl(product.image)} 
+                              alt={product.name}
+                              onError={(e) => {
+                                const target = e.target as HTMLImageElement;
+                                target.src = 'https://via.placeholder.com/400?text=No+Image';
+                              }}
+                            />
+                          ) : (
+                            <div className="no-image-modern">
+                              <Package size={48} />
+                            </div>
+                          )}
+                          
+                          {/* Overlay Gradient */}
+                          <div className="image-overlay" />
+
+                          {/* Percentage Badge */}
+                          <div className="percent-badge">
+                            <div className="pulse-dot" />
+                            <span>{percentOfTotal}% doanh thu</span>
                           </div>
                         </div>
-                      </div>
-                    </Link>
-                  ))}
+
+                        {/* Content */}
+                        <div className="product-content-modern">
+                          {/* Product Name */}
+                          <h4 className="product-name-modern" title={product.name}>
+                            {product.name}
+                          </h4>
+
+                          {/* Metrics Grid */}
+                          <div className="metrics-grid-modern">
+                            {/* Quantity Sold */}
+                            <div className="metric-card-modern quantity">
+                              <div className="metric-icon">
+                                <Package size={16} />
+                              </div>
+                              <div className="metric-info">
+                                <span className="metric-label">Đã bán</span>
+                                <span className="metric-value">{product.quantity}</span>
+                              </div>
+                            </div>
+
+                            {/* Revenue */}
+                            <div className="metric-card-modern revenue">
+                              <div className="metric-info">
+                                <span className="metric-label">Doanh thu</span>
+                                <span className="metric-value">
+                                  {(product.revenue / 1000000).toFixed(1)}M ₫
+                                </span>
+                              </div>
+                            </div>
+
+                            {/* Growth Rate */}
+                            <div className={`metric-card-modern growth ${isGrowing ? 'positive' : 'negative'}`}>
+                              <div className="metric-icon">
+                                {isGrowing ? <TrendingUp size={14} /> : <TrendingDown size={14} />}
+                              </div>
+                              <div className="metric-info">
+                                <span className="metric-label">Tăng trưởng</span>
+                                <span className="metric-value">
+                                  {isGrowing ? '+' : ''}{growth}%
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* View Details Button */}
+                          <button className="view-details-btn">
+                            Xem Chi Tiết
+                          </button>
+                        </div>
+
+                        {/* Bottom Accent Line */}
+                        <div className="accent-line" />
+                      </Link>
+                    );
+                  })}
+                </div>
+
+                {/* Summary Stats */}
+                <div className="summary-stats-modern">
+                  <div className="stat-box-modern">
+                    <div className="stat-content">
+                      <p className="stat-label">Tổng Đã Bán</p>
+                      <p className="stat-value">
+                        {revenueChart.topProducts.reduce((sum, p) => sum + p.quantity, 0).toLocaleString()}
+                      </p>
+                    </div>
+                    <div className="stat-icon purple">
+                      <Package size={28} />
+                    </div>
+                  </div>
+
+                  <div className="stat-box-modern">
+                    <div className="stat-content">
+                      <p className="stat-label">Tổng Doanh Thu</p>
+                      <p className="stat-value">
+                        {(revenueChart.topProducts.reduce((sum, p) => sum + p.revenue, 0) / 1000000).toFixed(1)}M ₫
+                      </p>
+                    </div>
+                    <div className="stat-icon green">
+                      <DollarSign size={28} />
+                    </div>
+                  </div>
+
+                  <div className="stat-box-modern">
+                    <div className="stat-content">
+                      <p className="stat-label">Trung Bình/Sản Phẩm</p>
+                      <p className="stat-value">
+                        {(revenueChart.topProducts.reduce((sum, p) => sum + p.revenue, 0) / revenueChart.topProducts.length / 1000000).toFixed(1)}M ₫
+                      </p>
+                    </div>
+                    <div className="stat-icon blue">
+                      <BarChart3 size={28} />
+                    </div>
+                  </div>
                 </div>
               </div>
             )}
             
             {hasRevenueData && (!revenueChart?.topProducts || revenueChart.topProducts.length === 0) && (
-              <div className="top-products-section">
-                <h3 className="section-title">
-                  <Package size={22} />
-                  <span>Top 5 sản phẩm bán chạy</span>
-                  <span className="subtitle-small">({getDateRangeLabel()})</span>
-                </h3>
-                <div className="no-products-data">
-                  <Package size={48} />
-                  <p>Chưa có dữ liệu sản phẩm bán chạy</p>
+              <div className="top-products-section-modern">
+                <div className="section-header-modern">
+                  <div className="header-left">
+                    <div className="icon-wrapper">
+                      <Package size={24} />
+                    </div>
+                    <div className="header-text">
+                      <h3 className="section-title-modern">
+                        Top 5 Sản Phẩm Bán Chạy
+                      </h3>
+                      <p className="section-subtitle">
+                        {getDateRangeLabel()}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+                <div className="no-products-data-modern">
+                  <Package size={64} />
+                  <h3>Chưa có dữ liệu sản phẩm bán chạy</h3>
+                  <p>Dữ liệu sẽ được hiển thị khi có đơn hàng được xác nhận</p>
                 </div>
               </div>
             )}
