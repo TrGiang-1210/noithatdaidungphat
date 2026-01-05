@@ -20,7 +20,10 @@ interface Category {
   level: number;
   path: string[];
   children?: Category[];
+  sortOrder?: number;
 }
+
+type DropPosition = 'before' | 'inside' | 'after' | null;
 
 export default function CategoryManager() {
   const [categories, setCategories] = useState<Category[]>([]);
@@ -33,6 +36,10 @@ export default function CategoryManager() {
   const [formData, setFormData] = useState({ name: "", parent: "" });
   const [parentName, setParentName] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
+  const [draggedItem, setDraggedItem] = useState<Category | null>(null);
+  const [dragOverItem, setDragOverItem] = useState<Category | null>(null);
+  const [dropPosition, setDropPosition] = useState<DropPosition>(null);
+  const [isDragging, setIsDragging] = useState(false);
 
   // ✅ Helper: Safely get category name (multilingual support)
   const getCategoryName = (name: any): string => {
@@ -47,6 +54,7 @@ export default function CategoryManager() {
     try {
       setLoading(true);
       const res = await axiosInstance.get("/admin/categories/tree");
+      console.log('📦 Fetched categories:', res.data);
       setCategories(res.data || []);
 
       // Tạo danh sách phẳng để chọn cha
@@ -70,6 +78,7 @@ export default function CategoryManager() {
       setFlatCategories(flatten(res.data || []));
     } catch (err) {
       alert("Lỗi tải danh mục");
+      console.error("❌ Fetch error:", err);
     } finally {
       setLoading(false);
     }
@@ -179,6 +188,153 @@ export default function CategoryManager() {
     }
   };
 
+  // ✅ Drag & Drop handlers - ENHANCED with 3 drop zones
+  const handleDragStart = (e: React.DragEvent, cat: Category) => {
+    e.stopPropagation();
+    setDraggedItem(cat);
+    setIsDragging(true);
+    e.dataTransfer.effectAllowed = "move";
+  };
+
+  const handleDragEnd = (e: React.DragEvent) => {
+    e.stopPropagation();
+    setIsDragging(false);
+    
+    setTimeout(() => {
+      setDraggedItem(null);
+      setDragOverItem(null);
+      setDropPosition(null);
+    }, 100);
+  };
+
+  const handleDragOver = (e: React.DragEvent, cat: Category) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    if (!draggedItem || draggedItem._id === cat._id) return;
+    
+    // ✅ Tính toán vị trí drop dựa trên mouse position
+    const target = e.currentTarget as HTMLElement;
+    const rect = target.getBoundingClientRect();
+    const mouseY = e.clientY - rect.top;
+    const height = rect.height;
+    
+    // Chia thành 3 vùng: 30% trên, 40% giữa, 30% dưới
+    let position: DropPosition = null;
+    
+    if (mouseY < height * 0.3) {
+      position = 'before'; // Vùng trên - đặt trước
+    } else if (mouseY > height * 0.7) {
+      position = 'after'; // Vùng dưới - đặt sau
+    } else {
+      position = 'inside'; // Vùng giữa - đặt vào trong
+    }
+    
+    // Kiểm tra không phải descendant
+    if (position === 'inside' && isDescendant(draggedItem, cat)) {
+      position = null;
+    }
+    
+    setDragOverItem(cat);
+    setDropPosition(position);
+    
+    e.dataTransfer.dropEffect = "move";
+  };
+
+  const handleDragLeave = (e: React.DragEvent, cat: Category) => {
+    e.stopPropagation();
+    
+    const relatedTarget = e.relatedTarget as HTMLElement;
+    const currentTarget = e.currentTarget as HTMLElement;
+    
+    if (!currentTarget.contains(relatedTarget)) {
+      if (dragOverItem?._id === cat._id) {
+        setDragOverItem(null);
+        setDropPosition(null);
+      }
+    }
+  };
+
+  const handleDrop = async (e: React.DragEvent, dropTarget: Category) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    if (!draggedItem || draggedItem._id === dropTarget._id || !dropPosition) {
+      setDraggedItem(null);
+      setDragOverItem(null);
+      setDropPosition(null);
+      setIsDragging(false);
+      return;
+    }
+
+    // Kiểm tra descendant cho position 'inside'
+    if (dropPosition === 'inside' && isDescendant(draggedItem, dropTarget)) {
+      alert("Không thể di chuyển danh mục cha vào danh mục con của nó!");
+      setDraggedItem(null);
+      setDragOverItem(null);
+      setDropPosition(null);
+      setIsDragging(false);
+      return;
+    }
+
+    const itemElement = (e.target as HTMLElement).closest('.category-item');
+    if (itemElement) {
+      itemElement.classList.add('processing');
+    }
+
+    try {
+      // ✅ Gửi cả position lên backend
+      await axiosInstance.put("/admin/categories/reorder", {
+        draggedId: draggedItem._id,
+        targetId: dropTarget._id,
+        position: dropPosition, // 'before', 'inside', 'after'
+      });
+      
+      if (itemElement) {
+        itemElement.classList.remove('processing');
+        itemElement.classList.add('success-flash');
+        setTimeout(() => {
+          itemElement.classList.remove('success-flash');
+        }, 600);
+      }
+      
+      await new Promise(resolve => setTimeout(resolve, 100));
+      await fetchCategories();
+      
+      console.log(`✅ Di chuyển thành công: ${dropPosition}`);
+      
+    } catch (err: any) {
+      console.error("❌ Reorder error:", err);
+      
+      if (itemElement) {
+        itemElement.classList.remove('processing');
+        itemElement.classList.add('error-flash');
+        setTimeout(() => {
+          itemElement.classList.remove('error-flash');
+        }, 600);
+      }
+      
+      alert(err.response?.data?.message || "Lỗi khi di chuyển danh mục");
+      fetchCategories();
+    } finally {
+      setDraggedItem(null);
+      setDragOverItem(null);
+      setDropPosition(null);
+      setIsDragging(false);
+    }
+  };
+
+  // Kiểm tra xem target có phải là con của dragged không
+  const isDescendant = (parent: Category, target: Category): boolean => {
+    if (!parent.children) return false;
+    
+    for (const child of parent.children) {
+      if (child._id === target._id) return true;
+      if (isDescendant(child, target)) return true;
+    }
+    return false;
+  };
+
   const renderTree = (nodes: Category[], level = 0) => {
     // Lọc categories theo search query
     const filterCategories = (cats: Category[]): Category[] => {
@@ -197,12 +353,9 @@ export default function CategoryManager() {
             .filter((child): child is Category => child !== null);
         }
         
-        // Nếu danh mục hiện tại match hoặc có con match thì giữ lại
         if (currentMatches || filteredChildren.length > 0) {
           return {
             ...cat,
-            // Nếu danh mục hiện tại match -> giữ nguyên TẤT CẢ children gốc
-            // Nếu không match -> chỉ giữ children đã được filter
             children: currentMatches ? cat.children : filteredChildren
           };
         }
@@ -221,14 +374,32 @@ export default function CategoryManager() {
       const hasChildren = cat.children && cat.children.length > 0;
       const isExpanded = expanded.includes(cat._id);
       const catName = getCategoryName(cat.name);
+      const isDraggingThis = draggedItem?._id === cat._id;
+      const isDragOverThis = dragOverItem?._id === cat._id;
 
       return (
         <div key={cat._id} className="category-tree-node">
+          {/* ✅ Drop indicator TRƯỚC item */}
+          {isDragOverThis && dropPosition === 'before' && (
+            <div className="drop-indicator drop-before">
+              <span className="drop-label">📍 Đặt ở đây</span>
+            </div>
+          )}
+
           <div
-            className="category-item"
+            className={`category-item ${isDraggingThis ? 'dragging' : ''} ${isDragOverThis && dropPosition === 'inside' ? 'drag-over-inside' : ''}`}
             style={{ paddingLeft: `${level * 28}px` }}
+            onDragOver={(e) => handleDragOver(e, cat)}
+            onDragLeave={(e) => handleDragLeave(e, cat)}
+            onDrop={(e) => handleDrop(e, cat)}
           >
-            <div className="drag-handle">
+            <div 
+              className="drag-handle" 
+              title="Kéo để di chuyển"
+              draggable={true}
+              onDragStart={(e) => handleDragStart(e, cat)}
+              onDragEnd={handleDragEnd}
+            >
               <GripVertical size={18} />
             </div>
 
@@ -266,7 +437,21 @@ export default function CategoryManager() {
                 <Trash2 size={16} />
               </button>
             </div>
+
+            {/* ✅ Overlay INSIDE khi hover vào giữa */}
+            {isDragOverThis && dropPosition === 'inside' && (
+              <div className="drop-overlay-inside">
+                <span className="drop-label-inside">📂 Đặt vào trong danh mục này</span>
+              </div>
+            )}
           </div>
+
+          {/* ✅ Drop indicator SAU item */}
+          {isDragOverThis && dropPosition === 'after' && (
+            <div className="drop-indicator drop-after">
+              <span className="drop-label">📍 Đặt ở đây</span>
+            </div>
+          )}
 
           {hasChildren && isExpanded && (
             <div className="children">
