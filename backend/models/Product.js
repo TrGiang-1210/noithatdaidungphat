@@ -39,10 +39,6 @@ const productSchema = new mongoose.Schema({
     }]
   }],
 
-  material: { type: String, default: "" },
-  color: { type: String, default: "" },
-  size: { type: String, default: "" },
-
   quantity: { type: Number, required: true },
   categories: [{
     type: mongoose.Schema.Types.ObjectId,

@@ -1,6 +1,10 @@
 // src/admin/pages/ProductBulkCategory.tsx
 import { useState, useEffect, useMemo } from "react";
-import { Search, Package, Folders, Loader2, CheckCircle, ToggleLeft, ToggleRight } from "lucide-react";
+import { 
+  Search, Package, Folders, Loader2, CheckCircle, 
+  ToggleLeft, ToggleRight, Filter, X, Eye, Save, 
+  ChevronLeft, ChevronRight 
+} from "lucide-react";
 import "@/styles/pages/admin/productBulkCategory.scss";
 import { getImageUrl, getFirstImageUrl } from "@/utils/imageUrl";
 import axiosInstance from "../../axios";
@@ -16,6 +20,12 @@ interface CategoryNode {
   value: string;
   label: string;
   children?: CategoryNode[];
+}
+
+interface PreviewItem {
+  product: Product;
+  oldCategories: string[];
+  newCategories: string[];
 }
 
 const normalizeCategoryIds = (
@@ -107,6 +117,14 @@ export default function ProductBulkCategory() {
   const [savedProductCount, setSavedProductCount] = useState(0);
   const [selectionMode, setSelectionMode] = useState<"single" | "multiple">("single");
 
+  // New states
+  const [categoryFilter, setCategoryFilter] = useState("all");
+  const [updateMode, setUpdateMode] = useState<"replace" | "add">("replace");
+  const [showPreview, setShowPreview] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage] = useState(10);
+  const [showFilters, setShowFilters] = useState(false);
+
   // Fetch data
   useEffect(() => {
     const fetchData = async () => {
@@ -191,12 +209,47 @@ export default function ProductBulkCategory() {
     setExpandedCategories((prev) => [...new Set([...prev, ...toExpand])]);
   };
 
+  const getCategoryLabel = (catId: string): string => {
+    const findLabel = (nodes: CategoryNode[]): string | null => {
+      for (const node of nodes) {
+        if (node.value === catId) return node.label;
+        if (node.children) {
+          const found = findLabel(node.children);
+          if (found) return found;
+        }
+      }
+      return null;
+    };
+    return findLabel(categories) || catId;
+  };
+
   const filteredProducts = useMemo(() => {
-    if (!productSearch) return products;
-    return products.filter((p) =>
-      p.name.toLowerCase().includes(productSearch.toLowerCase())
-    );
-  }, [products, productSearch]);
+    let filtered = products;
+
+    // Search filter
+    if (productSearch) {
+      filtered = filtered.filter((p) =>
+        p.name.toLowerCase().includes(productSearch.toLowerCase())
+      );
+    }
+
+    // Category filter
+    if (categoryFilter !== "all") {
+      if (categoryFilter === "no_category") {
+        filtered = filtered.filter((p) => {
+          const cats = normalizeCategoryIds(p.categories);
+          return cats.length === 0;
+        });
+      } else {
+        filtered = filtered.filter((p) => {
+          const cats = normalizeCategoryIds(p.categories);
+          return cats.includes(categoryFilter);
+        });
+      }
+    }
+
+    return filtered;
+  }, [products, productSearch, categoryFilter]);
 
   const filteredCategories = useMemo(() => {
     if (!categorySearch || categories.length === 0) return categories;
@@ -222,6 +275,13 @@ export default function ProductBulkCategory() {
     return filterNodes(categories);
   }, [categories, categorySearch]);
 
+  // Pagination
+  const totalPages = Math.ceil(filteredProducts.length / itemsPerPage);
+  const paginatedProducts = useMemo(() => {
+    const start = (currentPage - 1) * itemsPerPage;
+    return filteredProducts.slice(start, start + itemsPerPage);
+  }, [filteredProducts, currentPage, itemsPerPage]);
+
   const toggleSelectAllProducts = () => {
     if (
       selectedProducts.length === filteredProducts.length &&
@@ -246,7 +306,7 @@ export default function ProductBulkCategory() {
   const toggleSelectionMode = () => {
     const newMode = selectionMode === "single" ? "multiple" : "single";
     setSelectionMode(newMode);
-    
+
     if (newMode === "single") {
       if (selectedProducts.length > 1) {
         setSelectedProducts([selectedProducts[0]]);
@@ -254,6 +314,30 @@ export default function ProductBulkCategory() {
     } else {
       setSelectedCategories([]);
     }
+  };
+
+  const getPreviewData = (): PreviewItem[] => {
+    return selectedProducts
+      .map((pid) => {
+        const product = products.find((p) => p._id === pid);
+        if (!product) return null;
+
+        const oldCategories = normalizeCategoryIds(product.categories);
+        let newCategories: string[];
+
+        if (updateMode === "replace") {
+          newCategories = selectedCategories;
+        } else {
+          newCategories = [...new Set([...oldCategories, ...selectedCategories])];
+        }
+
+        return {
+          product,
+          oldCategories,
+          newCategories,
+        };
+      })
+      .filter(Boolean) as PreviewItem[];
   };
 
   const handleSave = async () => {
@@ -266,23 +350,35 @@ export default function ProductBulkCategory() {
       await axiosInstance.post("/admin/products/bulk-categories", {
         productIds: selectedProducts,
         categoryIds: selectedCategories,
+        mode: updateMode,
       });
 
       setProducts((prevProducts) =>
-        prevProducts.map((p) =>
-          selectedProducts.includes(p._id)
-            ? { ...p, categories: selectedCategories }
-            : p
-        )
+        prevProducts.map((p) => {
+          if (selectedProducts.includes(p._id)) {
+            const oldCats = normalizeCategoryIds(p.categories);
+            let newCats: string[];
+
+            if (updateMode === "replace") {
+              newCats = selectedCategories;
+            } else {
+              newCats = [...new Set([...oldCats, ...selectedCategories])];
+            }
+
+            return { ...p, categories: newCats };
+          }
+          return p;
+        })
       );
 
       setSavedProductCount(productCount);
       setShowSuccess(true);
       setTimeout(() => setShowSuccess(false), 4000);
       window.dispatchEvent(new Event("categories-updated"));
-      
+
       setSelectedProducts([]);
       setSelectedCategories([]);
+      setShowPreview(false);
     } catch (err: any) {
       console.error("Lỗi gán danh mục:", err);
       alert("Lỗi: " + (err.response?.data?.message || err.message));
@@ -311,12 +407,77 @@ export default function ProductBulkCategory() {
         <div className="success-banner">
           <CheckCircle size={20} />
           <span>
-            Đã lưu danh mục cho {savedProductCount} sản phẩm vào database!
+            Đã {updateMode === "replace" ? "thay thế" : "thêm"} danh mục cho{" "}
+            {savedProductCount} sản phẩm vào database!
           </span>
         </div>
       )}
 
+      {/* Preview Modal */}
+      {showPreview && (
+        <div className="preview-modal-overlay">
+          <div className="preview-modal">
+            <div className="preview-header">
+              <h2>Xem trước thay đổi</h2>
+              <button
+                onClick={() => setShowPreview(false)}
+                className="close-btn"
+              >
+                <X size={24} />
+              </button>
+            </div>
+
+            <div className="preview-mode-info">
+              <strong>Chế độ: </strong>
+              {updateMode === "replace"
+                ? "Thay thế danh mục cũ"
+                : "Thêm vào danh mục hiện có"}
+            </div>
+
+            <div className="preview-list">
+              {getPreviewData().map(({ product, oldCategories, newCategories }) => (
+                <div key={product._id} className="preview-item">
+                  <div className="preview-product-name">{product.name}</div>
+                  <div className="preview-changes">
+                    <div className="preview-row">
+                      <strong>Cũ:</strong>{" "}
+                      {oldCategories.length === 0
+                        ? "Chưa có"
+                        : oldCategories.map((id) => getCategoryLabel(id)).join(", ")}
+                    </div>
+                    <div className="preview-row">
+                      <strong>Mới:</strong>{" "}
+                      {newCategories.map((id) => getCategoryLabel(id)).join(", ")}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <div className="preview-actions">
+              <button onClick={() => setShowPreview(false)} className="btn-cancel">
+                Hủy
+              </button>
+              <button onClick={handleSave} disabled={saving} className="btn-confirm">
+                {saving ? (
+                  <>
+                    <Loader2 size={18} className="spin" />
+                    Đang lưu...
+                  </>
+                ) : (
+                  <>
+                    <Save size={18} />
+                    Xác nhận lưu
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="bulk-grid">
+        {/* Products Panel */}
         <div className="bulk-card">
           <div className="card-header">
             <div className="header-left">
@@ -327,10 +488,22 @@ export default function ProductBulkCategory() {
               </span>
             </div>
             <div className="header-right">
-              <button 
-                onClick={toggleSelectionMode} 
+              <button
+                onClick={() => setShowFilters(!showFilters)}
+                className={`filter-toggle-btn ${showFilters ? "active" : ""}`}
+                title="Bộ lọc"
+              >
+                <Filter size={16} />
+                Lọc
+              </button>
+              <button
+                onClick={toggleSelectionMode}
                 className="mode-toggle-btn"
-                title={selectionMode === "single" ? "Chuyển sang chế độ chọn nhiều" : "Chuyển sang chế độ xem"}
+                title={
+                  selectionMode === "single"
+                    ? "Chuyển sang chế độ chọn nhiều"
+                    : "Chuyển sang chế độ xem"
+                }
               >
                 {selectionMode === "single" ? (
                   <>
@@ -355,21 +528,46 @@ export default function ProductBulkCategory() {
             </div>
           </div>
 
+          {showFilters && (
+            <div className="filter-panel">
+              <label className="filter-label">Lọc theo danh mục:</label>
+              <select
+                value={categoryFilter}
+                onChange={(e) => {
+                  setCategoryFilter(e.target.value);
+                  setCurrentPage(1);
+                }}
+                className="filter-select"
+              >
+                <option value="all">Tất cả sản phẩm</option>
+                <option value="no_category">Chưa có danh mục</option>
+                {categories.map((cat) => (
+                  <option key={cat.value} value={cat.value}>
+                    {cat.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+
           <div className="search-box">
             <Search size={18} />
             <input
               type="text"
               placeholder="Tìm kiếm sản phẩm..."
               value={productSearch}
-              onChange={(e) => setProductSearch(e.target.value)}
+              onChange={(e) => {
+                setProductSearch(e.target.value);
+                setCurrentPage(1);
+              }}
             />
           </div>
 
           <div className="product-list">
-            {filteredProducts.length === 0 ? (
+            {paginatedProducts.length === 0 ? (
               <p className="empty-text">Không tìm thấy sản phẩm</p>
             ) : (
-              filteredProducts.map((p) => {
+              paginatedProducts.map((p) => {
                 const categoryCount = normalizeCategoryIds(p.categories).length;
 
                 return (
@@ -379,11 +577,12 @@ export default function ProductBulkCategory() {
                       checked={selectedProducts.includes(p._id)}
                       onChange={(e) => handleProductSelect(p._id, e.target.checked)}
                     />
-                    <img 
-                      src={getFirstImageUrl(p.images)} 
+                    <img
+                      src={getFirstImageUrl(p.images)}
                       alt={p.name}
                       onError={(e) => {
-                        e.currentTarget.src = "https://via.placeholder.com/150?text=Error";
+                        e.currentTarget.src =
+                          "https://via.placeholder.com/150?text=Error";
                       }}
                     />
                     <span className="product-name">{p.name}</span>
@@ -395,8 +594,33 @@ export default function ProductBulkCategory() {
               })
             )}
           </div>
+
+          {totalPages > 1 && (
+            <div className="pagination">
+              <span className="pagination-info">
+                Trang {currentPage} / {totalPages} ({filteredProducts.length} SP)
+              </span>
+              <div className="pagination-buttons">
+                <button
+                  onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                  disabled={currentPage === 1}
+                  className="pagination-btn"
+                >
+                  <ChevronLeft size={18} />
+                </button>
+                <button
+                  onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                  disabled={currentPage === totalPages}
+                  className="pagination-btn"
+                >
+                  <ChevronRight size={18} />
+                </button>
+              </div>
+            </div>
+          )}
         </div>
 
+        {/* Categories Panel */}
         <div className="bulk-card">
           <div className="card-header">
             <div className="header-left">
@@ -406,21 +630,32 @@ export default function ProductBulkCategory() {
                 {selectedCategories.length} danh mục
               </span>
             </div>
-            {selectionMode === "single" && selectedProducts.length === 1 && (
-              <span className="hint-text">
-                {normalizeCategoryIds(
-                  products.find((p) => p._id === selectedProducts[0])
-                    ?.categories
-                ).length > 0
-                  ? "Đang xem danh mục đã lưu"
-                  : "Chưa có danh mục"}
-              </span>
-            )}
-            {selectionMode === "multiple" && selectedProducts.length > 0 && (
-              <span className="hint-text-multiple">
-                Chọn danh mục để gán cho {selectedProducts.length} sản phẩm
-              </span>
-            )}
+            <div className="header-right">
+              {selectionMode === "single" && selectedProducts.length === 1 && (
+                <span className="hint-text">
+                  {normalizeCategoryIds(
+                    products.find((p) => p._id === selectedProducts[0])?.categories
+                  ).length > 0
+                    ? "Đang xem danh mục đã lưu"
+                    : "Chưa có danh mục"}
+                </span>
+              )}
+              {selectionMode === "multiple" && selectedProducts.length > 0 && (
+                <>
+                  <span className="hint-text-multiple">
+                    Chọn danh mục để gán cho {selectedProducts.length} sản phẩm
+                  </span>
+                  <select
+                    value={updateMode}
+                    onChange={(e) => setUpdateMode(e.target.value as "replace" | "add")}
+                    className="update-mode-select"
+                  >
+                    <option value="replace">Thay thế</option>
+                    <option value="add">Thêm vào</option>
+                  </select>
+                </>
+              )}
+            </div>
           </div>
 
           <div className="search-box">
@@ -469,22 +704,15 @@ export default function ProductBulkCategory() {
 
       <div className="action-bar">
         <button
-          onClick={handleSave}
+          onClick={() => setShowPreview(true)}
           disabled={
-            saving ||
-            selectedProducts.length === 0 ||
-            selectedCategories.length === 0
+            selectedProducts.length === 0 || selectedCategories.length === 0
           }
           className="save-btn"
         >
-          {saving ? (
-            <>
-              <Loader2 className="spin" size={20} />
-              Đang lưu vào database...
-            </>
-          ) : (
-            `Lưu danh mục cho ${selectedProducts.length.toLocaleString()} sản phẩm`
-          )}
+          <Eye size={20} />
+          {updateMode === "replace" ? "Thay thế" : "Thêm"} danh mục cho{" "}
+          {selectedProducts.length.toLocaleString()} sản phẩm
         </button>
       </div>
     </div>

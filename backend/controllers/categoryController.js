@@ -305,9 +305,17 @@ exports.reorderCategories = async (req, res) => {
     }
     
     // Lấy tất cả siblings ở parent mới
-    const siblings = await Category.find({ 
+    const allSiblings = await Category.find({ 
       parent: newParent || null 
     }).sort({ sortOrder: 1, 'name.vi': 1 });
+    
+    // ✅ Loại bỏ draggedCat khỏi list để tính toán
+    const siblings = allSiblings.filter(
+      s => s._id.toString() !== draggedId.toString()
+    );
+    
+    console.log('📋 Siblings (excluding dragged):', siblings.map(s => s.name.vi));
+    console.log('🎯 Target:', targetCat.name.vi, '| Position:', position);
     
     // Tìm vị trí của targetCat
     const targetIndex = siblings.findIndex(
@@ -318,44 +326,52 @@ exports.reorderCategories = async (req, res) => {
     let newOrder = 0;
     const updatePromises = [];
     
-    // ✅ FIX: Xử lý đúng cho cả drag lên và xuống
+    // ✅ FIX: Luôn thêm draggedCat vào đúng vị trí
+    let draggedAdded = false;
+    
     for (let i = 0; i < siblings.length; i++) {
       const sibling = siblings[i];
-      
-      // Skip draggedCat nếu nó đang ở cùng parent
-      if (sibling._id.toString() === draggedId.toString()) {
-        continue;
-      }
-      
       const isTarget = sibling._id.toString() === targetId.toString();
       
-      if (position === 'before' && isTarget) {
-        // Đặt draggedCat TRƯỚC target
+      if (position === 'before' && isTarget && !draggedAdded) {
+        // Thêm draggedCat TRƯỚC target
         draggedCat.sortOrder = newOrder;
         updatePromises.push(draggedCat.save());
         newOrder++;
+        draggedAdded = true;
         
+        // Rồi mới đến target
         sibling.sortOrder = newOrder;
         updatePromises.push(sibling.save());
         newOrder++;
         
-      } else if (position === 'after' && isTarget) {
-        // Đặt target TRƯỚC, draggedCat SAU
+      } else if (position === 'after' && isTarget && !draggedAdded) {
+        // Target trước
         sibling.sortOrder = newOrder;
         updatePromises.push(sibling.save());
         newOrder++;
         
+        // draggedCat sau
         draggedCat.sortOrder = newOrder;
         updatePromises.push(draggedCat.save());
         newOrder++;
+        draggedAdded = true;
         
       } else {
-        // Các sibling khác giữ nguyên thứ tự
+        // Các sibling khác
         sibling.sortOrder = newOrder;
         updatePromises.push(sibling.save());
         newOrder++;
       }
     }
+    
+    // ✅ Nếu chưa add draggedCat (trường hợp edge case)
+    if (!draggedAdded && position !== 'inside') {
+      draggedCat.sortOrder = newOrder;
+      updatePromises.push(draggedCat.save());
+    }
+    
+    console.log('💾 Saving', updatePromises.length, 'categories');
     
     // ✅ Xử lý riêng cho position === 'inside'
     if (position === 'inside') {

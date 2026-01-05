@@ -116,6 +116,8 @@
     animation: fadeInScale 0.2s ease;
     position: relative;
     overflow: hidden;
+    cursor: move; // ✅ Thêm cursor
+    pointer-events: all; // ✅ Cho phép events
 
     &::before {
       content: '';

@@ -381,7 +381,15 @@ export default function CategoryManager() {
         <div key={cat._id} className="category-tree-node">
           {/* ✅ Drop indicator TRƯỚC item */}
           {isDragOverThis && dropPosition === 'before' && (
-            <div className="drop-indicator drop-before">
+            <div 
+              className="drop-indicator drop-before"
+              onDragOver={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                e.dataTransfer.dropEffect = "move";
+              }}
+              onDrop={(e) => handleDrop(e, cat)}
+            >
               <span className="drop-label">📍 Đặt ở đây</span>
             </div>
           )}
