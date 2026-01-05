@@ -193,7 +193,10 @@ exports.deleteCategory = async (req, res) => {
 // Admin: Lấy category tree (không transform language)
 exports.getCategoryTree = async (req, res) => {
   try {
-    const categories = await CategoryService.getAll({});
+    // ✅ Sort theo sortOrder
+    const categories = await Category.find({})
+      .sort({ sortOrder: 1, 'name.vi': 1 });
+    
     const map = {};
     const tree = [];
 
@@ -202,7 +205,6 @@ exports.getCategoryTree = async (req, res) => {
       map[cat._id] = {
         ...catObj,
         value: cat._id.toString(),
-        // ✅ Hiển thị name.vi cho admin panel
         label: typeof catObj.name === 'object' ? catObj.name.vi : catObj.name,
         children: []
       };
@@ -216,9 +218,223 @@ exports.getCategoryTree = async (req, res) => {
       }
     });
 
+    // ✅ Sort children theo sortOrder
+    const sortChildren = (nodes) => {
+      nodes.forEach(node => {
+        if (node.children && node.children.length > 0) {
+          node.children.sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0));
+          sortChildren(node.children);
+        }
+      });
+    };
+    sortChildren(tree);
+    
+    // ✅ Sort root level
+    tree.sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0));
+
     res.json(tree);
   } catch (error) {
-    console.error("Lỗi getCategoryTree:", error);
+    console.error("❌ getCategoryTree error:", error);
     res.status(500).json({ message: "Lỗi lấy cây danh mục" });
+  }
+};
+
+// ✅ Reorder categories (drag & drop) - ENHANCED with 3 positions
+exports.reorderCategories = async (req, res) => {
+  try {
+    const { draggedId, targetId, position } = req.body; // before | inside | after
+    
+    console.log('🔄 Reordering categories:', { draggedId, targetId, position });
+    
+    if (!draggedId || !targetId || !position) {
+      return res.status(400).json({ 
+        message: 'Thiếu draggedId, targetId hoặc position' 
+      });
+    }
+    
+    // Tìm 2 categories
+    const draggedCat = await Category.findById(draggedId);
+    const targetCat = await Category.findById(targetId);
+    
+    if (!draggedCat || !targetCat) {
+      return res.status(404).json({ 
+        message: 'Không tìm thấy danh mục' 
+      });
+    }
+    
+    // Kiểm tra không cho kéo cha vào con
+    const isDescendant = async (parentId, childId) => {
+      const children = await Category.find({ parent: parentId });
+      for (const child of children) {
+        if (child._id.toString() === childId.toString()) return true;
+        if (await isDescendant(child._id, childId)) return true;
+      }
+      return false;
+    };
+    
+    if (position === 'inside' && await isDescendant(draggedId, targetId)) {
+      return res.status(400).json({ 
+        message: 'Không thể di chuyển danh mục cha vào danh mục con của nó' 
+      });
+    }
+    
+    // ✅ Xác định parent mới dựa trên position
+    let newParent;
+    
+    if (position === 'inside') {
+      // Đặt vào trong target -> target là parent mới
+      newParent = targetId;
+    } else {
+      // before hoặc after -> cùng parent với target
+      newParent = targetCat.parent;
+    }
+    
+    const oldParent = draggedCat.parent;
+    
+    // Cập nhật parent
+    draggedCat.parent = newParent;
+    
+    // Cập nhật level và ancestors
+    if (newParent) {
+      const parentCat = await Category.findById(newParent);
+      draggedCat.level = (parentCat.level || 0) + 1;
+      draggedCat.ancestors = [...(parentCat.ancestors || []), newParent];
+    } else {
+      draggedCat.level = 0;
+      draggedCat.ancestors = [];
+    }
+    
+    // Lấy tất cả siblings ở parent mới
+    const siblings = await Category.find({ 
+      parent: newParent || null 
+    }).sort({ sortOrder: 1, 'name.vi': 1 });
+    
+    // Tìm vị trí của targetCat
+    const targetIndex = siblings.findIndex(
+      s => s._id.toString() === targetId.toString()
+    );
+    
+    // Sắp xếp lại sortOrder
+    let newOrder = 0;
+    const updatePromises = [];
+    
+    // ✅ FIX: Xử lý đúng cho cả drag lên và xuống
+    for (let i = 0; i < siblings.length; i++) {
+      const sibling = siblings[i];
+      
+      // Skip draggedCat nếu nó đang ở cùng parent
+      if (sibling._id.toString() === draggedId.toString()) {
+        continue;
+      }
+      
+      const isTarget = sibling._id.toString() === targetId.toString();
+      
+      if (position === 'before' && isTarget) {
+        // Đặt draggedCat TRƯỚC target
+        draggedCat.sortOrder = newOrder;
+        updatePromises.push(draggedCat.save());
+        newOrder++;
+        
+        sibling.sortOrder = newOrder;
+        updatePromises.push(sibling.save());
+        newOrder++;
+        
+      } else if (position === 'after' && isTarget) {
+        // Đặt target TRƯỚC, draggedCat SAU
+        sibling.sortOrder = newOrder;
+        updatePromises.push(sibling.save());
+        newOrder++;
+        
+        draggedCat.sortOrder = newOrder;
+        updatePromises.push(draggedCat.save());
+        newOrder++;
+        
+      } else {
+        // Các sibling khác giữ nguyên thứ tự
+        sibling.sortOrder = newOrder;
+        updatePromises.push(sibling.save());
+        newOrder++;
+      }
+    }
+    
+    // ✅ Xử lý riêng cho position === 'inside'
+    if (position === 'inside') {
+      // Lấy children hiện tại của target
+      const targetChildren = await Category.find({ 
+        parent: targetId 
+      }).sort({ sortOrder: 1 });
+      
+      // Đặt draggedCat làm child đầu tiên
+      draggedCat.sortOrder = 0;
+      await draggedCat.save();
+      
+      // Đẩy các children khác xuống
+      for (let i = 0; i < targetChildren.length; i++) {
+        const child = targetChildren[i];
+        if (child._id.toString() !== draggedId.toString()) {
+          child.sortOrder = i + 1;
+          await child.save();
+        }
+      }
+    }
+    
+    // Nếu kéo từ parent khác sang, cập nhật sortOrder ở old parent
+    if (oldParent && oldParent.toString() !== (newParent ? newParent.toString() : 'null')) {
+      const oldSiblings = await Category.find({ 
+        parent: oldParent 
+      }).sort({ sortOrder: 1 });
+      
+      let order = 0;
+      for (const sibling of oldSiblings) {
+        if (sibling._id.toString() !== draggedId.toString()) {
+          sibling.sortOrder = order;
+          updatePromises.push(sibling.save());
+          order++;
+        }
+      }
+    }
+    
+    // Lưu tất cả thay đổi (chỉ cho before/after)
+    if (position !== 'inside') {
+      await Promise.all(updatePromises);
+    }
+    
+    // Cập nhật lại ancestors và level cho tất cả children của draggedCat
+    const updateChildrenRecursive = async (parentId) => {
+      const children = await Category.find({ parent: parentId });
+      const parent = await Category.findById(parentId);
+      
+      for (const child of children) {
+        child.level = parent.level + 1;
+        child.ancestors = [...parent.ancestors, parentId];
+        await child.save();
+        
+        const hasGrandChildren = await Category.countDocuments({ parent: child._id });
+        if (hasGrandChildren > 0) {
+          await updateChildrenRecursive(child._id);
+        }
+      }
+    };
+    
+    const hasChildren = await Category.countDocuments({ parent: draggedId });
+    if (hasChildren > 0) {
+      await updateChildrenRecursive(draggedId);
+    }
+    
+    console.log(`✅ Reorder successful: ${position}`);
+    
+    res.json({ 
+      message: 'Di chuyển danh mục thành công',
+      position,
+      draggedCat,
+      targetCat
+    });
+    
+  } catch (error) {
+    console.error('❌ Reorder error:', error);
+    res.status(500).json({ 
+      message: 'Lỗi khi sắp xếp lại danh mục',
+      error: error.message 
+    });
   }
 };

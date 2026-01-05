@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import axios from 'axios';
 import { Editor } from '@tinymce/tinymce-react';
 import { getImageUrl } from "@/utils/imageUrl";
@@ -47,6 +47,10 @@ const PostManager: React.FC = () => {
   const [uploadingImage, setUploadingImage] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const editorRef = useRef<any>(null);
+
+  // ✅ Pagination states
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
 
   // ✅ Helper: Get text from multilang field
   const getText = (field: MultilangString | string | undefined, lang: string = 'vi'): string => {
@@ -366,13 +370,36 @@ const PostManager: React.FC = () => {
   });
 
   // ✅ FIX: Use getText() helper for filtering
-  const filteredPosts = posts.filter(post => {
-    const postTitle = getText(post.title, 'vi').toLowerCase();
-    const matchSearch = postTitle.includes(searchTerm.toLowerCase());
-    const matchCategory = !selectedCategory || 
-      (typeof post.category_id === 'object' && post.category_id._id === selectedCategory);
-    return matchSearch && matchCategory;
-  });
+  const filteredPosts = useMemo(() => {
+    return posts.filter(post => {
+      const postTitle = getText(post.title, 'vi').toLowerCase();
+      const matchSearch = postTitle.includes(searchTerm.toLowerCase());
+      const matchCategory = !selectedCategory || 
+        (typeof post.category_id === 'object' && post.category_id._id === selectedCategory);
+      return matchSearch && matchCategory;
+    });
+  }, [posts, searchTerm, selectedCategory]);
+
+  // ✅ Pagination calculations
+  const totalPages = Math.ceil(filteredPosts.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const currentPosts = filteredPosts.slice(startIndex, endIndex);
+
+  // ✅ Reset to page 1 when filter changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, selectedCategory, itemsPerPage]);
+
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleItemsPerPageChange = (value: number) => {
+    setItemsPerPage(value);
+    setCurrentPage(1);
+  };
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('vi-VN', {
@@ -436,90 +463,164 @@ const PostManager: React.FC = () => {
           <p>Đang tải...</p>
         </div>
       ) : (
-        <div className="post-table-container">
-          <table className="post-table">
-            <thead>
-              <tr>
-                <th>Thumbnail</th>
-                <th>Tiêu đề</th>
-                <th>Danh mục</th>
-                <th>Trạng thái</th>
-                <th>Ngày tạo</th>
-                <th>Thao tác</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredPosts.length === 0 ? (
+        <>
+          <div className="post-table-container">
+            <table className="post-table">
+              <thead>
                 <tr>
-                  <td colSpan={6} className="empty-state">
-                    Không có bài viết nào
-                  </td>
+                  <th>Thumbnail</th>
+                  <th>Tiêu đề</th>
+                  <th>Danh mục</th>
+                  <th>Trạng thái</th>
+                  <th>Ngày tạo</th>
+                  <th>Thao tác</th>
                 </tr>
-              ) : (
-                filteredPosts.map(post => (
-                  <tr key={post._id}>
-                    <td>
-                      <div className="thumbnail-cell">
-                        {post.thumbnail ? (
-                          <img 
-                            src={getImageUrl(post.thumbnail)} 
-                            alt={getText(post.title, 'vi')}
-                            onError={(e) => {
-                              e.currentTarget.src = 'https://via.placeholder.com/150?text=Error';
-                            }}
-                          />
-                        ) : (
-                          <div className="no-image">No Image</div>
-                        )}
-                      </div>
-                    </td>
-                    <td>
-                      <div className="title-cell">
-                        <strong>{getText(post.title, 'vi')}</strong>
-                        <span className="slug">{post.slug}</span>
-                      </div>
-                    </td>
-                    <td>
-                      {typeof post.category_id === 'object' ? (
-                        <span className="category-badge">{getText(post.category_id.name, 'vi')}</span>
-                      ) : (
-                        <span className="category-badge">-</span>
-                      )}
-                    </td>
-                    <td>
-                      <span className={`status-badge status-${post.status || 'draft'}`}>
-                        {post.status === 'published' ? 'Đã xuất bản' : 'Nháp'}
-                      </span>
-                    </td>
-                    <td>{formatDate(post.created_at)}</td>
-                    <td>
-                      <div className="action-buttons">
-                        <button
-                          className="btn-edit"
-                          onClick={() => openModal(post)}
-                          title="Sửa"
-                        >
-                          <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
-                            <path d="M12.5 2.5L15.5 5.5L5.5 15.5H2.5V12.5L12.5 2.5Z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                          </svg>
-                        </button>
-                        <button
-                          className="btn-delete"
-                          onClick={() => handleDelete(post._id)}
-                          title="Xóa"
-                        >
-                          <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
-                            <path d="M3 5H15M7 8V13M11 8V13M4 5L5 15C5 15.5 5.5 16 6 16H12C12.5 16 13 15.5 13 15L14 5M7 5V3C7 2.5 7.5 2 8 2H10C10.5 2 11 2.5 11 3V5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                          </svg>
-                        </button>
-                      </div>
+              </thead>
+              <tbody>
+                {currentPosts.length === 0 ? (
+                  <tr>
+                    <td colSpan={6} className="empty-state">
+                      Không có bài viết nào
                     </td>
                   </tr>
-                ))
+                ) : (
+                  currentPosts.map(post => (
+                    <tr key={post._id}>
+                      <td>
+                        <div className="thumbnail-cell">
+                          {post.thumbnail ? (
+                            <img 
+                              src={getImageUrl(post.thumbnail)} 
+                              alt={getText(post.title, 'vi')}
+                              onError={(e) => {
+                                e.currentTarget.src = 'https://via.placeholder.com/150?text=Error';
+                              }}
+                            />
+                          ) : (
+                            <div className="no-image">No Image</div>
+                          )}
+                        </div>
+                      </td>
+                      <td>
+                        <div className="title-cell">
+                          <strong>{getText(post.title, 'vi')}</strong>
+                          <span className="slug">{post.slug}</span>
+                        </div>
+                      </td>
+                      <td>
+                        {typeof post.category_id === 'object' ? (
+                          <span className="category-badge">{getText(post.category_id.name, 'vi')}</span>
+                        ) : (
+                          <span className="category-badge">-</span>
+                        )}
+                      </td>
+                      <td>
+                        <span className={`status-badge status-${post.status || 'draft'}`}>
+                          {post.status === 'published' ? 'Đã xuất bản' : 'Nháp'}
+                        </span>
+                      </td>
+                      <td>{formatDate(post.created_at)}</td>
+                      <td>
+                        <div className="action-buttons">
+                          <button
+                            className="btn-edit"
+                            onClick={() => openModal(post)}
+                            title="Sửa"
+                          >
+                            <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+                              <path d="M12.5 2.5L15.5 5.5L5.5 15.5H2.5V12.5L12.5 2.5Z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                            </svg>
+                          </button>
+                          <button
+                            className="btn-delete"
+                            onClick={() => handleDelete(post._id)}
+                            title="Xóa"
+                          >
+                            <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+                              <path d="M3 5H15M7 8V13M11 8V13M4 5L5 15C5 15.5 5.5 16 6 16H12C12.5 16 13 15.5 13 15L14 5M7 5V3C7 2.5 7.5 2 8 2H10C10.5 2 11 2.5 11 3V5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                            </svg>
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+
+          {/* ✅ Pagination - Same layout as translateManager */}
+          {filteredPosts.length > 0 && (
+            <div className="pagination">
+              <div className="pagination-left">
+                <div className="items-per-page">
+                  <span>Hiển thị:</span>
+                  <select 
+                    value={itemsPerPage} 
+                    onChange={(e) => handleItemsPerPageChange(Number(e.target.value))}
+                  >
+                    <option value={5}>5</option>
+                    <option value={10}>10</option>
+                    <option value={15}>15</option>
+                    <option value={20}>20</option>
+                    <option value={50}>50</option>
+                    <option value={100}>100</option>
+                  </select>
+                  <span>bài viết/trang</span>
+                </div>
+                <div className="page-info">
+                  Hiển thị {startIndex + 1}-{Math.min(endIndex, filteredPosts.length)} trong tổng số {filteredPosts.length} bài viết
+                </div>
+              </div>
+
+              {totalPages > 1 && (
+                <div className="pagination-center">
+                  <button 
+                    onClick={() => handlePageChange(currentPage - 1)}
+                    disabled={currentPage === 1}
+                    className="pagination-btn"
+                  >
+                    ← Trước
+                  </button>
+                  
+                  <div className="pagination-numbers">
+                    {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => {
+                      if (
+                        page === 1 ||
+                        page === totalPages ||
+                        (page >= currentPage - 1 && page <= currentPage + 1)
+                      ) {
+                        return (
+                          <button
+                            key={page}
+                            onClick={() => handlePageChange(page)}
+                            className={`pagination-number ${currentPage === page ? 'active' : ''}`}
+                          >
+                            {page}
+                          </button>
+                        );
+                      } else if (
+                        page === currentPage - 2 ||
+                        page === currentPage + 2
+                      ) {
+                        return <span key={page} className="pagination-ellipsis">...</span>;
+                      }
+                      return null;
+                    })}
+                  </div>
+
+                  <button 
+                    onClick={() => handlePageChange(currentPage + 1)}
+                    disabled={currentPage === totalPages}
+                    className="pagination-btn"
+                  >
+                    Sau →
+                  </button>
+                </div>
               )}
-            </tbody>
-          </table>
-        </div>
+            </div>
+          )}
+        </>
       )}
 
       {/* Category Management Modal */}
@@ -628,15 +729,6 @@ const PostManager: React.FC = () => {
                             >
                               <svg width="16" height="16" viewBox="0 0 18 18" fill="none">
                                 <path d="M12.5 2.5L15.5 5.5L5.5 15.5H2.5V12.5L12.5 2.5Z" stroke="currentColor" strokeWidth="1.5"/>
-                              </svg>
-                            </button>
-                            <button
-                              className="btn-delete-cat"
-                              onClick={() => handleDeleteCategory(category._id)}
-                              title="Xóa"
-                            >
-                              <svg width="16" height="16" viewBox="0 0 18 18" fill="none">
-                                <path d="M3 5H15M7 8V13M11 8V13M4 5L5 15C5 15.5 5.5 16 6 16H12C12.5 16 13 15.5 13 15L14 5M7 5V3C7 2.5 7.5 2 8 2H10C10.5 2 11 2.5 11 3V5" stroke="currentColor" strokeWidth="1.5"/>
                               </svg>
                             </button>
                           </div>
@@ -886,4 +978,4 @@ const PostManager: React.FC = () => {
   );
 };
 
-export default PostManager
+export default PostManager;

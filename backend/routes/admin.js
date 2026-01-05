@@ -440,6 +440,7 @@ router.put('/translations/:id/review', auth, admin, translationController.review
 
 // ==================== CATEGORY ROUTES ====================
 router.get('/categories/tree', auth, admin, categoryController.getCategoryTree);
+router.put('/categories/reorder', auth, admin, categoryController.reorderCategories);
 router.post('/categories', auth, admin, categoryController.createCategory);
 router.put('/categories/:id', auth, admin, categoryController.updateCategory);
 router.delete('/categories/:id', auth, admin, categoryController.deleteCategory);
