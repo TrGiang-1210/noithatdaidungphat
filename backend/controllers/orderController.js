@@ -610,6 +610,49 @@ module.exports = {
         return res.status(404).json({ message: "Không tìm thấy đơn hàng" });
       }
 
+      // ✅ THÊM: CẬP NHẬT SOLD KHI CHUYỂN SANG CONFIRMED
+      if (status === "Confirmed" && order.status === "Pending") {
+        const items = await OrderDetailService.getByOrderId(order._id);
+
+        for (const item of items) {
+          try {
+            const product = await ProductService.getById(item.product_id);
+            if (product) {
+              await ProductService.update(item.product_id, {
+                sold: (product.sold || 0) + item.quantity,
+              });
+              console.log(
+                `✅ Cập nhật sold +${item.quantity} cho ${item.name}`
+              );
+            }
+          } catch (e) {
+            console.error(`❌ Lỗi cập nhật sold:`, e);
+          }
+        }
+      }
+
+      // ✅ THÊM: TRỪ SOLD KHI HỦY ĐƠN ĐÃ CONFIRMED
+      if (
+        status === "Cancelled" &&
+        ["Confirmed", "Shipping"].includes(order.status)
+      ) {
+        const items = await OrderDetailService.getByOrderId(order._id);
+
+        for (const item of items) {
+          try {
+            const product = await ProductService.getById(item.product_id);
+            if (product) {
+              await ProductService.update(item.product_id, {
+                sold: Math.max(0, (product.sold || 0) - item.quantity), // Không cho âm
+              });
+              console.log(`✅ Hoàn sold -${item.quantity} cho ${item.name}`);
+            }
+          } catch (e) {
+            console.error(`❌ Lỗi hoàn sold:`, e);
+          }
+        }
+      }
+
       // Cập nhật trạng thái
       const updated = await OrderService.update(req.params.id, {
         status,
