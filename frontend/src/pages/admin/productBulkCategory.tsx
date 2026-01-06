@@ -2,8 +2,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { 
   Search, Package, Folders, Loader2, CheckCircle, 
-  ToggleLeft, ToggleRight, Filter, X, Eye, Save, 
-  ChevronLeft, ChevronRight 
+  ToggleLeft, ToggleRight, Filter, X, Eye, Save
 } from "lucide-react";
 import "@/styles/pages/admin/productBulkCategory.scss";
 import { getImageUrl, getFirstImageUrl } from "@/utils/imageUrl";
@@ -122,7 +121,7 @@ export default function ProductBulkCategory() {
   const [updateMode, setUpdateMode] = useState<"replace" | "add">("replace");
   const [showPreview, setShowPreview] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage] = useState(10);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
   const [showFilters, setShowFilters] = useState(false);
 
   // Fetch data
@@ -281,6 +280,20 @@ export default function ProductBulkCategory() {
     const start = (currentPage - 1) * itemsPerPage;
     return filteredProducts.slice(start, start + itemsPerPage);
   }, [filteredProducts, currentPage, itemsPerPage]);
+
+  // Reset to page 1 when search or filter changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [productSearch, categoryFilter, itemsPerPage]);
+
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+  };
+
+  const handleItemsPerPageChange = (value: number) => {
+    setItemsPerPage(value);
+    setCurrentPage(1);
+  };
 
   const toggleSelectAllProducts = () => {
     if (
@@ -597,23 +610,55 @@ export default function ProductBulkCategory() {
 
           {totalPages > 1 && (
             <div className="pagination">
-              <span className="pagination-info">
-                Trang {currentPage} / {totalPages} ({filteredProducts.length} SP)
-              </span>
+              <div className="pagination-info">
+                <span className="items-display">
+                  Hiển thị: <strong>{itemsPerPage}</strong> sp/trang
+                </span>
+                <span className="page-range">
+                  Trang {currentPage} / {totalPages} ({filteredProducts.length} SP)
+                </span>
+              </div>
               <div className="pagination-buttons">
                 <button
-                  onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                  onClick={() => handlePageChange(currentPage - 1)}
                   disabled={currentPage === 1}
                   className="pagination-btn"
                 >
-                  <ChevronLeft size={18} />
+                  ← Trước
                 </button>
+                
+                <div className="pagination-numbers">
+                  {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => {
+                    if (
+                      page === 1 ||
+                      page === totalPages ||
+                      (page >= currentPage - 1 && page <= currentPage + 1)
+                    ) {
+                      return (
+                        <button
+                          key={page}
+                          onClick={() => handlePageChange(page)}
+                          className={`pagination-number ${currentPage === page ? 'active' : ''}`}
+                        >
+                          {page}
+                        </button>
+                      );
+                    } else if (
+                      page === currentPage - 2 ||
+                      page === currentPage + 2
+                    ) {
+                      return <span key={page} className="pagination-ellipsis">...</span>;
+                    }
+                    return null;
+                  })}
+                </div>
+
                 <button
-                  onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                  onClick={() => handlePageChange(currentPage + 1)}
                   disabled={currentPage === totalPages}
                   className="pagination-btn"
                 >
-                  <ChevronRight size={18} />
+                  Sau →
                 </button>
               </div>
             </div>
