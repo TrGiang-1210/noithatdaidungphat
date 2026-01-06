@@ -442,7 +442,7 @@ module.exports = {
     }
   },
 
-  // ==================== ADMIN: LẤY TẤT CẢ ĐƠN HÀNG (TIẾNG VIỆT) ====================
+  // ==================== ADMIN: LẤY TẤT CẢ ĐỠN HÀNG (TIẾNG VIỆT) ====================
   getAllOrdersAdmin: async (req, res) => {
     try {
       const { status, sort = "created_at", order = "desc" } = req.query;
@@ -465,38 +465,55 @@ module.exports = {
             customer: order.customer,
             items: await Promise.all(
               items.map(async (item) => {
-                const product = await ProductService.getById(item.product_id);
+                // ✅ FIX: HANDLE MISSING PRODUCT
+                let product = null;
+                try {
+                  product = await ProductService.getById(item.product_id);
+                } catch (e) {
+                  console.warn(
+                    `⚠️ Product ${item.product_id} not found:`,
+                    e.message
+                  );
+                }
 
                 // ✅ LẤY TÊN TIẾNG VIỆT AN TOÀN
-                let productNameVi = "N/A";
+                let productNameVi = "Sản phẩm đã xóa"; // ← Default for deleted products
+
                 if (typeof item.name === "object") {
-                  // NEW FORMAT: {vi, zh}
-                  productNameVi = item.name.vi || item.name.zh || "N/A";
+                  productNameVi =
+                    item.name.vi || item.name.zh || "Sản phẩm đã xóa";
                 } else if (typeof item.name === "string") {
-                  // LEGACY FORMAT: string
                   productNameVi = item.name;
                 } else if (product && product.name) {
                   productNameVi = getTextByLang(product.name, "vi");
                 }
 
-                // ✅ CONVERT ATTRIBUTES → STRING (TIẾNG VIỆT)
-                const displayAttributes = convertAttributesToStrings(
-                  item.selectedAttributes,
-                  product,
-                  "vi"
-                );
+                // ✅ CONVERT ATTRIBUTES → STRING (TIẾNG VIỆT) - Handle null product
+                const displayAttributes = product
+                  ? convertAttributesToStrings(
+                      item.selectedAttributes,
+                      product,
+                      "vi"
+                    )
+                  : convertAttributesToStrings(
+                      item.selectedAttributes,
+                      null,
+                      "vi"
+                    );
 
                 return {
                   product: {
                     _id: item.product_id,
                     name: productNameVi,
-                    images: [item.img_url],
+                    images: product?.images?.[0]
+                      ? [product.images[0]]
+                      : [item.img_url || ""], // ← Use stored img_url
                     sku: product?.sku || "N/A",
                     attributes: product?.attributes || [],
                   },
                   quantity: item.quantity,
                   price: item.price,
-                  selectedAttributes: displayAttributes, // ✅ LUÔN LÀ STRING
+                  selectedAttributes: displayAttributes,
                 };
               })
             ),
@@ -513,7 +530,7 @@ module.exports = {
 
       res.json(ordersWithDetails);
     } catch (error) {
-      console.error("Error fetching orders:", error);
+      console.error("❌ Error fetching orders:", error);
       res
         .status(500)
         .json({ message: error.message || "Lỗi khi lấy đơn hàng" });
@@ -536,12 +553,19 @@ module.exports = {
         customer: order.customer,
         items: await Promise.all(
           items.map(async (item) => {
-            const product = await ProductService.getById(item.product_id);
+            // ✅ HANDLE MISSING PRODUCT
+            let product = null;
+            try {
+              product = await ProductService.getById(item.product_id);
+            } catch (e) {
+              console.warn(`⚠️ Product ${item.product_id} not found`);
+            }
 
             // ✅ LẤY TÊN TIẾNG VIỆT
-            let productNameVi = "N/A";
+            let productNameVi = "Sản phẩm đã xóa";
+
             if (typeof item.name === "object") {
-              productNameVi = item.name.vi || item.name.zh || "N/A";
+              productNameVi = item.name.vi || item.name.zh || "Sản phẩm đã xóa";
             } else if (typeof item.name === "string") {
               productNameVi = item.name;
             } else if (product && product.name) {
@@ -549,17 +573,21 @@ module.exports = {
             }
 
             // ✅ CONVERT ATTRIBUTES → STRING
-            const displayAttributes = convertAttributesToStrings(
-              item.selectedAttributes,
-              product,
-              "vi"
-            );
+            const displayAttributes = product
+              ? convertAttributesToStrings(
+                  item.selectedAttributes,
+                  product,
+                  "vi"
+                )
+              : convertAttributesToStrings(item.selectedAttributes, null, "vi");
 
             return {
               product: {
                 _id: item.product_id,
                 name: productNameVi,
-                images: [item.img_url],
+                images: product?.images?.[0]
+                  ? [product.images[0]]
+                  : [item.img_url || ""],
                 sku: product?.sku || "N/A",
               },
               quantity: item.quantity,
@@ -577,6 +605,7 @@ module.exports = {
         reservedUntil: order.reservedUntil,
       });
     } catch (error) {
+      console.error("❌ Error:", error);
       res
         .status(500)
         .json({ message: error.message || "Lỗi khi lấy đơn hàng" });

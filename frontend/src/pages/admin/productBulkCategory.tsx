@@ -611,9 +611,22 @@ export default function ProductBulkCategory() {
           {totalPages > 1 && (
             <div className="pagination">
               <div className="pagination-info">
-                <span className="items-display">
-                  Hiển thị: <strong>{itemsPerPage}</strong> sp/trang
-                </span>
+                <div className="items-per-page">
+                  <span>Hiển thị:</span>
+                  <select
+                    value={itemsPerPage}
+                    onChange={(e) => handleItemsPerPageChange(Number(e.target.value))}
+                    className="items-select"
+                  >
+                    <option value={5}>5</option>
+                    <option value={10}>10</option>
+                    <option value={15}>15</option>
+                    <option value={20}>20</option>
+                    <option value={50}>50</option>
+                    <option value={100}>100</option>
+                  </select>
+                  <span>sp/trang</span>
+                </div>
                 <span className="page-range">
                   Trang {currentPage} / {totalPages} ({filteredProducts.length} SP)
                 </span>
