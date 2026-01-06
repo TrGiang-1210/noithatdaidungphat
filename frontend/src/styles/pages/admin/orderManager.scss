@@ -1,4 +1,4 @@
-// src/styles/pages/admin/orderManager.scss - WITH SEARCH BOX AND PAGINATION
+// src/styles/pages/admin/orderManager.scss - WITH ARCHIVE FEATURE
 .order-manager {
   padding: 24px;
   background: #f8f9fa;
@@ -95,6 +95,80 @@
           }
         }
       }
+    }
+  }
+
+  // ✅ NEW: Archive Controls
+  .archive-controls {
+    background: white;
+    border-radius: 12px;
+    padding: 16px;
+    margin-bottom: 20px;
+    display: flex;
+    gap: 16px;
+    flex-wrap: wrap;
+    align-items: center;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+    border: 1px solid #e5e7eb;
+
+    select {
+      padding: 8px 12px;
+      border: 1px solid #d1d5db;
+      border-radius: 6px;
+      font-size: 14px;
+      cursor: pointer;
+      transition: all 0.2s;
+      background: white;
+
+      &:hover {
+        border-color: #3b82f6;
+      }
+
+      &:focus {
+        outline: none;
+        border-color: #3b82f6;
+        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+      }
+    }
+
+    .archive-toggle {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 500;
+      color: #374151;
+      padding: 8px 12px;
+      border-radius: 6px;
+      transition: all 0.2s;
+
+      &:hover {
+        background: #f3f4f6;
+      }
+
+      input[type="checkbox"] {
+        width: 16px;
+        height: 16px;
+        cursor: pointer;
+        accent-color: #3b82f6;
+      }
+
+      svg {
+        color: #6b7280;
+      }
+    }
+
+    .archive-stats {
+      padding: 8px 12px;
+      background: #fef3c7;
+      border-radius: 6px;
+      font-size: 13px;
+      color: #92400e;
+      font-weight: 500;
+      display: flex;
+      align-items: center;
+      gap: 6px;
     }
   }
 
@@ -418,6 +492,27 @@
               }
 
               &.btn-complete {
+                background: #10b981;
+
+                &:hover:not(:disabled) {
+                  background: #059669;
+                  transform: translateY(-1px);
+                  box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3);
+                }
+              }
+
+              // ✅ NEW: Archive button styles
+              &.btn-archive {
+                background: #6b7280;
+
+                &:hover:not(:disabled) {
+                  background: #4b5563;
+                  transform: translateY(-1px);
+                  box-shadow: 0 2px 8px rgba(107, 114, 128, 0.3);
+                }
+              }
+
+              &.btn-unarchive {
                 background: #10b981;
 
                 &:hover:not(:disabled) {
@@ -793,6 +888,36 @@
                 .item-sku {
                   font-size: 13px;
                   color: #6b7280;
+                  margin-bottom: 6px;
+                }
+
+                // ✅ Attributes styling
+                .item-attributes {
+                  display: flex;
+                  flex-wrap: wrap;
+                  gap: 6px;
+                  margin-top: 8px;
+
+                  .attribute-badge {
+                    display: inline-flex;
+                    align-items: center;
+                    gap: 4px;
+                    padding: 3px 8px;
+                    background: #f0fdf4;
+                    border: 1px solid #86efac;
+                    border-radius: 4px;
+                    font-size: 12px;
+                    color: #166534;
+                    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI",
+                      Roboto, "Helvetica Neue", Arial, sans-serif;
+                    line-height: 1.5;
+                    white-space: nowrap;
+
+                    strong {
+                      font-weight: 600;
+                      color: #15803d;
+                    }
+                  }
                 }
               }
 
@@ -970,6 +1095,17 @@
       }
     }
 
+    .archive-controls {
+      flex-direction: column;
+      align-items: stretch;
+
+      select,
+      .archive-toggle {
+        width: 100%;
+        justify-content: center;
+      }
+    }
+
     .filter-bar {
       button {
         flex: 1;
@@ -1102,34 +1238,6 @@
           flex: 1;
           min-width: 120px;
         }
-      }
-    }
-  }
-
-  .item-attributes {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 6px;
-    margin-top: 8px;
-
-    .attribute-badge {
-      display: inline-flex;
-      align-items: center;
-      gap: 4px;
-      padding: 3px 8px;
-      background: #f0fdf4;
-      border: 1px solid #86efac;
-      border-radius: 4px;
-      font-size: 12px; // ✅ TĂNG TỪ 11px LÊN 12px
-      color: #166534;
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
-        "Helvetica Neue", Arial, sans-serif; // ✅ THÊM FONT FAMILY
-      line-height: 1.5; // ✅ THÊM LINE HEIGHT
-      white-space: nowrap; // ✅ KHÔNG CHO XUỐNG DÒNG
-
-      strong {
-        font-weight: 600;
-        color: #15803d;
       }
     }
   }

@@ -465,13 +465,18 @@ router.post('/post-categories', auth, admin, postCategoryController.createCatego
 router.put('/post-categories/:id', auth, admin, postCategoryController.updateCategory);
 router.delete('/post-categories/:id', auth, admin, postCategoryController.deleteCategory);
 
+// routes/admin.js
+
 // ==================== ORDER ROUTES ====================
 // ⚠️ Specific routes MUST come before dynamic routes
 router.get('/orders/stats/overview', auth, admin, orderController.getOrderStats);
+router.get('/orders/stats/archive', auth, admin, orderController.getArchiveStats); // ← MỚI
 router.get('/orders', auth, admin, orderController.getAllOrdersAdmin);
 router.get('/orders/:id', auth, admin, orderController.getOrderByIdAdmin);
 router.patch('/orders/:id/status', auth, admin, orderController.updateOrderStatus);
 router.patch('/orders/:id/cancel', auth, admin, orderController.cancelOrderAdmin);
+router.patch('/orders/:id/archive', auth, admin, orderController.archiveOrder); // ← MỚI
+router.patch('/orders/:id/unarchive', auth, admin, orderController.unarchiveOrder); // ← MỚI
 router.delete('/orders/:id', auth, admin, orderController.deleteOrder);
 
 module.exports = router;
