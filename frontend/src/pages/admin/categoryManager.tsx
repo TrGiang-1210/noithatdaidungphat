@@ -1,5 +1,5 @@
-// src/admin/pages/CategoryManager.tsx
-import { useState, useEffect } from "react";
+// src/admin/pages/CategoryManager.tsx - ✅ FIXED VERSION
+import { useState, useEffect, useRef } from "react";
 import {
   Plus,
   Edit2,
@@ -41,7 +41,11 @@ export default function CategoryManager() {
   const [dropPosition, setDropPosition] = useState<DropPosition>(null);
   const [isDragging, setIsDragging] = useState(false);
 
-  // ✅ Helper: Safely get category name (multilingual support)
+  // ✅ REF để lưu scroll position
+  const scrollPositionRef = useRef<number>(0);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  // ✅ Helper: Safely get category name
   const getCategoryName = (name: any): string => {
     if (typeof name === 'object' && name !== null && name.vi) {
       return name.vi;
@@ -49,10 +53,36 @@ export default function CategoryManager() {
     return String(name || '');
   };
 
-  // Load danh mục dạng cây từ backend
-  const fetchCategories = async () => {
+  // ✅ LƯU scroll position trước khi fetch
+  const saveScrollPosition = () => {
+    if (containerRef.current) {
+      scrollPositionRef.current = window.scrollY;
+      console.log('💾 Saved scroll position:', scrollPositionRef.current);
+    }
+  };
+
+  // ✅ KHÔI PHỤC scroll position sau khi render
+  const restoreScrollPosition = () => {
+    requestAnimationFrame(() => {
+      if (scrollPositionRef.current > 0) {
+        window.scrollTo({
+          top: scrollPositionRef.current,
+          behavior: 'instant' // Không smooth để tránh nhìn thấy jump
+        });
+        console.log('📍 Restored scroll position:', scrollPositionRef.current);
+      }
+    });
+  };
+
+  // Load danh mục
+  const fetchCategories = async (preserveScroll = false) => {
     try {
-      setLoading(true);
+      if (preserveScroll) {
+        saveScrollPosition();
+      } else {
+        setLoading(true);
+      }
+
       const res = await axiosInstance.get("/admin/categories/tree");
       console.log('📦 Fetched categories:', res.data);
       setCategories(res.data || []);
@@ -76,6 +106,11 @@ export default function CategoryManager() {
         return list;
       };
       setFlatCategories(flatten(res.data || []));
+
+      // ✅ Khôi phục scroll position nếu cần
+      if (preserveScroll) {
+        restoreScrollPosition();
+      }
     } catch (err) {
       alert("Lỗi tải danh mục");
       console.error("❌ Fetch error:", err);
@@ -146,6 +181,7 @@ export default function CategoryManager() {
     setShowModal(true);
   };
 
+  // ✅ SUBMIT - Giữ scroll position
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.name.trim()) return;
@@ -159,20 +195,32 @@ export default function CategoryManager() {
           slug,
           parent: formData.parent || null,
         });
+        console.log('✅ Updated category');
       } else {
         await axiosInstance.post("/admin/categories", {
           name: formData.name,
           slug,
           parent: formData.parent || null,
         });
+        console.log('✅ Created category');
+        
+        // ✅ Nếu thêm vào danh mục cha, tự động expand nó
+        if (formData.parent) {
+          setExpanded(prev => [...prev, formData.parent]);
+        }
       }
+      
       setShowModal(false);
-      fetchCategories();
+      
+      // ✅ Fetch lại NHƯNG giữ scroll position
+      await fetchCategories(true);
+      
     } catch (err: any) {
       alert(err.response?.data?.message || "Lỗi lưu danh mục");
     }
   };
 
+  // ✅ DELETE - Giữ scroll position
   const handleDelete = async () => {
     if (!deletingCat) return;
     const catName = getCategoryName(deletingCat.name);
@@ -181,14 +229,18 @@ export default function CategoryManager() {
 
     try {
       await axiosInstance.delete(`/admin/categories/${deletingCat._id}`);
+      console.log('✅ Deleted category');
       setDeletingCat(null);
-      fetchCategories();
+      
+      // ✅ Fetch lại NHƯNG giữ scroll position
+      await fetchCategories(true);
+      
     } catch (err) {
       alert("Không thể xóa (có thể đang có sản phẩm thuộc danh mục này)");
     }
   };
 
-  // ✅ Drag & Drop handlers - ENHANCED with 3 drop zones
+  // ✅ Drag & Drop handlers
   const handleDragStart = (e: React.DragEvent, cat: Category) => {
     e.stopPropagation();
     setDraggedItem(cat);
@@ -213,24 +265,21 @@ export default function CategoryManager() {
     
     if (!draggedItem || draggedItem._id === cat._id) return;
     
-    // ✅ Tính toán vị trí drop dựa trên mouse position
     const target = e.currentTarget as HTMLElement;
     const rect = target.getBoundingClientRect();
     const mouseY = e.clientY - rect.top;
     const height = rect.height;
     
-    // Chia thành 3 vùng: 30% trên, 40% giữa, 30% dưới
     let position: DropPosition = null;
     
     if (mouseY < height * 0.3) {
-      position = 'before'; // Vùng trên - đặt trước
+      position = 'before';
     } else if (mouseY > height * 0.7) {
-      position = 'after'; // Vùng dưới - đặt sau
+      position = 'after';
     } else {
-      position = 'inside'; // Vùng giữa - đặt vào trong
+      position = 'inside';
     }
     
-    // Kiểm tra không phải descendant
     if (position === 'inside' && isDescendant(draggedItem, cat)) {
       position = null;
     }
@@ -255,6 +304,7 @@ export default function CategoryManager() {
     }
   };
 
+  // ✅ DROP - Giữ scroll position
   const handleDrop = async (e: React.DragEvent, dropTarget: Category) => {
     e.preventDefault();
     e.stopPropagation();
@@ -267,7 +317,6 @@ export default function CategoryManager() {
       return;
     }
 
-    // Kiểm tra descendant cho position 'inside'
     if (dropPosition === 'inside' && isDescendant(draggedItem, dropTarget)) {
       alert("Không thể di chuyển danh mục cha vào danh mục con của nó!");
       setDraggedItem(null);
@@ -283,11 +332,10 @@ export default function CategoryManager() {
     }
 
     try {
-      // ✅ Gửi cả position lên backend
       await axiosInstance.put("/admin/categories/reorder", {
         draggedId: draggedItem._id,
         targetId: dropTarget._id,
-        position: dropPosition, // 'before', 'inside', 'after'
+        position: dropPosition,
       });
       
       if (itemElement) {
@@ -299,7 +347,9 @@ export default function CategoryManager() {
       }
       
       await new Promise(resolve => setTimeout(resolve, 100));
-      await fetchCategories();
+      
+      // ✅ Fetch lại NHƯNG giữ scroll position
+      await fetchCategories(true);
       
       console.log(`✅ Di chuyển thành công: ${dropPosition}`);
       
@@ -315,7 +365,7 @@ export default function CategoryManager() {
       }
       
       alert(err.response?.data?.message || "Lỗi khi di chuyển danh mục");
-      fetchCategories();
+      await fetchCategories(true);
     } finally {
       setDraggedItem(null);
       setDragOverItem(null);
@@ -324,7 +374,6 @@ export default function CategoryManager() {
     }
   };
 
-  // Kiểm tra xem target có phải là con của dragged không
   const isDescendant = (parent: Category, target: Category): boolean => {
     if (!parent.children) return false;
     
@@ -336,7 +385,6 @@ export default function CategoryManager() {
   };
 
   const renderTree = (nodes: Category[], level = 0) => {
-    // Lọc categories theo search query
     const filterCategories = (cats: Category[]): Category[] => {
       if (!searchQuery.trim()) return cats;
       
@@ -379,7 +427,6 @@ export default function CategoryManager() {
 
       return (
         <div key={cat._id} className="category-tree-node">
-          {/* ✅ Drop indicator TRƯỚC item */}
           {isDragOverThis && dropPosition === 'before' && (
             <div 
               className="drop-indicator drop-before"
@@ -446,7 +493,6 @@ export default function CategoryManager() {
               </button>
             </div>
 
-            {/* ✅ Overlay INSIDE khi hover vào giữa */}
             {isDragOverThis && dropPosition === 'inside' && (
               <div className="drop-overlay-inside">
                 <span className="drop-label-inside">📂 Đặt vào trong danh mục này</span>
@@ -454,7 +500,6 @@ export default function CategoryManager() {
             )}
           </div>
 
-          {/* ✅ Drop indicator SAU item */}
           {isDragOverThis && dropPosition === 'after' && (
             <div className="drop-indicator drop-after">
               <span className="drop-label">📍 Đặt ở đây</span>
@@ -495,7 +540,7 @@ export default function CategoryManager() {
   }
 
   return (
-    <div className="category-manager">
+    <div className="category-manager" ref={containerRef}>
       <div className="page-header">
         <h1 className="page-title">Quản lý danh mục</h1>
         <button onClick={() => openAddModal()} className="btn-primary">

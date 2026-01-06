@@ -442,14 +442,36 @@ module.exports = {
     }
   },
 
-  // ==================== ADMIN: LẤY TẤT CẢ ĐỠN HÀNG (TIẾNG VIỆT) ====================
+  // ==================== ADMIN: LẤY TẤT CẢ ĐƠN HÀNG - UPDATED WITH ARCHIVE FILTER ====================
   getAllOrdersAdmin: async (req, res) => {
     try {
-      const { status, sort = "created_at", order = "desc" } = req.query;
+      const {
+        status,
+        days = "30", // ← Mặc định 30 ngày
+        archived = "false", // ← Mặc định chỉ lấy đơn chưa archive
+        sort = "created_at",
+        order = "desc",
+      } = req.query;
 
       const filters = {};
+
+      // ✅ Filter archived
+      if (archived === "true") {
+        filters.archived = true;
+      } else {
+        filters.archived = { $ne: true }; // Chỉ lấy đơn chưa archive
+      }
+
+      // Filter by status
       if (status && status !== "all") {
         filters.status = status;
+      }
+
+      // ✅ Filter by date range
+      if (days !== "all") {
+        const daysAgo = new Date();
+        daysAgo.setDate(daysAgo.getDate() - parseInt(days));
+        filters.created_at = { $gte: daysAgo };
       }
 
       const sortObj = { [sort]: order === "asc" ? 1 : -1 };
@@ -465,7 +487,7 @@ module.exports = {
             customer: order.customer,
             items: await Promise.all(
               items.map(async (item) => {
-                // ✅ FIX: HANDLE MISSING PRODUCT
+                // ✅ HANDLE MISSING PRODUCT
                 let product = null;
                 try {
                   product = await ProductService.getById(item.product_id);
@@ -477,7 +499,7 @@ module.exports = {
                 }
 
                 // ✅ LẤY TÊN TIẾNG VIỆT AN TOÀN
-                let productNameVi = "Sản phẩm đã xóa"; // ← Default for deleted products
+                let productNameVi = "Sản phẩm đã xóa";
 
                 if (typeof item.name === "object") {
                   productNameVi =
@@ -488,7 +510,7 @@ module.exports = {
                   productNameVi = getTextByLang(product.name, "vi");
                 }
 
-                // ✅ CONVERT ATTRIBUTES → STRING (TIẾNG VIỆT) - Handle null product
+                // ✅ CONVERT ATTRIBUTES → STRING
                 const displayAttributes = product
                   ? convertAttributesToStrings(
                       item.selectedAttributes,
@@ -507,7 +529,7 @@ module.exports = {
                     name: productNameVi,
                     images: product?.images?.[0]
                       ? [product.images[0]]
-                      : [item.img_url || ""], // ← Use stored img_url
+                      : [item.img_url || ""],
                     sku: product?.sku || "N/A",
                     attributes: product?.attributes || [],
                   },
@@ -524,6 +546,8 @@ module.exports = {
             createdAt: order.created_at,
             updatedAt: order.updated_at,
             reservedUntil: order.reservedUntil,
+            archived: order.archived || false, // ← THÊM FIELD NÀY
+            archivedAt: order.archivedAt,
           };
         })
       );
@@ -534,6 +558,114 @@ module.exports = {
       res
         .status(500)
         .json({ message: error.message || "Lỗi khi lấy đơn hàng" });
+    }
+  },
+
+  // ==================== ADMIN: ARCHIVE ĐƠN HÀNG ====================
+  archiveOrder: async (req, res) => {
+    try {
+      const order = await OrderService.getById(req.params.id);
+
+      if (!order) {
+        return res.status(404).json({ message: "Không tìm thấy đơn hàng" });
+      }
+
+      // ✅ Chỉ archive đơn đã hoàn thành hoặc hủy
+      if (!["Completed", "Cancelled"].includes(order.status)) {
+        return res.status(400).json({
+          message: "Chỉ có thể lưu trữ đơn đã hoàn thành hoặc đã hủy",
+        });
+      }
+
+      // ✅ Kiểm tra đơn đã > 30 ngày chưa
+      const orderDate = new Date(order.created_at);
+      const daysDiff = Math.floor(
+        (Date.now() - orderDate.getTime()) / (1000 * 60 * 60 * 24)
+      );
+
+      if (daysDiff < 30) {
+        return res.status(400).json({
+          message: `Chỉ có thể lưu trữ đơn hàng sau 30 ngày (đơn này mới ${daysDiff} ngày)`,
+        });
+      }
+
+      const updated = await OrderService.update(req.params.id, {
+        archived: true,
+        archivedAt: new Date(),
+        archivedBy: req.user?.id || null,
+      });
+
+      res.json({
+        message: "Đã lưu trữ đơn hàng thành công",
+        order: updated,
+      });
+    } catch (error) {
+      console.error("❌ Archive error:", error);
+      res
+        .status(500)
+        .json({ message: error.message || "Lỗi khi lưu trữ đơn hàng" });
+    }
+  },
+
+  // ==================== ADMIN: UNARCHIVE (KHÔI PHỤC) ĐƠN HÀNG ====================
+  unarchiveOrder: async (req, res) => {
+    try {
+      const order = await OrderService.getById(req.params.id);
+
+      if (!order) {
+        return res.status(404).json({ message: "Không tìm thấy đơn hàng" });
+      }
+
+      if (!order.archived) {
+        return res.status(400).json({
+          message: "Đơn hàng này chưa được lưu trữ",
+        });
+      }
+
+      const updated = await OrderService.update(req.params.id, {
+        archived: false,
+        archivedAt: null,
+        archivedBy: null,
+      });
+
+      res.json({
+        message: "Đã khôi phục đơn hàng",
+        order: updated,
+      });
+    } catch (error) {
+      console.error("❌ Unarchive error:", error);
+      res
+        .status(500)
+        .json({ message: error.message || "Lỗi khi khôi phục đơn hàng" });
+    }
+  },
+
+  // ==================== ADMIN: LẤY THỐNG KÊ ARCHIVE ====================
+  getArchiveStats: async (req, res) => {
+    try {
+      const total = await OrderService.count({});
+      const archived = await OrderService.count({ archived: true });
+      const active = total - archived;
+
+      // Đơn có thể archive (Completed/Cancelled > 30 ngày)
+      const thirtyDaysAgo = new Date();
+      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+      const archivable = await OrderService.count({
+        archived: { $ne: true },
+        status: { $in: ["Completed", "Cancelled"] },
+        created_at: { $lt: thirtyDaysAgo },
+      });
+
+      res.json({
+        total,
+        active,
+        archived,
+        archivable,
+      });
+    } catch (error) {
+      console.error("❌ Stats error:", error);
+      res.status(500).json({ message: error.message || "Lỗi lấy thống kê" });
     }
   },
 

@@ -1,4 +1,4 @@
-// src/admin/pages/OrderManager.tsx - ✅ FIXED: SAFE RENDERING
+// src/admin/pages/OrderManager.tsx - ✅ COMPLETE WITH ARCHIVE FEATURE
 import { useState, useEffect, useMemo } from "react";
 import {
   Package,
@@ -14,6 +14,9 @@ import {
   User,
   Calendar,
   Search,
+  Archive,
+  ArchiveRestore,
+  Download,
 } from "lucide-react";
 import axiosInstance from "../../axios";
 import { getFirstImageUrl } from "@/utils/imageUrl";
@@ -47,6 +50,15 @@ interface Order {
   createdAt: string;
   updatedAt: string;
   reservedUntil?: string;
+  archived?: boolean;
+  archivedAt?: string;
+}
+
+interface ArchiveStats {
+  total: number;
+  active: number;
+  archived: number;
+  archivable: number;
 }
 
 export default function OrderManager() {
@@ -60,6 +72,11 @@ export default function OrderManager() {
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
 
+  // ✅ NEW: Archive filters
+  const [dateRange, setDateRange] = useState("30"); // Default 30 days
+  const [showArchived, setShowArchived] = useState(false);
+  const [archiveStats, setArchiveStats] = useState<ArchiveStats | null>(null);
+
   const getPaymentMethodLabel = (method: string) => {
     const labels: Record<string, string> = {
       cod: "Thanh toán khi nhận hàng (COD)",
@@ -72,27 +89,24 @@ export default function OrderManager() {
     return labels[method] || method;
   };
 
-  // ✅ FIXED: SAFE STRING EXTRACTION - KHÔNG BAO GIỜ TRẢ VỀ OBJECT
+  // ✅ SAFE STRING EXTRACTION
   const getAttributeLabel = (
     attributeName: string,
     value: string | any,
     product: any
   ): string => {
-    // ✅ BƯỚC 1: CONVERT VALUE THÀNH STRING AN TOÀN
     let valueStr: string;
     
     if (typeof value === 'string') {
       valueStr = value;
     } else if (typeof value === 'object' && value !== null) {
-      // ✅ Nếu value là {vi: "...", zh: "..."} → lấy .vi
       valueStr = value.vi || value.zh || String(value);
     } else {
       valueStr = String(value || '');
     }
 
-    // ✅ BƯỚC 2: TÌM LABEL TRONG PRODUCT ATTRIBUTES (nếu có)
     if (!product || !product.attributes) {
-      return valueStr; // Không tìm thấy product → trả về value đã convert
+      return valueStr;
     }
 
     const attribute = product.attributes.find((attr: any) => {
@@ -102,30 +116,33 @@ export default function OrderManager() {
     });
 
     if (!attribute || !attribute.options) {
-      return valueStr; // Không tìm thấy attribute → trả về value đã convert
+      return valueStr;
     }
 
-    // ✅ BƯỚC 3: TÌM OPTION THEO VALUE (không phải label)
     const option = attribute.options.find((opt: any) => opt && opt.value === valueStr);
     
     if (!option || !option.label) {
-      return valueStr; // Không tìm thấy option → trả về value đã convert
+      return valueStr;
     }
 
-    // ✅ BƯỚC 4: LẤY LABEL AN TOÀN
     let label = option.label;
     if (typeof label === "object" && label !== null) {
       label = label.vi || label.zh || valueStr;
     }
     
-    // ✅ ĐẢM BẢO LUÔN TRẢ VỀ STRING
     return String(label || valueStr);
   };
 
+  // ✅ FETCH ORDERS WITH FILTERS
   const fetchOrders = async () => {
     try {
       setLoading(true);
-      const res = await axiosInstance.get("/admin/orders");
+      const params = new URLSearchParams({
+        days: dateRange,
+        archived: showArchived.toString(),
+      });
+
+      const res = await axiosInstance.get(`/admin/orders?${params}`);
 
       const validOrders = (res.data || [])
         .filter((order: any) => {
@@ -158,11 +175,25 @@ export default function OrderManager() {
     }
   };
 
+  // ✅ FETCH ARCHIVE STATS
+  const fetchArchiveStats = async () => {
+    try {
+      const res = await axiosInstance.get("/admin/orders/stats/archive");
+      setArchiveStats(res.data);
+    } catch (err) {
+      console.error("Error fetching archive stats:", err);
+    }
+  };
+
   useEffect(() => {
     fetchOrders();
-    const interval = setInterval(fetchOrders, 30000);
+    fetchArchiveStats();
+    const interval = setInterval(() => {
+      fetchOrders();
+      fetchArchiveStats();
+    }, 30000);
     return () => clearInterval(interval);
-  }, []);
+  }, [dateRange, showArchived]);
 
   const getStatusInfo = (status: Order["status"]) => {
     const statusMap = {
@@ -252,6 +283,49 @@ export default function OrderManager() {
     }
   };
 
+  // ✅ NEW: ARCHIVE ORDER
+  const handleArchiveOrder = async (orderId: string) => {
+    if (!confirm("Xác nhận lưu trữ đơn hàng này? Đơn sẽ được chuyển vào kho lưu trữ.")) {
+      return;
+    }
+
+    try {
+      setProcessingOrderId(orderId);
+      await axiosInstance.patch(`/admin/orders/${orderId}/archive`);
+      await fetchOrders();
+      await fetchArchiveStats();
+      alert("Đã lưu trữ đơn hàng thành công!");
+
+      if (selectedOrder?._id === orderId) {
+        setShowDetailModal(false);
+        setSelectedOrder(null);
+      }
+    } catch (err: any) {
+      alert(err.response?.data?.message || "Lỗi lưu trữ đơn hàng");
+    } finally {
+      setProcessingOrderId(null);
+    }
+  };
+
+  // ✅ NEW: UNARCHIVE ORDER
+  const handleUnarchiveOrder = async (orderId: string) => {
+    if (!confirm("Xác nhận khôi phục đơn hàng từ kho lưu trữ?")) {
+      return;
+    }
+
+    try {
+      setProcessingOrderId(orderId);
+      await axiosInstance.patch(`/admin/orders/${orderId}/unarchive`);
+      await fetchOrders();
+      await fetchArchiveStats();
+      alert("Đã khôi phục đơn hàng!");
+    } catch (err: any) {
+      alert(err.response?.data?.message || "Lỗi khôi phục đơn hàng");
+    } finally {
+      setProcessingOrderId(null);
+    }
+  };
+
   const openDetailModal = (order: Order) => {
     setSelectedOrder(order);
     setShowDetailModal(true);
@@ -273,6 +347,17 @@ export default function OrderManager() {
       return `${hours}h ${minutes}m`;
     }
     return `${minutes}m`;
+  };
+
+  // ✅ CHECK IF ORDER CAN BE ARCHIVED
+  const canArchiveOrder = (order: Order) => {
+    if (!["Completed", "Cancelled"].includes(order.status)) return false;
+    if (order.archived) return false;
+
+    const orderDate = new Date(order.createdAt);
+    const daysDiff = Math.floor((Date.now() - orderDate.getTime()) / (1000 * 60 * 60 * 24));
+    
+    return daysDiff >= 30;
   };
 
   const statusFilteredOrders = useMemo(() => {
@@ -306,7 +391,7 @@ export default function OrderManager() {
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchQuery, filterStatus, itemsPerPage]);
+  }, [searchQuery, filterStatus, itemsPerPage, dateRange, showArchived]);
 
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
@@ -372,6 +457,42 @@ export default function OrderManager() {
         </div>
       </div>
 
+      {/* ✅ NEW: ARCHIVE CONTROLS */}
+      <div className="archive-controls">
+        <select 
+          value={dateRange} 
+          onChange={(e) => setDateRange(e.target.value)}
+          className="date-filter"
+        >
+          <option value="7">7 ngày gần nhất</option>
+          <option value="30">30 ngày gần nhất</option>
+          <option value="90">3 tháng gần nhất</option>
+          <option value="180">6 tháng gần nhất</option>
+          <option value="365">1 năm gần nhất</option>
+          <option value="all">Tất cả</option>
+        </select>
+        
+        <label className="archive-toggle">
+          <input 
+            type="checkbox" 
+            checked={showArchived}
+            onChange={(e) => setShowArchived(e.target.checked)}
+          />
+          <Archive size={16} />
+          Hiển thị đơn đã lưu trữ
+        </label>
+
+        {archiveStats && (
+          <div className="archive-stats">
+            <Archive size={14} />
+            Đã lưu trữ: <strong>{archiveStats.archived}</strong> / {archiveStats.total} đơn
+            {archiveStats.archivable > 0 && (
+              <> • Có thể lưu trữ: <strong>{archiveStats.archivable}</strong></>
+            )}
+          </div>
+        )}
+      </div>
+
       <div className="filter-bar">
         <button
           className={filterStatus === "all" ? "active" : ""}
@@ -435,6 +556,8 @@ export default function OrderManager() {
           <p className="empty">
             {searchQuery
               ? `Không tìm thấy đơn hàng nào với từ khóa "${searchQuery}"`
+              : showArchived
+              ? "Không có đơn hàng đã lưu trữ"
               : "Không có đơn hàng nào"}
           </p>
         ) : (
@@ -464,9 +587,15 @@ export default function OrderManager() {
                   const timeLeft = getReserveTimeLeft(order.reservedUntil);
 
                   return (
-                    <tr key={order._id}>
+                    <tr key={order._id} className={order.archived ? "archived-row" : ""}>
                       <td>
                         <strong>{order.orderNumber}</strong>
+                        {order.archived && (
+                          <div style={{ fontSize: "11px", color: "#6b7280", marginTop: "2px" }}>
+                            <Archive size={10} style={{ display: "inline", marginRight: "2px" }} />
+                            Đã lưu trữ
+                          </div>
+                        )}
                       </td>
                       <td>
                         <div className="customer-info">
@@ -560,65 +689,102 @@ export default function OrderManager() {
                           <Eye size={16} />
                         </button>
 
-                        {order.status === "Pending" && (
+                        {/* ✅ ARCHIVED ORDERS - ONLY UNARCHIVE */}
+                        {order.archived && (
+                          <button
+                            onClick={() => handleUnarchiveOrder(order._id)}
+                            className="btn-small btn-unarchive"
+                            disabled={processingOrderId === order._id}
+                            title="Khôi phục đơn hàng"
+                          >
+                            {processingOrderId === order._id ? (
+                              <Loader2 size={16} className="spin" />
+                            ) : (
+                              <ArchiveRestore size={16} />
+                            )}
+                          </button>
+                        )}
+
+                        {/* ✅ ACTIVE ORDERS - NORMAL ACTIONS */}
+                        {!order.archived && (
                           <>
-                            <button
-                              onClick={() =>
-                                handleStatusChange(order._id, "Confirmed")
-                              }
-                              className="btn-small btn-confirm"
-                              disabled={processingOrderId === order._id}
-                              title="Xác nhận đơn"
-                            >
-                              {processingOrderId === order._id ? (
-                                <Loader2 size={16} className="spin" />
-                              ) : (
-                                <CheckCircle size={16} />
-                              )}
-                            </button>
-                            <button
-                              onClick={() => handleCancelOrder(order._id)}
-                              className="btn-small btn-cancel"
-                              disabled={processingOrderId === order._id}
-                              title="Hủy đơn"
-                            >
-                              <XCircle size={16} />
-                            </button>
+                            {order.status === "Pending" && (
+                              <>
+                                <button
+                                  onClick={() =>
+                                    handleStatusChange(order._id, "Confirmed")
+                                  }
+                                  className="btn-small btn-confirm"
+                                  disabled={processingOrderId === order._id}
+                                  title="Xác nhận đơn"
+                                >
+                                  {processingOrderId === order._id ? (
+                                    <Loader2 size={16} className="spin" />
+                                  ) : (
+                                    <CheckCircle size={16} />
+                                  )}
+                                </button>
+                                <button
+                                  onClick={() => handleCancelOrder(order._id)}
+                                  className="btn-small btn-cancel"
+                                  disabled={processingOrderId === order._id}
+                                  title="Hủy đơn"
+                                >
+                                  <XCircle size={16} />
+                                </button>
+                              </>
+                            )}
+
+                            {order.status === "Confirmed" && (
+                              <button
+                                onClick={() =>
+                                  handleStatusChange(order._id, "Shipping")
+                                }
+                                className="btn-small btn-ship"
+                                disabled={processingOrderId === order._id}
+                                title="Chuyển sang đang giao"
+                              >
+                                {processingOrderId === order._id ? (
+                                  <Loader2 size={16} className="spin" />
+                                ) : (
+                                  <Truck size={16} />
+                                )}
+                              </button>
+                            )}
+
+                            {order.status === "Shipping" && (
+                              <button
+                                onClick={() =>
+                                  handleStatusChange(order._id, "Completed")
+                                }
+                                className="btn-small btn-complete"
+                                disabled={processingOrderId === order._id}
+                                title="Hoàn thành"
+                              >
+                                {processingOrderId === order._id ? (
+                                  <Loader2 size={16} className="spin" />
+                                ) : (
+                                  <CheckCircle size={16} />
+                                )}
+                              </button>
+                            )}
+
+                            {/* ✅ ARCHIVE BUTTON - Only for Completed/Cancelled > 30 days */}
+                            {canArchiveOrder(order) && (
+                              <button
+                                onClick={() => handleArchiveOrder(order._id)}
+                                className="btn-small btn-archive"
+                                disabled={processingOrderId === order._id}
+                                title="Lưu trữ đơn hàng"
+                              >
+                                {processingOrderId === order._id ? (
+                                  <Loader2 size={16} className="spin" />
+                                ) : (
+                                  <Archive size={16} />
+                                )}
+                              </button>
+                            )}
                           </>
-                        )}
-
-                        {order.status === "Confirmed" && (
-                          <button
-                            onClick={() =>
-                              handleStatusChange(order._id, "Shipping")
-                            }
-                            className="btn-small btn-ship"
-                            disabled={processingOrderId === order._id}
-                            title="Chuyển sang đang giao"
-                          >
-                            {processingOrderId === order._id ? (
-                              <Loader2 size={16} className="spin" />
-                            ) : (
-                              <Truck size={16} />
-                            )}
-                          </button>
-                        )}
-
-                        {order.status === "Shipping" && (
-                          <button
-                            onClick={() =>
-                              handleStatusChange(order._id, "Completed")
-                            }
-                            className="btn-small btn-complete"
-                            disabled={processingOrderId === order._id}
-                            title="Hoàn thành"
-                          >
-                            {processingOrderId === order._id ? (
-                              <Loader2 size={16} className="spin" />
-                            ) : (
-                              <CheckCircle size={16} />
-                            )}
-                          </button>
                         )}
                       </td>
                     </tr>
@@ -713,7 +879,7 @@ export default function OrderManager() {
         </div>
       )}
 
-      {/* ✅ MODAL CHI TIẾT - SAFE RENDERING */}
+      {/* ✅ MODAL CHI TIẾT */}
       {showDetailModal && selectedOrder && (
         <div
           className="modal-overlay"
@@ -725,18 +891,36 @@ export default function OrderManager() {
           >
             <div className="modal-header">
               <h3>Chi tiết đơn hàng {selectedOrder.orderNumber}</h3>
-              <div
-                className="status-badge"
-                style={{
-                  backgroundColor: getStatusInfo(selectedOrder.status).bgColor,
-                  color: getStatusInfo(selectedOrder.status).color,
-                }}
-              >
-                {(() => {
-                  const StatusIcon = getStatusInfo(selectedOrder.status).icon;
-                  return <StatusIcon size={14} />;
-                })()}
-                {getStatusInfo(selectedOrder.status).label}
+              <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+                {selectedOrder.archived && (
+                  <div style={{
+                    backgroundColor: "#fef3c7",
+                    color: "#92400e",
+                    padding: "6px 12px",
+                    borderRadius: "20px",
+                    fontSize: "13px",
+                    fontWeight: 600,
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "4px"
+                  }}>
+                    <Archive size={14} />
+                    Đã lưu trữ
+                  </div>
+                )}
+                <div
+                  className="status-badge"
+                  style={{
+                    backgroundColor: getStatusInfo(selectedOrder.status).bgColor,
+                    color: getStatusInfo(selectedOrder.status).color,
+                  }}
+                >
+                  {(() => {
+                    const StatusIcon = getStatusInfo(selectedOrder.status).icon;
+                    return <StatusIcon size={14} />;
+                  })()}
+                  {getStatusInfo(selectedOrder.status).label}
+                </div>
               </div>
             </div>
 
@@ -795,6 +979,18 @@ export default function OrderManager() {
                       </div>
                     </div>
                   )}
+
+                {selectedOrder.archived && selectedOrder.archivedAt && (
+                  <div className="reserve-info" style={{ background: "#fef3c7", borderLeftColor: "#f59e0b" }}>
+                    <Archive size={16} style={{ color: "#f59e0b" }} />
+                    <div>
+                      <strong style={{ color: "#92400e" }}>Đã lưu trữ:</strong>
+                      <span style={{ color: "#78350f" }}>
+                        {new Date(selectedOrder.archivedAt).toLocaleString("vi-VN")}
+                      </span>
+                    </div>
+                  </div>
+                )}
               </div>
 
               <div className="info-section">
@@ -822,13 +1018,11 @@ export default function OrderManager() {
                             SKU: {item.product?.sku || "N/A"}
                           </div>
 
-                          {/* ✅ SAFE RENDERING - LUÔN HIỂN THỊ STRING */}
                           {item.selectedAttributes &&
                             Object.keys(item.selectedAttributes).length > 0 && (
                               <div className="item-attributes">
                                 {Object.entries(item.selectedAttributes).map(
                                   ([key, value]) => {
-                                    // ✅ CONVERT VALUE → STRING AN TOÀN
                                     const displayValue = getAttributeLabel(
                                       key,
                                       value,
@@ -868,65 +1062,109 @@ export default function OrderManager() {
             <div className="modal-actions">
               <button onClick={() => setShowDetailModal(false)}>Đóng</button>
 
-              {selectedOrder.status === "Pending" && (
+              {/* ✅ ARCHIVED ORDER - ONLY UNARCHIVE */}
+              {selectedOrder.archived && (
+                <button
+                  onClick={() => handleUnarchiveOrder(selectedOrder._id)}
+                  className="btn-confirm"
+                  disabled={processingOrderId === selectedOrder._id}
+                >
+                  {processingOrderId === selectedOrder._id ? (
+                    <Loader2 size={16} className="spin" />
+                  ) : (
+                    <ArchiveRestore size={16} />
+                  )}
+                  Khôi phục đơn hàng
+                </button>
+              )}
+
+              {/* ✅ ACTIVE ORDERS - NORMAL ACTIONS */}
+              {!selectedOrder.archived && (
                 <>
-                  <button
-                    onClick={() => {
-                      handleStatusChange(selectedOrder._id, "Confirmed");
-                    }}
-                    className="btn-confirm"
-                    disabled={processingOrderId === selectedOrder._id}
-                  >
-                    {processingOrderId === selectedOrder._id ? (
-                      <Loader2 size={16} className="spin" />
-                    ) : (
-                      <CheckCircle size={16} />
-                    )}
-                    Xác nhận đơn
-                  </button>
-                  <button
-                    onClick={() => handleCancelOrder(selectedOrder._id)}
-                    className="btn-danger"
-                    disabled={processingOrderId === selectedOrder._id}
-                  >
-                    <XCircle size={16} />
-                    Hủy đơn
-                  </button>
+                  {selectedOrder.status === "Pending" && (
+                    <>
+                      <button
+                        onClick={() => {
+                          handleStatusChange(selectedOrder._id, "Confirmed");
+                        }}
+                        className="btn-confirm"
+                        disabled={processingOrderId === selectedOrder._id}
+                      >
+                        {processingOrderId === selectedOrder._id ? (
+                          <Loader2 size={16} className="spin" />
+                        ) : (
+                          <CheckCircle size={16} />
+                        )}
+                        Xác nhận đơn
+                      </button>
+                      <button
+                        onClick={() => handleCancelOrder(selectedOrder._id)}
+                        className="btn-danger"
+                        disabled={processingOrderId === selectedOrder._id}
+                      >
+                        <XCircle size={16} />
+                        Hủy đơn
+                      </button>
+                    </>
+                  )}
+
+                  {selectedOrder.status === "Confirmed" && (
+                    <button
+                      onClick={() =>
+                        handleStatusChange(selectedOrder._id, "Shipping")
+                      }
+                      className="btn-ship"
+                      disabled={processingOrderId === selectedOrder._id}
+                    >
+                      {processingOrderId === selectedOrder._id ? (
+                        <Loader2 size={16} className="spin" />
+                      ) : (
+                        <Truck size={16} />
+                      )}
+                      Chuyển sang đang giao
+                    </button>
+                  )}
+
+                  {selectedOrder.status === "Shipping" && (
+                    <button
+                      onClick={() =>
+                        handleStatusChange(selectedOrder._id, "Completed")
+                      }
+                      className="btn-complete"
+                      disabled={processingOrderId === selectedOrder._id}
+                    >
+                      {processingOrderId === selectedOrder._id ? (
+                        <Loader2 size={16} className="spin" />
+                      ) : (
+                        <CheckCircle size={16} />
+                      )}
+                      Hoàn thành đơn
+                    </button>
+                  )}
+
+                  {/* ✅ ARCHIVE BUTTON IN MODAL */}
+                  {canArchiveOrder(selectedOrder) && (
+                    <button
+                      onClick={() => handleArchiveOrder(selectedOrder._id)}
+                      className="btn-archive"
+                      disabled={processingOrderId === selectedOrder._id}
+                      style={{
+                        background: "#6b7280",
+                        color: "white",
+                        display: "inline-flex",
+                        alignItems: "center",
+                        gap: "8px"
+                      }}
+                    >
+                      {processingOrderId === selectedOrder._id ? (
+                        <Loader2 size={16} className="spin" />
+                      ) : (
+                        <Archive size={16} />
+                      )}
+                      Lưu trữ đơn hàng
+                    </button>
+                  )}
                 </>
-              )}
-
-              {selectedOrder.status === "Confirmed" && (
-                <button
-                  onClick={() =>
-                    handleStatusChange(selectedOrder._id, "Shipping")
-                  }
-                  className="btn-ship"
-                  disabled={processingOrderId === selectedOrder._id}
-                >
-                  {processingOrderId === selectedOrder._id ? (
-                    <Loader2 size={16} className="spin" />
-                  ) : (
-                    <Truck size={16} />
-                  )}
-                  Chuyển sang đang giao
-                </button>
-              )}
-
-              {selectedOrder.status === "Shipping" && (
-                <button
-                  onClick={() =>
-                    handleStatusChange(selectedOrder._id, "Completed")
-                  }
-                  className="btn-complete"
-                  disabled={processingOrderId === selectedOrder._id}
-                >
-                  {processingOrderId === selectedOrder._id ? (
-                    <Loader2 size={16} className="spin" />
-                  ) : (
-                    <CheckCircle size={16} />
-                  )}
-                  Hoàn thành đơn
-                </button>
               )}
             </div>
           </div>

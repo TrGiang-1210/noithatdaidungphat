@@ -12,7 +12,7 @@ const orderSchema = new mongoose.Schema({
   user_id: { 
     type: mongoose.Schema.Types.ObjectId, 
     ref: 'User',
-    default: null // Cho phép guest checkout
+    default: null
   },
 
   order_code: { 
@@ -41,16 +41,28 @@ const orderSchema = new mongoose.Schema({
 
   note: { type: String, default: '' },
 
-  // ✅ THÊM FIELD RESERVE STOCK
   reservedUntil: { 
     type: Date,
     default: function() {
-      // Mặc định giữ hàng 24 giờ
       return new Date(Date.now() + 24 * 60 * 60 * 1000);
     }
   },
 
-  // Nếu bạn dùng GHN, GHTK, ViettelPost...
+  // ✅ THÊM ARCHIVE FIELDS
+  archived: { 
+    type: Boolean, 
+    default: false 
+  },
+  
+  archivedAt: { 
+    type: Date 
+  },
+  
+  archivedBy: { 
+    type: mongoose.Schema.Types.ObjectId, 
+    ref: 'User' 
+  },
+
   tracking_number: { type: String },
   carrier: { type: String },
 
@@ -76,5 +88,7 @@ orderSchema.index({ order_code: 1 });
 orderSchema.index({ 'customer.phone': 1 });
 orderSchema.index({ status: 1 });
 orderSchema.index({ reservedUntil: 1 });
+orderSchema.index({ created_at: -1, archived: 1 }); // ← MỚI
+orderSchema.index({ status: 1, archived: 1 }); // ← MỚI
 
 module.exports = mongoose.model('Order', orderSchema);
