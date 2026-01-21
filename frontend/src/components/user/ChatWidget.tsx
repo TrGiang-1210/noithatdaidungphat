@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
-import { useChatClient } from '/hooks/useChatClient';
-import { useLanguage } from '@/context/LanguageContext'; // ✅ IMPORT
+// import { useChatClient } from '/hooks/useChatClient';
+import { useLanguage } from '../../context/LanguageContext'; // ✅ IMPORT
 import "@/styles/components/user/chatWidget.scss";
 
 interface ChatWidgetProps {
@@ -14,7 +14,7 @@ const ChatWidget = ({ userId, userName, userEmail }: ChatWidgetProps) => {
   const [isOpen, setIsOpen] = useState(false);
   const [newMessage, setNewMessage] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const typingTimeoutRef = useRef<NodeJS.Timeout>();
+  const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);  // ← FIX
 
   const {
     isConnected,
@@ -150,6 +150,7 @@ const ChatWidget = ({ userId, userName, userEmail }: ChatWidgetProps) => {
                   key={msg._id}
                   className={`message ${msg.sender === 'user' ? 'message-user' : 'message-admin'}`}
                 >
+                  
                   <div className="message-content">
                     {(msg.sender === 'bot' || msg.sender === 'admin') && (
                       <div className="message-sender-name">{msg.senderName}</div>

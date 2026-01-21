@@ -1,7 +1,7 @@
 // src/context/AuthContext.tsx - INTEGRATED WITH CHAT
 import React, { createContext, useState, useEffect, ReactNode } from "react";
 import axiosInstance from "../axios";
-import { triggerUserLogout } from "@/utils/authEvents"; // ← THÊM
+import { triggerUserLogout } from "../utils/authEvents"; // ← THÊM
 
 interface User {
   id?: string;

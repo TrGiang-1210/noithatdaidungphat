@@ -26,7 +26,7 @@ import PostManager from "../pages/admin/postManager";
 import OrderManager from "../pages/admin/orderManager";
 import AdminChat from "../pages/admin/adminChat";
 import TranslationManagement from "../pages/admin/translateManager";
-import DatabaseTranslation from "../pages/admin/DatabaseTranslation";
+import DatabaseTranslation from "../pages/admin/databaseTranslation";
 
 const MainRouter = () => {
   return (
