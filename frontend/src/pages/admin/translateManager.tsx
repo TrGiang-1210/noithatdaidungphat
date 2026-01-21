@@ -80,7 +80,7 @@ const TranslationManagement = () => {
     }
   };
 
-  const handleAITranslate = async (id) => {
+  const handleAITranslate = async (id: string) => {
     try {
       const token = localStorage.getItem('token');
       toast.info('🤖 Đang dịch...');
@@ -111,8 +111,9 @@ const TranslationManagement = () => {
       fetchTranslations();
       fetchStats();
     } catch (error) {
-      console.error('Translation error:', error);
-      toast.error('❌ Dịch thất bại: ' + error.message);
+      // console.error('Translation error:', error);
+      const err = error as Error;
+      toast.error('❌ Dịch thất bại: ' + err.message);
     }
   };
 

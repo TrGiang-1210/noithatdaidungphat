@@ -38,7 +38,7 @@ const Header: React.FC = () => {
   const [suggestions, setSuggestions] = useState<any[]>([]);
   const [loadingSuggestions, setLoadingSuggestions] = useState(false);
   const suggestionsRef = useRef<HTMLDivElement>(null);
-  const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const searchTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);  // ← FIX
   const [hoveredParent, setHoveredParent] = useState<string | null>(null);
   const [hoveredChild, setHoveredChild] = useState<string | null>(null);
 
