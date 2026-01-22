@@ -19,6 +19,6 @@ export interface HomeData {
 }
 
 export const fetchHomeData = async (): Promise<HomeData> => {
-  const response = await axios.get('http://localhost:5000/api/home');
+  const response = await axios.get('https://tongkhonoithattayninh.vn/api/home');
   return response.data;
 };

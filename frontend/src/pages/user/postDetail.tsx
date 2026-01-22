@@ -53,7 +53,7 @@ const PostDetail: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
 
-  const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+  const API_URL = import.meta.env.VITE_API_URL || 'https://tongkhonoithattayninh.vn/api';
 
   const getText = (field: any): string => {
     if (!field) return '';

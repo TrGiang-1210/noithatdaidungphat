@@ -37,13 +37,13 @@ type Product = {
 };
 
 const endpointCandidates = (param: string, lang: string) => [
-  `http://localhost:5000/api/products/slug/${encodeURIComponent(
+  `https://tongkhonoithattayninh.vn/api/products/slug/${encodeURIComponent(
     param
   )}?lang=${lang}`,
-  `http://localhost:5000/api/products/${encodeURIComponent(
+  `https://tongkhonoithattayninh.vn/api/products/${encodeURIComponent(
     param
   )}?lang=${lang}`,
-  `http://localhost:5000/api/product/${encodeURIComponent(param)}?lang=${lang}`,
+  `https://tongkhonoithattayninh.vn/api/product/${encodeURIComponent(param)}?lang=${lang}`,
 ];
 
 const ProductDetail: React.FC = () => {
@@ -120,8 +120,8 @@ const ProductDetail: React.FC = () => {
 
     try {
       const viewUrl = productSlug
-        ? `http://localhost:5000/api/products/slug/${productSlug}/increment-view`
-        : `http://localhost:5000/api/products/${productId}/increment-view`;
+        ? `https://tongkhonoithattayninh.vn/api/products/slug/${productSlug}/increment-view`
+        : `https://tongkhonoithattayninh.vn/api/products/${productId}/increment-view`;
 
       await fetch(viewUrl, {
         method: "POST",
@@ -192,7 +192,7 @@ const ProductDetail: React.FC = () => {
           product.categories.length === 0
         ) {
           const res = await fetch(
-            `http://localhost:5000/api/products?lang=${language}`
+            `https://tongkhonoithattayninh.vn/api/products?lang=${language}`
           );
           const allProducts = await res.json();
           const filtered = allProducts
@@ -220,7 +220,7 @@ const ProductDetail: React.FC = () => {
         }
 
         const res = await fetch(
-          `http://localhost:5000/api/products?lang=${language}`
+          `https://tongkhonoithattayninh.vn/api/products?lang=${language}`
         );
         const allProducts = await res.json();
 

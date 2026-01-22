@@ -15,7 +15,7 @@ export default defineConfig({
     host: true, // để localhost:5173 chạy ngon
     proxy: {
       '/api': {
-        target: 'http://localhost:5000',  // ← backend của mày
+        target: 'https://tongkhonoithattayninh.vn',  // ← backend của mày
         changeOrigin: true,
         secure: false,
         // rewrite: (path) => path.replace(/^\/api/, '') // nếu cần, nhưng ko cần vì backend có /api

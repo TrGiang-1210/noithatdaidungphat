@@ -17,8 +17,8 @@ export const getImageUrl = (path: string | undefined | null): string => {
   }
 
   // 3. Lấy base URL từ .env hoặc dùng mặc định
-  const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
-  const baseUrl = apiUrl.replace('/api', ''); // Bỏ /api ở cuối → http://localhost:5000
+  const apiUrl = import.meta.env.VITE_API_URL || 'https://tongkhonoithattayninh.vn/api';
+  const baseUrl = apiUrl.replace('/api', ''); // Bỏ /api ở cuối → https://tongkhonoithattayninh.vn
 
   // 4. Đảm bảo path có dấu / ở đầu
   const normalizedPath = path.startsWith('/') ? path : `/${path}`;

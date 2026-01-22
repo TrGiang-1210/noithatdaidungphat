@@ -4,7 +4,7 @@ import { Link, useSearchParams, useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 import "@/styles/pages/user/resetPass.scss";
 
-const API_BASE = "http://localhost:5000/api/auth";
+const API_BASE = "https://tongkhonoithattayninh.vn/api/auth";
 
 const ResetPassPage: React.FC = () => {
   const [searchParams] = useSearchParams();

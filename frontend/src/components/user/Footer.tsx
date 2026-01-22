@@ -18,7 +18,7 @@ const Footer: React.FC = () => {
     const fetchCategories = async () => {
       try {
         // ✅ Thêm ?lang=${language}
-        const response = await fetch(`http://localhost:5000/api/categories?lang=${language}`);
+        const response = await fetch(`https://tongkhonoithattayninh.vn/api/categories?lang=${language}`);
         const data = await response.json();
         setCategories(data);
         setLoading(false);
