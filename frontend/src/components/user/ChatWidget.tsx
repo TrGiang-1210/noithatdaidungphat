@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-// import { useChatClient } from '/hooks/useChatClient';
+import { useChatClient } from '../../../hooks/useChatClient';
 import { useLanguage } from '../../context/LanguageContext'; // ✅ IMPORT
 import "@/styles/components/user/chatWidget.scss";
 
