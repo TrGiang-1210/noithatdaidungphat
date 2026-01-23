@@ -25,17 +25,17 @@ export interface Product {
 
 // Các hàm API
 export const fetchAllProducts = async (): Promise<Product[]> => {
-  const response = await axios.get('http://localhost:5000/api/products');
+  const response = await axios.get('https://tongkhonoithattayninh.vn/api/products');
   return response.data;
 };
 
 export const fetchProductById = async (id: string): Promise<Product> => {
-  const response = await axios.get(`http://localhost:5000/api/products/${id}`);
+  const response = await axios.get(`https://tongkhonoithattayninh.vn/api/products/${id}`);
   return response.data;
 };
 
 export const fetchProductDetail = async (slug: string): Promise<Product> => {
-  const response = await axios.get(`http://localhost:5000/api/products/${slug}`);
+  const response = await axios.get(`https://tongkhonoithattayninh.vn/api/products/${slug}`);
   return response.data;
 };
 

@@ -47,7 +47,7 @@ const Posts: React.FC = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedCategory, setSelectedCategory] = useState<string>("");
 
-  const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
+  const API_URL = import.meta.env.VITE_API_URL || "https://tongkhonoithattayninh.vn/api";
 
   // ✅ Helper: Get text by language
   const getText = (field: any): string => {

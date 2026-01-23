@@ -11,6 +11,6 @@ export interface Category {
 
 // Lấy danh sách tất cả danh mục
 export const fetchAllCategories = async (): Promise<Category[]> => {
-  const response = await axios.get('http://localhost:5000/api/categories');
+  const response = await axios.get('https://tongkhonoithattayninh.vn/api/categories');
   return response.data;
 };

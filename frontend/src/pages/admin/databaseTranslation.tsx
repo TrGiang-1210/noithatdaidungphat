@@ -40,7 +40,7 @@ const DatabaseTranslation: React.FC = () => {
   const loadStats = async () => {
     try {
       const token = getToken();
-      const res = await fetch('http://localhost:5000/api/admin/bulk-translate/stats?targetLang=zh', {
+      const res = await fetch('https://tongkhonoithattayninh.vn/api/admin/bulk-translate/stats?targetLang=zh', {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -77,7 +77,7 @@ const DatabaseTranslation: React.FC = () => {
 
     try {
       const token = getToken();
-      const res = await fetch('http://localhost:5000/api/admin/bulk-translate/products', {
+      const res = await fetch('https://tongkhonoithattayninh.vn/api/admin/bulk-translate/products', {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',
@@ -127,7 +127,7 @@ const DatabaseTranslation: React.FC = () => {
 
     try {
       const token = getToken();
-      const res = await fetch('http://localhost:5000/api/admin/bulk-translate/categories', {
+      const res = await fetch('https://tongkhonoithattayninh.vn/api/admin/bulk-translate/categories', {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',
@@ -178,7 +178,7 @@ const DatabaseTranslation: React.FC = () => {
 
     try {
       const token = getToken();
-      const res = await fetch('http://localhost:5000/api/admin/bulk-translate/posts', {
+      const res = await fetch('https://tongkhonoithattayninh.vn/api/admin/bulk-translate/posts', {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',
@@ -229,7 +229,7 @@ const DatabaseTranslation: React.FC = () => {
 
     try {
       const token = getToken();
-      const res = await fetch('http://localhost:5000/api/admin/bulk-translate/post-categories', {
+      const res = await fetch('https://tongkhonoithattayninh.vn/api/admin/bulk-translate/post-categories', {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',

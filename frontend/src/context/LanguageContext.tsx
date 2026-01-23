@@ -31,7 +31,7 @@ export const LanguageProvider: React.FC<LanguageProviderProps> = ({ children }) 
   const loadTranslations = async (lang: string) => {
     try {
       setLoading(true);
-      const response = await axios.get(`http://localhost:5000/api/translations`, {
+      const response = await axios.get(`https://tongkhonoithattayninh.vn/api/translations`, {
         params: { lang }
       });
       

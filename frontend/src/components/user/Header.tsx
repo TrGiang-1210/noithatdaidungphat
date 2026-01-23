@@ -52,7 +52,7 @@ const Header: React.FC = () => {
   useEffect(() => {
     const fetchCategories = async () => {
       try {
-        const response = await fetch(`http://localhost:5000/api/categories?lang=${language}`);
+        const response = await fetch(`https://tongkhonoithattayninh.vn/api/categories?lang=${language}`);
         const data = await response.json();
         setCategories(data);
         setLoading(false);
@@ -121,7 +121,7 @@ const Header: React.FC = () => {
 
       try {
         const res = await fetch(
-          `http://localhost:5000/api/products/search-suggestions?q=${encodeURIComponent(
+          `https://tongkhonoithattayninh.vn/api/products/search-suggestions?q=${encodeURIComponent(
             searchQuery
           )}&lang=${language}`
         );

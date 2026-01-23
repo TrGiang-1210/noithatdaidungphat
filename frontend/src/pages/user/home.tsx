@@ -112,7 +112,7 @@ const Home: React.FC = () => {
         setLoading(true);
 
         // ✅ Thêm ?lang=${language}
-        const productsRes = await fetch(`http://localhost:5000/api/products?lang=${language}`);
+        const productsRes = await fetch(`https://tongkhonoithattayninh.vn/api/products?lang=${language}`);
         const allProducts: Product[] = await productsRes.json();
 
         const hotProds = allProducts.filter(p => p.hot === true);
@@ -130,7 +130,7 @@ const Home: React.FC = () => {
 
         // ✅ Thêm ?lang=${language}
         const categoriesRes = await fetch(
-          `http://localhost:5000/api/categories?lang=${language}`
+          `https://tongkhonoithattayninh.vn/api/categories?lang=${language}`
         );
         const allCategories: Category[] = await categoriesRes.json();
 
@@ -142,7 +142,7 @@ const Home: React.FC = () => {
         for (const cat of parentCategories.slice(0, 4)) {
           try {
             // ✅ Thêm ?lang=${language}
-            let url = `http://localhost:5000/api/products?category=${cat.slug}&lang=${language}`;
+            let url = `https://tongkhonoithattayninh.vn/api/products?category=${cat.slug}&lang=${language}`;
             const res = await fetch(url);
             const prods = await res.json();
             categoryProds[cat._id] = Array.isArray(prods)

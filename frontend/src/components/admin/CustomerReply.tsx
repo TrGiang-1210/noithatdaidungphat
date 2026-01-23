@@ -166,7 +166,7 @@ const CustomerReply = () => {
   };
 
   useEffect(() => {
-    socketRef.current = io('http://localhost:5000');
+    socketRef.current = io('https://tongkhonoithattayninh.vn');
 
     socketRef.current.on('connect', () => {
       console.log('✅ Admin socket connected:', socketRef.current?.id);

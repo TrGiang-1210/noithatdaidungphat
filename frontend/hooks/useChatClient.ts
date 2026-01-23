@@ -52,7 +52,7 @@ export function useChatClient({ userId, userName, userEmail, language = 'vi' }: 
   };
 
   useEffect(() => {
-    socketRef.current = io('http://localhost:5000');
+    socketRef.current = io('https://tongkhonoithattayninh.vn');
 
     socketRef.current.on('connect', () => {
       console.log('✅ Chat connected:', socketRef.current?.id);
