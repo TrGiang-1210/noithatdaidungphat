@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import axios from "axios";
 import { getImageUrl } from "@/utils/imageUrl";
-import { useLanguage } from "@/context/LanguageContext"; // ✅ NEW
+import { useLanguage } from "@/context/LanguageContext";
 import "@/styles/pages/user/post.scss";
 
 // ✅ UPDATED: Multilingual fields
@@ -38,7 +38,7 @@ interface PostsResponse {
 }
 
 const Posts: React.FC = () => {
-  const { language, t } = useLanguage(); // ✅ NEW
+  const { language, t } = useLanguage();
   const [searchParams, setSearchParams] = useSearchParams();
   const [posts, setPosts] = useState<Post[]>([]);
   const [categories, setCategories] = useState<PostCategory[]>([]);
