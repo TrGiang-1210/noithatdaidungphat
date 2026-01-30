@@ -33,6 +33,16 @@ interface Post {
   updated_at: string;
 }
 
+// 🆕 Interface for bulk upload
+interface UploadedImage {
+  url: string;
+  filename: string;
+  originalName: string;
+  size: number;
+  uploading?: boolean;
+  error?: string;
+}
+
 const PostManager: React.FC = () => {
   const { language } = useLanguage();
   const [posts, setPosts] = useState<Post[]>([]);
@@ -45,7 +55,14 @@ const PostManager: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('');
   const [uploadingImage, setUploadingImage] = useState(false);
+  
+  // 🆕 Bulk upload states
+  const [uploadedImages, setUploadedImages] = useState<UploadedImage[]>([]);
+  const [bulkUploadProgress, setBulkUploadProgress] = useState(0);
+  const [showBulkUpload, setShowBulkUpload] = useState(false);
+  
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const bulkFileInputRef = useRef<HTMLInputElement>(null);
   const editorRef = useRef<any>(null);
 
   // ✅ Pagination states
@@ -170,6 +187,7 @@ const PostManager: React.FC = () => {
     }));
   };
 
+  // ✅ FIXED: Single image upload
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -198,12 +216,107 @@ const PostManager: React.FC = () => {
       
       setFormData(prev => ({ ...prev, thumbnail: res.data.url }));
       alert('Upload ảnh thành công!');
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error uploading image:', error);
-      alert('Lỗi khi upload ảnh. Vui lòng nhập URL thủ công.');
+      alert(error.response?.data?.message || 'Lỗi khi upload ảnh. Vui lòng thử lại.');
     } finally {
       setUploadingImage(false);
     }
+  };
+
+  // 🆕 BULK IMAGE UPLOAD
+  const handleBulkImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []);
+    if (files.length === 0) return;
+
+    // Validate files
+    const validFiles = files.filter(file => {
+      if (!file.type.startsWith('image/')) {
+        alert(`${file.name} không phải là file ảnh!`);
+        return false;
+      }
+      if (file.size > 5 * 1024 * 1024) {
+        alert(`${file.name} vượt quá 5MB!`);
+        return false;
+      }
+      return true;
+    });
+
+    if (validFiles.length === 0) return;
+
+    setShowBulkUpload(true);
+    setBulkUploadProgress(0);
+
+    // Initialize upload list
+    const initialImages: UploadedImage[] = validFiles.map(file => ({
+      url: '',
+      filename: '',
+      originalName: file.name,
+      size: file.size,
+      uploading: true
+    }));
+    setUploadedImages(initialImages);
+
+    // Upload files sequentially with progress
+    for (let i = 0; i < validFiles.length; i++) {
+      const file = validFiles[i];
+      const formDataUpload = new FormData();
+      formDataUpload.append('image', file);
+
+      try {
+        const res = await axios.post(`${API_URL}/admin/upload-image`, formDataUpload, {
+          headers: {
+            ...axiosConfig.headers,
+            'Content-Type': 'multipart/form-data'
+          }
+        });
+
+        setUploadedImages(prev => {
+          const updated = [...prev];
+          updated[i] = {
+            ...updated[i],
+            url: res.data.url,
+            filename: res.data.filename,
+            uploading: false
+          };
+          return updated;
+        });
+
+      } catch (error: any) {
+        console.error(`Error uploading ${file.name}:`, error);
+        setUploadedImages(prev => {
+          const updated = [...prev];
+          updated[i] = {
+            ...updated[i],
+            uploading: false,
+            error: error.response?.data?.message || 'Upload failed'
+          };
+          return updated;
+        });
+      }
+
+      // Update progress
+      setBulkUploadProgress(Math.round(((i + 1) / validFiles.length) * 100));
+    }
+
+    // Reset file input
+    if (bulkFileInputRef.current) {
+      bulkFileInputRef.current.value = '';
+    }
+  };
+
+  // 🆕 Copy image URL to clipboard
+  const copyToClipboard = (url: string) => {
+    const fullUrl = url.startsWith('http') ? url : `${window.location.origin}${url}`;
+    navigator.clipboard.writeText(fullUrl);
+    alert('Đã copy URL vào clipboard!');
+  };
+
+  // 🆕 Clear bulk upload list
+  const clearBulkUpload = () => {
+    setUploadedImages([]);
+    setShowBulkUpload(false);
+    setBulkUploadProgress(0);
   };
 
   const handleAddTag = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -504,40 +617,34 @@ const PostManager: React.FC = () => {
                       <td>
                         <div className="title-cell">
                           <strong>{getText(post.title, 'vi')}</strong>
-                          <span className="slug">{post.slug}</span>
+                          <div className="slug">/{post.slug}</div>
                         </div>
                       </td>
                       <td>
                         {typeof post.category_id === 'object' ? (
-                          <span className="category-badge">{getText(post.category_id.name, 'vi')}</span>
+                          <span className="category-badge">
+                            {getText(post.category_id.name, 'vi')}
+                          </span>
                         ) : (
-                          <span className="category-badge">-</span>
+                          <span className="category-badge">N/A</span>
                         )}
                       </td>
                       <td>
-                        <span className={`status-badge status-${post.status || 'draft'}`}>
+                        <span className={`status-badge status-${post.status}`}>
                           {post.status === 'published' ? 'Đã xuất bản' : 'Nháp'}
                         </span>
                       </td>
                       <td>{formatDate(post.created_at)}</td>
                       <td>
                         <div className="action-buttons">
-                          <button
-                            className="btn-edit"
-                            onClick={() => openModal(post)}
-                            title="Sửa"
-                          >
+                          <button className="btn-edit" onClick={() => openModal(post)}>
                             <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
-                              <path d="M12.5 2.5L15.5 5.5L5.5 15.5H2.5V12.5L12.5 2.5Z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                              <path d="M12.5 2.5l3 3-9 9H3.5v-3l9-9z" stroke="currentColor" strokeWidth="1.5"/>
                             </svg>
                           </button>
-                          <button
-                            className="btn-delete"
-                            onClick={() => handleDelete(post._id)}
-                            title="Xóa"
-                          >
+                          <button className="btn-delete" onClick={() => handleDelete(post._id)}>
                             <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
-                              <path d="M3 5H15M7 8V13M11 8V13M4 5L5 15C5 15.5 5.5 16 6 16H12C12.5 16 13 15.5 13 15L14 5M7 5V3C7 2.5 7.5 2 8 2H10C10.5 2 11 2.5 11 3V5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                              <path d="M4.5 6v9h9V6m-10.5 0h12m-9-1.5v-1.5h6v1.5" stroke="currentColor" strokeWidth="1.5"/>
                             </svg>
                           </button>
                         </div>
@@ -549,98 +656,75 @@ const PostManager: React.FC = () => {
             </table>
           </div>
 
-          {/* ✅ Pagination - Same layout as translateManager */}
-          {filteredPosts.length > 0 && (
+          {/* Pagination */}
+          {totalPages > 1 && (
             <div className="pagination">
               <div className="pagination-left">
                 <div className="items-per-page">
                   <span>Hiển thị:</span>
-                  <select 
-                    value={itemsPerPage} 
-                    onChange={(e) => handleItemsPerPageChange(Number(e.target.value))}
-                  >
+                  <select value={itemsPerPage} onChange={(e) => handleItemsPerPageChange(Number(e.target.value))}>
                     <option value={5}>5</option>
                     <option value={10}>10</option>
-                    <option value={15}>15</option>
                     <option value={20}>20</option>
                     <option value={50}>50</option>
-                    <option value={100}>100</option>
                   </select>
-                  <span>bài viết/trang</span>
                 </div>
                 <div className="page-info">
-                  Hiển thị {startIndex + 1}-{Math.min(endIndex, filteredPosts.length)} trong tổng số {filteredPosts.length} bài viết
+                  Hiển thị {startIndex + 1}-{Math.min(endIndex, filteredPosts.length)} trong {filteredPosts.length} kết quả
                 </div>
               </div>
-
-              {totalPages > 1 && (
-                <div className="pagination-center">
-                  <button 
-                    onClick={() => handlePageChange(currentPage - 1)}
-                    disabled={currentPage === 1}
-                    className="pagination-btn"
-                  >
-                    ← Trước
-                  </button>
-                  
-                  <div className="pagination-numbers">
-                    {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => {
-                      if (
-                        page === 1 ||
-                        page === totalPages ||
-                        (page >= currentPage - 1 && page <= currentPage + 1)
-                      ) {
-                        return (
-                          <button
-                            key={page}
-                            onClick={() => handlePageChange(page)}
-                            className={`pagination-number ${currentPage === page ? 'active' : ''}`}
-                          >
-                            {page}
-                          </button>
-                        );
-                      } else if (
-                        page === currentPage - 2 ||
-                        page === currentPage + 2
-                      ) {
-                        return <span key={page} className="pagination-ellipsis">...</span>;
-                      }
-                      return null;
-                    })}
-                  </div>
-
-                  <button 
-                    onClick={() => handlePageChange(currentPage + 1)}
-                    disabled={currentPage === totalPages}
-                    className="pagination-btn"
-                  >
-                    Sau →
-                  </button>
+              
+              <div className="pagination-center">
+                <button 
+                  className="pagination-btn" 
+                  onClick={() => handlePageChange(currentPage - 1)}
+                  disabled={currentPage === 1}
+                >
+                  Trước
+                </button>
+                
+                <div className="pagination-numbers">
+                  {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
+                    <button
+                      key={page}
+                      className={`pagination-number ${currentPage === page ? 'active' : ''}`}
+                      onClick={() => handlePageChange(page)}
+                    >
+                      {page}
+                    </button>
+                  ))}
                 </div>
-              )}
+                
+                <button 
+                  className="pagination-btn" 
+                  onClick={() => handlePageChange(currentPage + 1)}
+                  disabled={currentPage === totalPages}
+                >
+                  Sau
+                </button>
+              </div>
             </div>
           )}
         </>
       )}
 
-      {/* Category Management Modal */}
+      {/* ==================== CATEGORY MODAL ==================== */}
       {showCategoryModal && (
         <div className="modal-overlay" onClick={() => setShowCategoryModal(false)}>
           <div className="modal-content modal-category-manager" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
-              <h2>Quản Lý Danh Mục Bài Viết</h2>
+              <h2>Quản Lý Danh Mục</h2>
               <button className="modal-close" onClick={() => setShowCategoryModal(false)}>
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-                  <path d="M18 6L6 18M6 6L18 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+                  <path d="M6 18L18 6M6 6l12 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
                 </svg>
               </button>
             </div>
 
-            <div className="modal-body category-manager-body">
-              {/* Add/Edit Form */}
-              <form className="category-form" onSubmit={handleCategorySubmit}>
+            <div className="category-manager-body">
+              <form onSubmit={handleCategorySubmit} className="category-form">
                 <h3 className="form-title">
-                  {editingCategory ? '✏️ Chỉnh Sửa Danh Mục' : '➕ Thêm Danh Mục Mới'}
+                  {editingCategory ? 'Chỉnh sửa danh mục' : 'Tạo danh mục mới'}
                 </h3>
                 
                 <div className="form-row">
@@ -652,10 +736,10 @@ const PostManager: React.FC = () => {
                       value={categoryForm.name.vi}
                       onChange={handleCategoryInputChange}
                       required
-                      placeholder="Ví dụ: Xu hướng nội thất"
+                      placeholder="Nhập tên danh mục"
                     />
                   </div>
-
+                  
                   <div className="form-group">
                     <label>Slug *</label>
                     <input
@@ -664,33 +748,26 @@ const PostManager: React.FC = () => {
                       value={categoryForm.slug}
                       onChange={handleCategoryInputChange}
                       required
-                      placeholder="xu-huong-noi-that"
+                      placeholder="url-danh-muc"
                     />
                   </div>
                 </div>
 
                 <div className="form-actions">
                   {editingCategory && (
-                    <button
-                      type="button"
-                      className="btn-cancel"
-                      onClick={handleCancelEditCategory}
-                    >
+                    <button type="button" className="btn-cancel" onClick={handleCancelEditCategory}>
                       Hủy
                     </button>
                   )}
                   <button type="submit" className="btn-submit">
-                    {editingCategory ? 'Cập Nhật' : 'Tạo Danh Mục'}
+                    {editingCategory ? 'Cập nhật' : 'Tạo danh mục'}
                   </button>
                 </div>
               </form>
 
-              {/* Categories List */}
               <div className="categories-list-section">
                 <div className="list-header">
-                  <h3 className="list-title">
-                    📂 Danh Sách Danh Mục ({filteredCategories.length})
-                  </h3>
+                  <h3 className="list-title">Danh sách danh mục</h3>
                   <div className="search-box-small">
                     <svg width="16" height="16" viewBox="0 0 20 20" fill="none">
                       <circle cx="9" cy="9" r="5" stroke="currentColor" strokeWidth="2"/>
@@ -704,61 +781,59 @@ const PostManager: React.FC = () => {
                     />
                   </div>
                 </div>
-                
-                <div className="categories-list-scrollable">
-                  {filteredCategories.length === 0 ? (
-                    <div className="empty-categories">
-                      {categorySearchTerm ? 'Không tìm thấy danh mục' : 'Chưa có danh mục nào'}
-                    </div>
-                  ) : (
+
+                {filteredCategories.length === 0 ? (
+                  <div className="empty-categories">Không có danh mục nào</div>
+                ) : (
+                  <div className="categories-list-scrollable">
                     <div className="categories-grid">
                       {filteredCategories.map(category => (
-                        <div
-                          key={category._id}
+                        <div 
+                          key={category._id} 
                           className={`category-item ${editingCategory?._id === category._id ? 'editing' : ''}`}
                         >
                           <div className="category-info">
                             <h4 className="category-name">{getText(category.name, 'vi')}</h4>
-                            <p className="category-slug">{category.slug}</p>
+                            <p className="category-slug">/{category.slug}</p>
                           </div>
                           <div className="category-actions">
-                            <button
-                              className="btn-edit-cat"
-                              onClick={() => handleEditCategory(category)}
-                              title="Sửa"
-                            >
+                            <button className="btn-edit-cat" onClick={() => handleEditCategory(category)}>
                               <svg width="16" height="16" viewBox="0 0 18 18" fill="none">
-                                <path d="M12.5 2.5L15.5 5.5L5.5 15.5H2.5V12.5L12.5 2.5Z" stroke="currentColor" strokeWidth="1.5"/>
+                                <path d="M12.5 2.5l3 3-9 9H3.5v-3l9-9z" stroke="currentColor" strokeWidth="1.5"/>
+                              </svg>
+                            </button>
+                            <button className="btn-delete-cat" onClick={() => handleDeleteCategory(category._id)}>
+                              <svg width="16" height="16" viewBox="0 0 18 18" fill="none">
+                                <path d="M4.5 6v9h9V6m-10.5 0h12m-9-1.5v-1.5h6v1.5" stroke="currentColor" strokeWidth="1.5"/>
                               </svg>
                             </button>
                           </div>
                         </div>
                       ))}
                     </div>
-                  )}
-                </div>
+                  </div>
+                )}
               </div>
             </div>
           </div>
         </div>
       )}
 
-      {/* Post Modal - WordPress Style */}
+      {/* ==================== POST EDITOR MODAL ==================== */}
       {showModal && (
         <div className="modal-overlay" onClick={closeModal}>
           <div className="modal-content modal-wordpress" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
-              <h2>{editingPost ? 'Sửa Bài Viết' : 'Tạo Bài Viết Mới'}</h2>
+              <h2>{editingPost ? 'Chỉnh sửa bài viết' : 'Tạo bài viết mới'}</h2>
               <button className="modal-close" onClick={closeModal}>
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-                  <path d="M18 6L6 18M6 6L18 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+                  <path d="M6 18L18 6M6 6l12 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
                 </svg>
               </button>
             </div>
 
             <form onSubmit={handleSubmit}>
               <div className="wordpress-editor">
-                {/* Main Editor Area */}
                 <div className="editor-main">
                   <div className="form-group">
                     <input
@@ -832,6 +907,72 @@ const PostManager: React.FC = () => {
                       <button type="submit" className="btn-publish">
                         {formData.status === 'published' ? 'Xuất Bản' : 'Lưu Nháp'}
                       </button>
+                    </div>
+                  </div>
+
+                  {/* 🆕 BULK IMAGE UPLOAD BOX */}
+                  <div className="sidebar-box">
+                    <h3>📸 Upload Nhiều Ảnh</h3>
+                    <div className="featured-image-box">
+                      <input
+                        type="file"
+                        ref={bulkFileInputRef}
+                        onChange={handleBulkImageUpload}
+                        accept="image/*"
+                        multiple
+                        style={{ display: 'none' }}
+                      />
+                      <button
+                        type="button"
+                        className="btn-upload"
+                        onClick={() => bulkFileInputRef.current?.click()}
+                      >
+                        Chọn nhiều ảnh
+                      </button>
+                      
+                      {showBulkUpload && (
+                        <div className="bulk-upload-container">
+                          <div className="bulk-upload-header">
+                            <h4>Đã upload: {uploadedImages.filter(img => !img.uploading && !img.error).length}/{uploadedImages.length}</h4>
+                            <button type="button" onClick={clearBulkUpload} className="btn-clear">Xóa tất cả</button>
+                          </div>
+                          
+                          {bulkUploadProgress < 100 && (
+                            <div className="progress-bar">
+                              <div className="progress-fill" style={{ width: `${bulkUploadProgress}%` }}></div>
+                              <span className="progress-text">{bulkUploadProgress}%</span>
+                            </div>
+                          )}
+                          
+                          <div className="bulk-upload-grid">
+                            {uploadedImages.map((img, index) => (
+                              <div key={index} className="bulk-upload-item">
+                                {img.uploading ? (
+                                  <div className="upload-loading">
+                                    <div className="spinner-small"></div>
+                                  </div>
+                                ) : img.error ? (
+                                  <div className="upload-error">❌</div>
+                                ) : (
+                                  <img src={getImageUrl(img.url)} alt={img.originalName} />
+                                )}
+                                <div className="bulk-upload-info">
+                                  <div className="image-name">{img.originalName}</div>
+                                  {!img.uploading && !img.error && (
+                                    <button
+                                      type="button"
+                                      onClick={() => copyToClipboard(img.url)}
+                                      className="btn-copy-url"
+                                    >
+                                      Copy URL
+                                    </button>
+                                  )}
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
                     </div>
                   </div>
 

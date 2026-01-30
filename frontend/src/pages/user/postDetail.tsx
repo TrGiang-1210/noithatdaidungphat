@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import axios from 'axios';
 import { getImageUrl } from "@/utils/imageUrl";
@@ -52,6 +52,7 @@ const PostDetail: React.FC = () => {
   const [relatedPosts, setRelatedPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
+  const contentRef = useRef<HTMLDivElement>(null);
 
   const API_URL = import.meta.env.VITE_API_URL || 'https://tongkhonoithattayninh.vn/api';
 
@@ -59,6 +60,45 @@ const PostDetail: React.FC = () => {
     if (!field) return '';
     if (typeof field === 'string') return field;
     return field[language] || field.vi || '';
+  };
+
+  // 🆕 Function to process HTML content and fix image URLs
+  const processContentImages = (htmlContent: string): string => {
+    if (!htmlContent) return '';
+    
+    // Create a temporary div to parse HTML
+    const tempDiv = document.createElement('div');
+    tempDiv.innerHTML = htmlContent;
+    
+    // Find all img tags
+    const images = tempDiv.querySelectorAll('img');
+    
+    images.forEach((img) => {
+      const src = img.getAttribute('src');
+      if (src) {
+        // If src starts with /uploads, convert it using getImageUrl
+        if (src.startsWith('/uploads')) {
+          img.setAttribute('src', getImageUrl(src));
+        }
+        // If src is a relative path without http/https
+        else if (!src.startsWith('http://') && !src.startsWith('https://') && !src.startsWith('data:')) {
+          img.setAttribute('src', getImageUrl(src));
+        }
+        
+        // Add error handling
+        img.setAttribute('onerror', "this.style.display='none'");
+        
+        // Add loading lazy for performance
+        img.setAttribute('loading', 'lazy');
+        
+        // Ensure images are responsive
+        if (!img.hasAttribute('style')) {
+          img.setAttribute('style', 'max-width: 100%; height: auto;');
+        }
+      }
+    });
+    
+    return tempDiv.innerHTML;
   };
 
   useEffect(() => {
@@ -90,6 +130,30 @@ const PostDetail: React.FC = () => {
 
     fetchPost();
   }, [slug, language]);
+
+  // 🆕 Process images in content after post is loaded
+  useEffect(() => {
+    if (post && contentRef.current) {
+      const images = contentRef.current.querySelectorAll('img');
+      
+      images.forEach((img) => {
+        const src = img.getAttribute('src');
+        if (src) {
+          // Fix relative URLs
+          if (src.startsWith('/uploads')) {
+            img.setAttribute('src', getImageUrl(src));
+          } else if (!src.startsWith('http://') && !src.startsWith('https://') && !src.startsWith('data:')) {
+            img.setAttribute('src', getImageUrl(src));
+          }
+          
+          // Add error handling
+          img.onerror = () => {
+            img.style.display = 'none';
+          };
+        }
+      });
+    }
+  }, [post, contentRef.current]);
 
   // Fetch related posts
   useEffect(() => {
@@ -157,6 +221,7 @@ const PostDetail: React.FC = () => {
           <img
             src={post.thumbnail ? getImageUrl(post.thumbnail) : '/placeholder-post.jpg'}
             alt={getText(post.title)}
+            loading="lazy"
             onError={(e) => {
               e.currentTarget.src = 'https://via.placeholder.com/400x300?text=No+Image';
             }}
@@ -228,10 +293,11 @@ const PostDetail: React.FC = () => {
             </div>
           )}
 
-          {/* Content */}
+          {/* Content - 🆕 Using processContentImages */}
           <div 
+            ref={contentRef}
             className="post-content"
-            dangerouslySetInnerHTML={{ __html: getText(post.content) }}
+            dangerouslySetInnerHTML={{ __html: processContentImages(getText(post.content)) }}
           />
 
           {/* Tags */}

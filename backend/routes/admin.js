@@ -1,4 +1,4 @@
-// routes/admin.js - ✅ FIXED ROUTE ORDER
+// routes/admin.js - ✅ FIXED WITH POST IMAGE UPLOAD
 const express = require('express');
 const router = express.Router();
 const multer = require('multer');
@@ -68,8 +68,80 @@ const productUpload = multer({
 
 const postUpload = multer({
   storage: postStorage,
-  limits: { fileSize: 5 * 1024 * 1024 },
+  limits: { fileSize: 5 * 1024 * 1024 }, // 5MB per file
   fileFilter: fileFilter
+});
+
+// ==================== 🆕 IMAGE UPLOAD ROUTES FOR POSTS ====================
+
+// 📸 Upload single image for post
+router.post('/upload-image', auth, admin, postUpload.single('image'), (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ message: 'Không có file ảnh được tải lên' });
+    }
+
+    // Return relative path that frontend can use
+    const imageUrl = `/uploads/posts/${req.file.filename}`;
+    
+    console.log('✅ Uploaded single image:', imageUrl);
+    
+    res.json({ 
+      url: imageUrl,
+      filename: req.file.filename,
+      message: 'Upload ảnh thành công'
+    });
+  } catch (error) {
+    console.error('❌ Upload single image error:', error);
+    res.status(500).json({ message: 'Lỗi khi upload ảnh: ' + error.message });
+  }
+});
+
+// 📸📸📸 Upload multiple images for posts (bulk upload)
+router.post('/upload-images', auth, admin, postUpload.array('images', 50), (req, res) => {
+  try {
+    if (!req.files || req.files.length === 0) {
+      return res.status(400).json({ message: 'Không có file ảnh được tải lên' });
+    }
+
+    // Map all uploaded files to their URLs
+    const imageUrls = req.files.map(file => ({
+      url: `/uploads/posts/${file.filename}`,
+      filename: file.filename,
+      originalName: file.originalname,
+      size: file.size
+    }));
+    
+    console.log(`✅ Uploaded ${imageUrls.length} images successfully`);
+    
+    res.json({ 
+      images: imageUrls,
+      count: imageUrls.length,
+      message: `Upload thành công ${imageUrls.length} ảnh`
+    });
+  } catch (error) {
+    console.error('❌ Upload multiple images error:', error);
+    res.status(500).json({ message: 'Lỗi khi upload ảnh: ' + error.message });
+  }
+});
+
+// 🗑️ Delete image (optional - for cleanup)
+router.delete('/delete-image/:filename', auth, admin, (req, res) => {
+  try {
+    const { filename } = req.params;
+    const filePath = path.join(postsDir, filename);
+    
+    if (fs.existsSync(filePath)) {
+      fs.unlinkSync(filePath);
+      console.log('✅ Deleted image:', filename);
+      res.json({ message: 'Xóa ảnh thành công' });
+    } else {
+      res.status(404).json({ message: 'Không tìm thấy file ảnh' });
+    }
+  } catch (error) {
+    console.error('❌ Delete image error:', error);
+    res.status(500).json({ message: 'Lỗi khi xóa ảnh: ' + error.message });
+  }
 });
 
 // ==================== DASHBOARD STATS ROUTE WITH DATE FILTER ====================
@@ -206,78 +278,50 @@ router.get('/dashboard/stats', auth, admin, async (req, res) => {
       ? Math.round((translatedPostCategoriesDB / totalPostCategoriesDB) * 100) 
       : 0;
     
-    // ==================== 🆕 DYNAMIC REVENUE CHART DATA ====================
+    // ==================== REVENUE CHART DATA (DYNAMIC PERIOD) ====================
+    const allOrders = await Order.find({
+      created_at: { $gte: startDate, $lte: endDate },
+      status: { $in: ['Confirmed', 'Shipping', 'Completed'] }
+    }).select('created_at total');
+    
     const revenueData = [];
-    const currentDate = new Date(startDate);
+    let currentDate = new Date(startDate);
     
-    // Helper function to format Vietnamese day names
-    const formatVietnameseDate = (date) => {
-      const dayNames = ['CN', 'Th 2', 'Th 3', 'Th 4', 'Th 5', 'Th 6', 'Th 7'];
-      const dayName = dayNames[date.getDay()];
-      const day = String(date.getDate()).padStart(2, '0');
-      const month = String(date.getMonth() + 1).padStart(2, '0');
-      const year = date.getFullYear();
-      
-      return {
-        date: `${dayName} ${day}/${month}`,
-        fullDate: `${dayName}, ${day}/${month}/${year}`
-      };
-    };
-    
-    // Generate data for each day in range
     while (currentDate <= endDate) {
-      const dayStart = new Date(currentDate);
-      dayStart.setHours(0, 0, 0, 0);
+      const nextDate = new Date(currentDate);
+      nextDate.setDate(nextDate.getDate() + 1);
       
-      const dayEnd = new Date(currentDate);
-      dayEnd.setHours(23, 59, 59, 999);
-      
-      // Count all orders in this day
-      const dayOrderCount = await Order.countDocuments({
-        created_at: { $gte: dayStart, $lte: dayEnd }
-      });
-      
-      // Get confirmed orders for revenue calculation
-      const dayOrders = await Order.find({
-        created_at: { $gte: dayStart, $lte: dayEnd },
-        status: { $in: ['Confirmed', 'Shipping', 'Completed'] }
+      const dayOrders = allOrders.filter(order => {
+        const orderDate = new Date(order.created_at);
+        return orderDate >= currentDate && orderDate < nextDate;
       });
       
       const dayRevenue = dayOrders.reduce((sum, order) => sum + (order.total || 0), 0);
       
-      const dateFormat = formatVietnameseDate(currentDate);
-      
       revenueData.push({
-        date: dateFormat.date,
-        fullDate: dateFormat.fullDate,
-        revenue: dayRevenue || 0, // ✅ Always return 0, not null
-        orders: dayOrderCount || 0,
-        confirmedOrders: dayOrders.length || 0
+        date: currentDate.toISOString().split('T')[0],
+        dateVN: currentDate.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit' }),
+        revenue: dayRevenue,
+        orders: dayOrders.length
       });
       
-      // Move to next day
-      currentDate.setDate(currentDate.getDate() + 1);
+      currentDate = nextDate;
     }
     
-    // Calculate totals for the selected period
     const totalRevenue = revenueData.reduce((sum, day) => sum + day.revenue, 0);
     const totalOrders = revenueData.reduce((sum, day) => sum + day.orders, 0);
-    const averageRevenue = days > 0 ? Math.round(totalRevenue / days) : 0;
+    const averageRevenue = totalOrders > 0 ? Math.round(totalRevenue / totalOrders) : 0;
     
-    // ==================== 🆕 GROWTH CALCULATION ====================
-    // Compare with previous period of same length
+    // Calculate previous period for growth comparison
     const prevStartDate = new Date(startDate);
     prevStartDate.setDate(prevStartDate.getDate() - days);
-    
     const prevEndDate = new Date(startDate);
     prevEndDate.setDate(prevEndDate.getDate() - 1);
-    prevEndDate.setHours(23, 59, 59, 999);
     
     const prevOrders = await Order.find({
       created_at: { $gte: prevStartDate, $lte: prevEndDate },
       status: { $in: ['Confirmed', 'Shipping', 'Completed'] }
     });
-    
     const prevRevenue = prevOrders.reduce((sum, order) => sum + (order.total || 0), 0);
     
     let revenueGrowth = 0;
@@ -465,18 +509,16 @@ router.post('/post-categories', auth, admin, postCategoryController.createCatego
 router.put('/post-categories/:id', auth, admin, postCategoryController.updateCategory);
 router.delete('/post-categories/:id', auth, admin, postCategoryController.deleteCategory);
 
-// routes/admin.js
-
 // ==================== ORDER ROUTES ====================
 // ⚠️ Specific routes MUST come before dynamic routes
 router.get('/orders/stats/overview', auth, admin, orderController.getOrderStats);
-router.get('/orders/stats/archive', auth, admin, orderController.getArchiveStats); // ← MỚI
+router.get('/orders/stats/archive', auth, admin, orderController.getArchiveStats);
 router.get('/orders', auth, admin, orderController.getAllOrdersAdmin);
 router.get('/orders/:id', auth, admin, orderController.getOrderByIdAdmin);
 router.patch('/orders/:id/status', auth, admin, orderController.updateOrderStatus);
 router.patch('/orders/:id/cancel', auth, admin, orderController.cancelOrderAdmin);
-router.patch('/orders/:id/archive', auth, admin, orderController.archiveOrder); // ← MỚI
-router.patch('/orders/:id/unarchive', auth, admin, orderController.unarchiveOrder); // ← MỚI
+router.patch('/orders/:id/archive', auth, admin, orderController.archiveOrder);
+router.patch('/orders/:id/unarchive', auth, admin, orderController.unarchiveOrder);
 router.delete('/orders/:id', auth, admin, orderController.deleteOrder);
 
 module.exports = router;
