@@ -62,7 +62,7 @@ const PostDetail: React.FC = () => {
     return field[language] || field.vi || '';
   };
 
-  // 🆕 Function to process HTML content and fix image URLs
+  // ✅ IMPROVED: Function to process HTML content and fix image URLs
   const processContentImages = (htmlContent: string): string => {
     if (!htmlContent) return '';
     
@@ -74,27 +74,59 @@ const PostDetail: React.FC = () => {
     const images = tempDiv.querySelectorAll('img');
     
     images.forEach((img) => {
-      const src = img.getAttribute('src');
-      if (src) {
-        // If src starts with /uploads, convert it using getImageUrl
-        if (src.startsWith('/uploads')) {
-          img.setAttribute('src', getImageUrl(src));
-        }
-        // If src is a relative path without http/https
-        else if (!src.startsWith('http://') && !src.startsWith('https://') && !src.startsWith('data:')) {
-          img.setAttribute('src', getImageUrl(src));
-        }
-        
-        // Add error handling
-        img.setAttribute('onerror', "this.style.display='none'");
-        
-        // Add loading lazy for performance
-        img.setAttribute('loading', 'lazy');
-        
-        // Ensure images are responsive
-        if (!img.hasAttribute('style')) {
-          img.setAttribute('style', 'max-width: 100%; height: auto;');
-        }
+      let src = img.getAttribute('src');
+      if (!src) return;
+      
+      // ✅ FIX 1: Remove any leading/trailing whitespace
+      src = src.trim();
+      
+      // ✅ FIX 2: Handle different URL formats
+      let finalUrl = src;
+      
+      // Case 1: Absolute URL (starts with http:// or https://)
+      if (src.startsWith('http://') || src.startsWith('https://')) {
+        finalUrl = src;
+      }
+      // Case 2: Data URI (base64 images)
+      else if (src.startsWith('data:')) {
+        finalUrl = src;
+      }
+      // Case 3: Relative path starting with /uploads
+      else if (src.startsWith('/uploads')) {
+        finalUrl = getImageUrl(src);
+      }
+      // Case 4: Relative path without leading slash
+      else if (src.startsWith('uploads/')) {
+        finalUrl = getImageUrl('/' + src);
+      }
+      // Case 5: Just filename (unlikely but handle it)
+      else {
+        // Assume it's in /uploads/posts/
+        finalUrl = getImageUrl('/uploads/posts/' + src);
+      }
+      
+      // Set the corrected URL
+      img.setAttribute('src', finalUrl);
+      
+      // ✅ FIX 3: Better error handling with placeholder
+      img.setAttribute('onerror', `
+        this.onerror=null;
+        this.src='https://via.placeholder.com/800x450?text=Image+Not+Found';
+        this.style.maxWidth='100%';
+        this.style.height='auto';
+      `);
+      
+      // Add loading lazy for performance
+      img.setAttribute('loading', 'lazy');
+      
+      // ✅ FIX 4: Ensure images are responsive with better styling
+      const existingStyle = img.getAttribute('style') || '';
+      const newStyle = existingStyle + '; max-width: 100%; height: auto; display: block; margin: 20px auto; border-radius: 8px;';
+      img.setAttribute('style', newStyle);
+      
+      // Add alt text if missing
+      if (!img.hasAttribute('alt')) {
+        img.setAttribute('alt', 'Post image');
       }
     });
     
@@ -131,29 +163,43 @@ const PostDetail: React.FC = () => {
     fetchPost();
   }, [slug, language]);
 
-  // 🆕 Process images in content after post is loaded
+  // ✅ IMPROVED: Process images in content after post is loaded (backup method)
   useEffect(() => {
     if (post && contentRef.current) {
       const images = contentRef.current.querySelectorAll('img');
       
       images.forEach((img) => {
-        const src = img.getAttribute('src');
-        if (src) {
-          // Fix relative URLs
-          if (src.startsWith('/uploads')) {
-            img.setAttribute('src', getImageUrl(src));
-          } else if (!src.startsWith('http://') && !src.startsWith('https://') && !src.startsWith('data:')) {
-            img.setAttribute('src', getImageUrl(src));
-          }
-          
-          // Add error handling
-          img.onerror = () => {
-            img.style.display = 'none';
-          };
+        let src = img.getAttribute('src');
+        if (!src) return;
+        
+        src = src.trim();
+        
+        // Skip if already a full URL or data URI
+        if (src.startsWith('http://') || src.startsWith('https://') || src.startsWith('data:')) {
+          return;
         }
+        
+        // Fix relative URLs
+        let finalUrl = src;
+        if (src.startsWith('/uploads')) {
+          finalUrl = getImageUrl(src);
+        } else if (src.startsWith('uploads/')) {
+          finalUrl = getImageUrl('/' + src);
+        } else {
+          finalUrl = getImageUrl('/uploads/posts/' + src);
+        }
+        
+        img.setAttribute('src', finalUrl);
+        
+        // Error handling
+        img.onerror = () => {
+          img.src = 'https://via.placeholder.com/800x450?text=Image+Not+Found';
+          img.style.maxWidth = '100%';
+          img.style.height = 'auto';
+        };
       });
     }
-  }, [post, contentRef.current]);
+  }, [post]);
 
   // Fetch related posts
   useEffect(() => {
@@ -287,13 +333,13 @@ const PostDetail: React.FC = () => {
                 src={getImageUrl(post.thumbnail)}
                 alt={getText(post.title)}
                 onError={(e) => {
-                  e.currentTarget.style.display = 'none';
+                  e.currentTarget.src = 'https://via.placeholder.com/1200x600?text=No+Image';
                 }}
               />
             </div>
           )}
 
-          {/* Content - 🆕 Using processContentImages */}
+          {/* Content - ✅ Using improved processContentImages */}
           <div 
             ref={contentRef}
             className="post-content"

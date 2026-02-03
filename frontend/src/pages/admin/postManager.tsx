@@ -102,9 +102,17 @@ const PostManager: React.FC = () => {
     slug: "",
   });
 
-  const API_URL =
-    import.meta.env.VITE_API_URL || "https://tongkhonoithattayninh.vn/api";
-  const token = localStorage.getItem("token");
+ // ✅ THÊM DEBUG
+console.log('🔍 All env vars:', import.meta.env);
+console.log('🔍 VITE_API_URL:', import.meta.env.VITE_API_URL);
+console.log('🔍 MODE:', import.meta.env.MODE);
+
+const API_URL =
+  import.meta.env.VITE_API_URL || "https://tongkhonoithattayninh.vn/api";
+
+console.log('🔍 Final API_URL:', API_URL);
+
+const token = localStorage.getItem("token");
 
   const axiosConfig = {
     headers: { Authorization: `Bearer ${token}` },
