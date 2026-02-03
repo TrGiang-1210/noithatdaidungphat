@@ -1,11 +1,11 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { Link } from "react-router-dom";
 import { getFirstImageUrl } from "../../utils/imageUrl";
 import { useLanguage } from "../../context/LanguageContext";
 import "@/styles/pages/user/home.scss";
 import { ChevronRight, ChevronLeft } from "lucide-react";
 
-// Banner images
+// Banner images - GIỮ NGUYÊN như code gốc
 import banner1 from "@/assets/banner/banner1.jpg";
 import banner2 from "@/assets/banner/banner2.jpg";
 import banner3 from "@/assets/banner/banner3.jpg";
@@ -32,26 +32,45 @@ interface Category {
   children?: Category[];
 }
 
-const Home: React.FC = () => {
-  const { t, language } = useLanguage(); // ✅ Lấy cả language
+// ✅ API CACHE - Lưu kết quả API trong 5 phút
+const API_CACHE = new Map<string, { data: any; timestamp: number }>();
+const CACHE_DURATION = 5 * 60 * 1000; // 5 phút
 
-  const banners = [
-    { src: banner1, alt: "Banner 1" },
-    { src: banner2, alt: "Banner 2" },
-    { src: banner3, alt: "Banner 3" },
-  ];
+const fetchWithCache = async (url: string) => {
+  const cached = API_CACHE.get(url);
+  const now = Date.now();
+
+  if (cached && now - cached.timestamp < CACHE_DURATION) {
+    return cached.data;
+  }
+
+  const response = await fetch(url);
+  const data = await response.json();
+  API_CACHE.set(url, { data, timestamp: now });
+  return data;
+};
+
+const Home: React.FC = () => {
+  const { t, language } = useLanguage();
+
+  // ✅ useMemo cho banners
+  const banners = useMemo(
+    () => [
+      { src: banner1, alt: "Banner 1" },
+      { src: banner2, alt: "Banner 2" },
+      { src: banner3, alt: "Banner 3" },
+    ],
+    []
+  );
 
   const [currentSlide, setCurrentSlide] = useState(0);
   const [hotProducts, setHotProducts] = useState<Product[]>([]);
   const [saleProducts, setSaleProducts] = useState<Product[]>([]);
   const [newProducts, setNewProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
-  const [categoryProducts, setCategoryProducts] = useState<
-    Record<string, Product[]>
-  >({});
+  const [categoryProducts, setCategoryProducts] = useState<Record<string, Product[]>>({});
   const [loading, setLoading] = useState(true);
-  
-  // Carousel states
+
   const [hotCarouselIndex, setHotCarouselIndex] = useState(0);
   const [saleCarouselIndex, setSaleCarouselIndex] = useState(0);
 
@@ -105,20 +124,23 @@ const Home: React.FC = () => {
     setSaleCarouselIndex((prev) => (prev + 1) % saleProducts.length);
   };
 
-  // ✅ Load dữ liệu - THÊM language parameter
+  // ✅ OPTIMIZED DATA LOADING - Gọi API song song và có cache
   useEffect(() => {
     const loadData = async () => {
       try {
         setLoading(true);
 
-        // ✅ Thêm ?lang=${language}
-        const productsRes = await fetch(`https://tongkhonoithattayninh.vn/api/products?lang=${language}`);
-        const allProducts: Product[] = await productsRes.json();
+        // ✅ GỌI API SONG SONG thay vì tuần tự
+        const [allProducts, allCategories] = await Promise.all([
+          fetchWithCache(`https://tongkhonoithattayninh.vn/api/products?lang=${language}`),
+          fetchWithCache(`https://tongkhonoithattayninh.vn/api/categories?lang=${language}`),
+        ]);
 
-        const hotProds = allProducts.filter(p => p.hot === true);
+        // Filter products (client-side filtering nhanh hơn nhiều API calls)
+        const hotProds = allProducts.filter((p: Product) => p.hot === true);
         setHotProducts(hotProds);
 
-        const saleProds = allProducts.filter(p => p.onSale === true);
+        const saleProds = allProducts.filter((p: Product) => p.onSale === true);
         setSaleProducts(saleProds);
 
         const sortedByDate = [...allProducts].sort((a, b) => {
@@ -128,32 +150,24 @@ const Home: React.FC = () => {
         });
         setNewProducts(sortedByDate.slice(0, 8));
 
-        // ✅ Thêm ?lang=${language}
-        const categoriesRes = await fetch(
-          `https://tongkhonoithattayninh.vn/api/categories?lang=${language}`
-        );
-        const allCategories: Category[] = await categoriesRes.json();
-
-        const parentCategories = allCategories.filter((cat) => !cat.parent);
+        const parentCategories = allCategories.filter((cat: Category) => !cat.parent);
         setCategories(parentCategories);
 
+        // ✅ GỌI API CATEGORY PRODUCTS SONG SONG
         const categoryProds: Record<string, Product[]> = {};
-
-        for (const cat of parentCategories.slice(0, 4)) {
+        const categoryPromises = parentCategories.slice(0, 4).map(async (cat: Category) => {
           try {
-            // ✅ Thêm ?lang=${language}
-            let url = `https://tongkhonoithattayninh.vn/api/products?category=${cat.slug}&lang=${language}`;
-            const res = await fetch(url);
-            const prods = await res.json();
-            categoryProds[cat._id] = Array.isArray(prods)
-              ? prods.slice(0, 8)
-              : [];
+            const prods = await fetchWithCache(
+              `https://tongkhonoithattayninh.vn/api/products?category=${cat.slug}&lang=${language}`
+            );
+            categoryProds[cat._id] = Array.isArray(prods) ? prods.slice(0, 8) : [];
           } catch (err) {
             console.error(`Error loading products for ${cat.name}:`, err);
             categoryProds[cat._id] = [];
           }
-        }
+        });
 
+        await Promise.all(categoryPromises);
         setCategoryProducts(categoryProds);
       } catch (error) {
         console.error("Lỗi load dữ liệu:", error);
@@ -163,20 +177,17 @@ const Home: React.FC = () => {
     };
 
     loadData();
-  }, [language]); // ✅ Re-fetch khi language thay đổi
+  }, [language]);
 
-  // Component ProductCard
-  const ProductCard: React.FC<{ product: Product }> = ({ product }) => {
+  // ✅ OPTIMIZED PRODUCT CARD với React.memo
+  const ProductCard: React.FC<{ product: Product }> = React.memo(({ product }) => {
     const isOutOfStock = product.quantity <= 0;
 
-    const discount =
-      product.priceOriginal > product.priceSale
-        ? Math.round(
-            ((product.priceOriginal - product.priceSale) /
-              product.priceOriginal) *
-              100
-          )
+    const discount = useMemo(() => {
+      return product.priceOriginal > product.priceSale
+        ? Math.round(((product.priceOriginal - product.priceSale) / product.priceOriginal) * 100)
         : 0;
+    }, [product.priceOriginal, product.priceSale]);
 
     return (
       <Link
@@ -185,17 +196,15 @@ const Home: React.FC = () => {
       >
         <div className="product-image">
           {isOutOfStock && (
-            <span className="badge out-of-stock-badge">
-              {t('product.outOfStock')}
-            </span>
+            <span className="badge out-of-stock-badge">{t("product.outOfStock")}</span>
           )}
 
           <img
             src={getFirstImageUrl(product.images)}
             alt={product.name}
+            loading="lazy"
             onError={(e) => {
-              e.currentTarget.src =
-                "https://via.placeholder.com/300x300?text=No+Image";
+              e.currentTarget.src = "https://via.placeholder.com/300x300?text=No+Image";
             }}
           />
         </div>
@@ -204,31 +213,25 @@ const Home: React.FC = () => {
 
           <div className="product-price">
             <div className="price-left">
-              <span className="price-sale">
-                {product.priceSale.toLocaleString()}₫
-              </span>
+              <span className="price-sale">{product.priceSale.toLocaleString()}₫</span>
               {discount > 0 && (
-                <span className="price-original">
-                  {product.priceOriginal.toLocaleString()}₫
-                </span>
+                <span className="price-original">{product.priceOriginal.toLocaleString()}₫</span>
               )}
             </div>
-            {discount > 0 && (
-              <span className="discount-percent">-{discount}%</span>
-            )}
+            {discount > 0 && <span className="discount-percent">-{discount}%</span>}
           </div>
         </div>
       </Link>
     );
-  };
+  });
 
-  // Component ProductCarousel
+  // ✅ OPTIMIZED CAROUSEL với React.memo
   const ProductCarousel: React.FC<{
     products: Product[];
     currentIndex: number;
     onPrev: () => void;
     onNext: () => void;
-  }> = ({ products, currentIndex, onPrev, onNext }) => {
+  }> = React.memo(({ products, currentIndex, onPrev, onNext }) => {
     if (products.length === 0) return null;
 
     if (products.length <= 4) {
@@ -241,22 +244,20 @@ const Home: React.FC = () => {
       );
     }
 
-    const getVisibleProducts = () => {
+    const visibleProducts = useMemo(() => {
       const visible = [];
       for (let i = 0; i < 4; i++) {
         visible.push(products[(currentIndex + i) % products.length]);
       }
       return visible;
-    };
-
-    const visibleProducts = getVisibleProducts();
+    }, [products, currentIndex]);
 
     return (
       <div className="product-carousel-wrapper">
         <button className="carousel-nav prev" onClick={onPrev}>
           <ChevronLeft size={24} />
         </button>
-        
+
         <div className="product-carousel">
           <div className="product-carousel-inner">
             {visibleProducts.map((product) => (
@@ -272,28 +273,26 @@ const Home: React.FC = () => {
         </button>
       </div>
     );
-  };
+  });
 
-  // Component Section Header
-  const SectionHeader: React.FC<{ title: string; link?: string }> = ({
-    title,
-    link,
-  }) => (
-    <div className="section-header">
-      <h2 className="section-title">{title}</h2>
-      {link && (
-        <Link to={link} className="view-all">
-          {t('common.viewAll')} <ChevronRight size={16} />
-        </Link>
-      )}
-    </div>
+  const SectionHeader: React.FC<{ title: string; link?: string }> = React.memo(
+    ({ title, link }) => (
+      <div className="section-header">
+        <h2 className="section-title">{title}</h2>
+        {link && (
+          <Link to={link} className="view-all">
+            {t("common.viewAll")} <ChevronRight size={16} />
+          </Link>
+        )}
+      </div>
+    )
   );
 
   if (loading) {
     return (
       <div className="loading-container">
         <div className="spinner"></div>
-        <p>{t('common.loading')}</p>
+        <p>{t("common.loading")}</p>
       </div>
     );
   }
@@ -315,6 +314,7 @@ const Home: React.FC = () => {
                       src={banner.src}
                       alt={banner.alt}
                       className="slide-img"
+                      loading={idx === 0 ? "eager" : "lazy"}
                     />
                   </div>
                 ))}
@@ -345,7 +345,7 @@ const Home: React.FC = () => {
       {hotProducts.length > 0 && (
         <section className="product-section">
           <div className="container">
-            <SectionHeader title={t('home.hotProducts')} />
+            <SectionHeader title={t("home.hotProducts")} />
             <ProductCarousel
               products={hotProducts}
               currentIndex={hotCarouselIndex}
@@ -360,7 +360,7 @@ const Home: React.FC = () => {
       {saleProducts.length > 0 && (
         <section className="product-section">
           <div className="container">
-            <SectionHeader title={t('home.saleProducts')} />
+            <SectionHeader title={t("home.saleProducts")} />
             <ProductCarousel
               products={saleProducts}
               currentIndex={saleCarouselIndex}
@@ -374,7 +374,7 @@ const Home: React.FC = () => {
       {/* ==================== SẢN PHẨM MỚI ==================== */}
       <section className="product-section">
         <div className="container">
-          <SectionHeader title={t('home.newProducts')} />
+          <SectionHeader title={t("home.newProducts")} />
           <div className="product-grid">
             {newProducts.map((product) => (
               <ProductCard key={product._id} product={product} />
@@ -392,10 +392,7 @@ const Home: React.FC = () => {
         return (
           <section key={category._id} className="product-section">
             <div className="container">
-              <SectionHeader
-                title={category.name}
-                link={`/danh-muc/${category.slug}`}
-              />
+              <SectionHeader title={category.name} link={`/danh-muc/${category.slug}`} />
               <div className="product-grid">
                 {products.map((product) => (
                   <ProductCard key={product._id} product={product} />
