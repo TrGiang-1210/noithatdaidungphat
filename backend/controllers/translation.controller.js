@@ -31,7 +31,7 @@ exports.getTranslationKeys = async (req, res) => {
 
     const query = {};
     if (namespace) query.namespace = namespace;
-    if (status && status !== "all") query[`translations.zh.status`] = status;
+    if (status && status !== 'all') query[`translations.zh.status`] = status;
     if (search) {
       query.$or = [
         { key: { $regex: search, $options: "i" } },

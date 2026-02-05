@@ -3,6 +3,7 @@ import { toast } from "react-toastify";
 import "@/styles/pages/admin/translateManager.scss";
 
 const API_URL = "https://tongkhonoithattayninh.vn/api/admin";
+// const API_URL = 'http://localhost:5137/admin';
 
 const TranslationManagement = () => {
   const [translations, setTranslations] = useState([]);

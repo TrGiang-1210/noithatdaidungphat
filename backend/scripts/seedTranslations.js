@@ -38,6 +38,7 @@ const sampleTranslations = [
   { key: 'header.news', namespace: 'header', viText: 'Tin tức', category: 'UI' },
   { key: 'header.about', namespace: 'header', viText: 'Giới thiệu', category: 'UI' },
   { key: 'header.color', namespace: 'header', viText: 'Bảng màu', category: 'UI' },
+  { key: 'header.partners', namespace: 'header', viText: 'Đối tác', category: 'UI' },
   
   // ========== FOOTER ==========
   { key: 'footer.description', namespace: 'footer', viText: 'Nội Thất Đại Dũng Phát – cung cấp sản phẩm nội thất chất lượng, bền đẹp, giá tốt cho gia đình, khách sạn, văn phòng.', category: 'UI' },
@@ -501,7 +502,7 @@ async function seed() {
     
     console.log('📋 Next steps:');
     console.log('   1. Restart backend server');
-    console.log('   2. Go to: http://localhost:5173/admin/quan-ly-ngon-ngu');
+    console.log('   2. Go to: http://localhost:5173/admin/quan-ly-ngon-ngu-ui');
     console.log('   3. Select all keys (or filter by namespace)');
     console.log('   4. Click "AI Translate" button');
     console.log('   5. Review and approve translations');
