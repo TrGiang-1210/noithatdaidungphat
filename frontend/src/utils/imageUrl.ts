@@ -16,9 +16,9 @@ export const getImageUrl = (path: string | undefined | null): string => {
     return path;
   }
 
-  // 3. Lấy base URL từ .env hoặc dùng mặc định
-  const apiUrl = import.meta.env.VITE_API_URL || 'https://tongkhonoithattayninh.vn/api';
-  const baseUrl = apiUrl.replace('/api', ''); // Bỏ /api ở cuối → https://tongkhonoithattayninh.vn
+  // ✅ FIX: LUÔN DÙNG PRODUCTION DOMAIN CHO ẢNH
+  // Vì ảnh được lưu trên production server, không phải localhost
+  const baseUrl = 'https://tongkhonoithattayninh.vn';
 
   // 4. Đảm bảo path có dấu / ở đầu
   const normalizedPath = path.startsWith('/') ? path : `/${path}`;

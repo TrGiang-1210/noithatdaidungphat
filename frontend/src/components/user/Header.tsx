@@ -505,6 +505,9 @@ const Header: React.FC = () => {
             <Link to="/gioi-thieu" className="menu-item">
               {t('header.about')}
             </Link>
+            <Link to="/mau-mau" className="menu-item">
+              {t('header.color')}
+            </Link>
           </div>
         </div>
       </nav>

@@ -16,6 +16,7 @@ import OrderTrackingPage from "../pages/user/orderTracking";
 import CategoryProducts from "../pages/user/categoryProduct";
 import Posts from "../pages/user/post";
 import PostDetail from "../pages/user/postDetail";
+import ColorChoice from "../pages/user/colorChoice";
 
 // === ADMIN PAGES ===
 import ProductBulkCategory from "../pages/admin/productBulkCategory";
@@ -46,6 +47,7 @@ const MainRouter = () => {
         <Route path="/danh-muc/:slug" element={<CategoryProducts />} />
         <Route path="/posts" element={<Posts />} />
         <Route path="/posts/:slug" element={<PostDetail />} />
+        <Route path="/mau-mau" element={<ColorChoice />} />
       </Route>
 
       <Route path="/tai-khoan-ca-nhan" element={<AuthPage />} />
