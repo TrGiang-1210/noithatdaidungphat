@@ -37,6 +37,7 @@ const sampleTranslations = [
   { key: 'header.trackOrder', namespace: 'header', viText: 'Kiểm tra đơn hàng', category: 'UI' },
   { key: 'header.news', namespace: 'header', viText: 'Tin tức', category: 'UI' },
   { key: 'header.about', namespace: 'header', viText: 'Giới thiệu', category: 'UI' },
+  { key: 'header.color', namespace: 'header', viText: 'Bảng màu', category: 'UI' },
   
   // ========== FOOTER ==========
   { key: 'footer.description', namespace: 'footer', viText: 'Nội Thất Đại Dũng Phát – cung cấp sản phẩm nội thất chất lượng, bền đẹp, giá tốt cho gia đình, khách sạn, văn phòng.', category: 'UI' },

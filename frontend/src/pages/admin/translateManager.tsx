@@ -1,17 +1,17 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import { toast } from 'react-toastify';
+import React, { useState, useEffect, useMemo } from "react";
+import { toast } from "react-toastify";
 import "@/styles/pages/admin/translateManager.scss";
 
-const API_URL = 'https://tongkhonoithattayninh.vn/api/admin';
+const API_URL = "https://tongkhonoithattayninh.vn/api/admin";
 
 const TranslationManagement = () => {
   const [translations, setTranslations] = useState([]);
   const [stats, setStats] = useState({});
   const [loading, setLoading] = useState(false);
-  const [filter, setFilter] = useState({ status: 'all', search: '' });
+  const [filter, setFilter] = useState({ status: "all", search: "" });
   const [selectedKeys, setSelectedKeys] = useState([]);
   const [editingId, setEditingId] = useState(null);
-  const [editValue, setEditValue] = useState('');
+  const [editValue, setEditValue] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
 
@@ -24,33 +24,37 @@ const TranslationManagement = () => {
     setLoading(true);
     try {
       const params = new URLSearchParams();
-      if (filter.status !== 'all') params.append('status', filter.status);
-      if (filter.search) params.append('search', filter.search);
-      params.append('limit', '1000');
-      
-      const token = localStorage.getItem('token');
-      const res = await fetch(`${API_URL}/translations/keys?${params}`, {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
-      
+      if (filter.status !== "all") params.append("status", filter.status);
+      if (filter.search) params.append("search", filter.search);
+      params.append("limit", "1000");
+
+      const token = localStorage.getItem("token");
+      const res = await fetch(
+        `${API_URL}/translations/keys?${params}&_t=${Date.now()}`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Cache-Control": "no-cache",
+          },
+        },
+      );
+
       if (!res.ok) {
         throw new Error(`HTTP ${res.status}: ${res.statusText}`);
       }
-      
+
       const data = await res.json();
-      
+
       if (!data.success) {
-        console.error('API Error:', data.message);
-        toast.error(data.message || 'Failed to load translations');
+        console.error("API Error:", data.message);
+        toast.error(data.message || "Failed to load translations");
         return;
       }
-      
+
       setTranslations(data.data || []);
     } catch (error) {
-      console.error('Error fetching translations:', error);
-      toast.error('Failed to load translations: ' + error.message);
+      console.error("Error fetching translations:", error);
+      toast.error("Failed to load translations: " + error.message);
     } finally {
       setLoading(false);
     }
@@ -58,111 +62,120 @@ const TranslationManagement = () => {
 
   const fetchStats = async () => {
     try {
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem("token");
       const res = await fetch(`${API_URL}/translations/statistics`, {
         headers: {
-          'Authorization': `Bearer ${token}`
-        }
+          Authorization: `Bearer ${token}`,
+        },
       });
-      
+
       if (!res.ok) {
-        console.warn('Failed to load stats');
+        console.warn("Failed to load stats");
         return;
       }
-      
+
       const data = await res.json();
-      
+
       if (data.success) {
         setStats(data.data || {});
       }
     } catch (error) {
-      console.error('Error fetching stats:', error);
+      console.error("Error fetching stats:", error);
     }
   };
 
   const handleAITranslate = async (id: string) => {
     try {
-      const token = localStorage.getItem('token');
-      toast.info('🤖 Đang dịch...');
-      
+      const token = localStorage.getItem("token");
+      toast.info("🤖 Đang dịch...");
+
       const res = await fetch(`${API_URL}/translations/ai-translate`, {
-        method: 'POST',
-        headers: { 
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({ translationId: id, targetLang: 'zh' })
+        body: JSON.stringify({ translationId: id, targetLang: "zh" }),
       });
-      
+
       if (!res.ok) {
         const errorData = await res.json();
         throw new Error(errorData.message || `HTTP ${res.status}`);
       }
-      
+
       const data = await res.json();
-      
+
       if (!data.success) {
-        throw new Error(data.message || 'Translation failed');
+        throw new Error(data.message || "Translation failed");
       }
-      
+
       const confidence = data.data?.confidence || 0;
-      toast.success(`✅ Dịch thành công! Độ tin cậy: ${(confidence * 100).toFixed(0)}%`);
-      
+      toast.success(
+        `✅ Dịch thành công! Độ tin cậy: ${(confidence * 100).toFixed(0)}%`,
+      );
+
       fetchTranslations();
       fetchStats();
     } catch (error) {
       // console.error('Translation error:', error);
       const err = error as Error;
-      toast.error('❌ Dịch thất bại: ' + err.message);
+      toast.error("❌ Dịch thất bại: " + err.message);
     }
   };
 
   const handleBatchAITranslate = async () => {
     // Lọc chỉ những keys chưa được dịch (draft)
-    const untranslatedKeys = selectedKeys.filter(id => {
-      const trans = translations.find(t => t._id === id);
-      return !trans?.translations?.zh?.value || trans.translations.zh.status === 'draft';
+    const untranslatedKeys = selectedKeys.filter((id) => {
+      const trans = translations.find((t) => t._id === id);
+      return (
+        !trans?.translations?.zh?.value ||
+        trans.translations.zh.status === "draft"
+      );
     });
-    
+
     if (untranslatedKeys.length === 0) {
-      toast.warning('Không có key nào cần dịch (tất cả đã được dịch rồi)');
+      toast.warning("Không có key nào cần dịch (tất cả đã được dịch rồi)");
       return;
     }
-    
-    if (!confirm(`Dịch ${untranslatedKeys.length} keys chưa dịch bằng AI?`)) return;
-    
+
+    if (!confirm(`Dịch ${untranslatedKeys.length} keys chưa dịch bằng AI?`))
+      return;
+
     setLoading(true);
     try {
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem("token");
       toast.info(`🤖 Đang dịch ${untranslatedKeys.length} keys...`);
-      
+
       const res = await fetch(`${API_URL}/translations/batch-ai-translate`, {
-        method: 'POST',
-        headers: { 
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({ translationIds: untranslatedKeys, targetLang: 'zh' })
+        body: JSON.stringify({
+          translationIds: untranslatedKeys,
+          targetLang: "zh",
+        }),
       });
-      
+
       if (!res.ok) {
         const errorData = await res.json();
         throw new Error(errorData.message || `HTTP ${res.status}`);
       }
-      
+
       const data = await res.json();
-      
+
       if (!data.success) {
-        throw new Error(data.message || 'Batch translation failed');
+        throw new Error(data.message || "Batch translation failed");
       }
-      
+
       toast.success(`✅ ${data.message}`);
       setSelectedKeys([]);
       fetchTranslations();
       fetchStats();
     } catch (error) {
-      console.error('Batch translation error:', error);
-      toast.error('❌ Batch dịch thất bại: ' + error.message);
+      console.error("Batch translation error:", error);
+      toast.error("❌ Batch dịch thất bại: " + error.message);
     } finally {
       setLoading(false);
     }
@@ -170,46 +183,49 @@ const TranslationManagement = () => {
 
   const handleBatchApprove = async () => {
     if (selectedKeys.length === 0) {
-      toast.warning('Vui lòng chọn ít nhất 1 key để approve');
+      toast.warning("Vui lòng chọn ít nhất 1 key để approve");
       return;
     }
-    
-    const approvableKeys = selectedKeys.filter(id => {
-      const trans = translations.find(t => t._id === id);
-      return trans?.translations?.zh?.value && trans.translations.zh.status !== 'approved';
+
+    const approvableKeys = selectedKeys.filter((id) => {
+      const trans = translations.find((t) => t._id === id);
+      return (
+        trans?.translations?.zh?.value &&
+        trans.translations.zh.status !== "approved"
+      );
     });
-    
+
     if (approvableKeys.length === 0) {
-      toast.warning('Không có key nào có thể approve');
+      toast.warning("Không có key nào có thể approve");
       return;
     }
-    
+
     if (!confirm(`Approve ${approvableKeys.length} keys?`)) return;
-    
+
     setLoading(true);
     try {
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem("token");
       toast.info(`✓ Đang approve ${approvableKeys.length} keys...`);
-      
+
       let successCount = 0;
       let failCount = 0;
-      
+
       for (const id of approvableKeys) {
         try {
-          const translation = translations.find(t => t._id === id);
+          const translation = translations.find((t) => t._id === id);
           const res = await fetch(`${API_URL}/translations/${id}/review`, {
-            method: 'PUT',
-            headers: { 
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${token}`
+            method: "PUT",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`,
             },
             body: JSON.stringify({
-              lang: 'zh',
+              lang: "zh",
               value: translation.translations.zh.value,
-              status: 'approved'
-            })
+              status: "approved",
+            }),
           });
-          
+
           if (res.ok) {
             const data = await res.json();
             if (data.success) {
@@ -224,20 +240,20 @@ const TranslationManagement = () => {
           failCount++;
         }
       }
-      
+
       if (successCount > 0) {
         toast.success(`✅ Đã approve ${successCount} keys thành công!`);
       }
       if (failCount > 0) {
         toast.error(`❌ ${failCount} keys approve thất bại`);
       }
-      
+
       setSelectedKeys([]);
       fetchTranslations();
       fetchStats();
     } catch (error) {
-      console.error('Batch approve error:', error);
-      toast.error('❌ Batch approve thất bại: ' + error.message);
+      console.error("Batch approve error:", error);
+      toast.error("❌ Batch approve thất bại: " + error.message);
     } finally {
       setLoading(false);
     }
@@ -245,95 +261,95 @@ const TranslationManagement = () => {
 
   const handleSaveEdit = async (id) => {
     try {
-      const token = localStorage.getItem('token');
-      
+      const token = localStorage.getItem("token");
+
       const res = await fetch(`${API_URL}/translations/${id}/review`, {
-        method: 'PUT',
-        headers: { 
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
-          lang: 'zh',
+          lang: "zh",
           value: editValue,
-          status: 'human_reviewed'
-        })
+          status: "human_reviewed",
+        }),
       });
-      
+
       if (!res.ok) {
         const errorData = await res.json();
         throw new Error(errorData.message || `HTTP ${res.status}`);
       }
-      
+
       const data = await res.json();
-      
+
       if (!data.success) {
-        throw new Error(data.message || 'Update failed');
+        throw new Error(data.message || "Update failed");
       }
-      
-      toast.success('✅ Cập nhật thành công!');
+
+      toast.success("✅ Cập nhật thành công!");
       setEditingId(null);
       fetchTranslations();
       fetchStats();
     } catch (error) {
-      console.error('Update error:', error);
-      toast.error('❌ Cập nhật thất bại: ' + error.message);
+      console.error("Update error:", error);
+      toast.error("❌ Cập nhật thất bại: " + error.message);
     }
   };
 
   const handleApprove = async (id) => {
     try {
-      const token = localStorage.getItem('token');
-      const translation = translations.find(t => t._id === id);
-      
+      const token = localStorage.getItem("token");
+      const translation = translations.find((t) => t._id === id);
+
       if (!translation?.translations?.zh?.value) {
-        toast.error('Không có bản dịch để approve');
+        toast.error("Không có bản dịch để approve");
         return;
       }
-      
+
       const res = await fetch(`${API_URL}/translations/${id}/review`, {
-        method: 'PUT',
-        headers: { 
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
-          lang: 'zh',
+          lang: "zh",
           value: translation.translations.zh.value,
-          status: 'approved'
-        })
+          status: "approved",
+        }),
       });
-      
+
       if (!res.ok) {
         const errorData = await res.json();
         throw new Error(errorData.message || `HTTP ${res.status}`);
       }
-      
+
       const data = await res.json();
-      
+
       if (!data.success) {
-        throw new Error(data.message || 'Approval failed');
+        throw new Error(data.message || "Approval failed");
       }
-      
-      toast.success('✅ Đã approve!');
+
+      toast.success("✅ Đã approve!");
       fetchTranslations();
       fetchStats();
     } catch (error) {
-      console.error('Approval error:', error);
-      toast.error('❌ Approve thất bại: ' + error.message);
+      console.error("Approval error:", error);
+      toast.error("❌ Approve thất bại: " + error.message);
     }
   };
 
   const toggleSelect = (id) => {
-    setSelectedKeys(prev => 
-      prev.includes(id) ? prev.filter(k => k !== id) : [...prev, id]
+    setSelectedKeys((prev) =>
+      prev.includes(id) ? prev.filter((k) => k !== id) : [...prev, id],
     );
   };
 
   const getStatusBadge = (status) => {
     return (
-      <span className={`status-badge ${status || 'draft'}`}>
-        {status?.toUpperCase() || 'UNKNOWN'}
+      <span className={`status-badge ${status || "draft"}`}>
+        {status?.toUpperCase() || "UNKNOWN"}
       </span>
     );
   };
@@ -356,7 +372,7 @@ const TranslationManagement = () => {
 
   const handlePageChange = (page) => {
     setCurrentPage(page);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
   const handleItemsPerPageChange = (value) => {
@@ -365,39 +381,43 @@ const TranslationManagement = () => {
   };
 
   // Đếm số keys có thể approve
-  const approvableCount = selectedKeys.filter(id => {
-    const trans = translations.find(t => t._id === id);
-    return trans?.translations?.zh?.value && trans.translations.zh.status !== 'approved';
+  const approvableCount = selectedKeys.filter((id) => {
+    const trans = translations.find((t) => t._id === id);
+    return (
+      trans?.translations?.zh?.value &&
+      trans.translations.zh.status !== "approved"
+    );
   }).length;
 
   // Đếm số keys chưa được dịch (draft)
-  const untranslatedCount = selectedKeys.filter(id => {
-    const trans = translations.find(t => t._id === id);
-    return !trans?.translations?.zh?.value || trans.translations.zh.status === 'draft';
+  const untranslatedCount = selectedKeys.filter((id) => {
+    const trans = translations.find((t) => t._id === id);
+    return (
+      !trans?.translations?.zh?.value ||
+      trans.translations.zh.status === "draft"
+    );
   }).length;
 
   return (
     <div className="translation-management">
       <h1>Dịch UI</h1>
-      
+
       {/* Stats */}
       <div className="stats-container">
         <div className="stat-card total">
           <div className="stat-label">Total Keys</div>
-          <div className="stat-value">
-            {stats.total?.[0]?.count || 0}
-          </div>
+          <div className="stat-value">{stats.total?.[0]?.count || 0}</div>
         </div>
         <div className="stat-card ai-translated">
           <div className="stat-label">AI Translated</div>
           <div className="stat-value">
-            {stats.byStatus?.find(s => s._id === 'ai_translated')?.count || 0}
+            {stats.byStatus?.find((s) => s._id === "ai_translated")?.count || 0}
           </div>
         </div>
         <div className="stat-card approved">
           <div className="stat-label">Approved</div>
           <div className="stat-value">
-            {stats.byStatus?.find(s => s._id === 'approved')?.count || 0}
+            {stats.byStatus?.find((s) => s._id === "approved")?.count || 0}
           </div>
         </div>
       </div>
@@ -411,7 +431,7 @@ const TranslationManagement = () => {
           onChange={(e) => setFilter({ ...filter, search: e.target.value })}
           className="search-input"
         />
-        
+
         <select
           value={filter.status}
           onChange={(e) => setFilter({ ...filter, status: e.target.value })}
@@ -423,23 +443,29 @@ const TranslationManagement = () => {
           <option value="human_reviewed">Human Reviewed</option>
           <option value="approved">Approved</option>
         </select>
-        
+
         <button
           onClick={handleBatchAITranslate}
           disabled={untranslatedCount === 0 || loading}
           className="batch-translate-btn"
-          title={untranslatedCount === 0 ? 'Không có key nào cần dịch' : `Dịch ${untranslatedCount} keys chưa được dịch`}
+          title={
+            untranslatedCount === 0
+              ? "Không có key nào cần dịch"
+              : `Dịch ${untranslatedCount} keys chưa được dịch`
+          }
         >
-          {loading ? '⏳ Đang dịch...' : `🤖 AI Translate (${untranslatedCount})`}
+          {loading
+            ? "⏳ Đang dịch..."
+            : `🤖 AI Translate (${untranslatedCount})`}
         </button>
 
         <button
           onClick={handleBatchApprove}
           disabled={approvableCount === 0 || loading}
           className="batch-approve-btn"
-          title={approvableCount === 0 ? 'Không có key nào có thể approve' : ''}
+          title={approvableCount === 0 ? "Không có key nào có thể approve" : ""}
         >
-          {loading ? '⏳ Đang approve...' : `✓ Approve (${approvableCount})`}
+          {loading ? "⏳ Đang approve..." : `✓ Approve (${approvableCount})`}
         </button>
       </div>
 
@@ -464,10 +490,19 @@ const TranslationManagement = () => {
               <thead>
                 <tr>
                   <th>
-                    <input 
+                    <input
                       type="checkbox"
-                      checked={selectedKeys.length === currentTranslations.length && currentTranslations.length > 0}
-                      onChange={(e) => setSelectedKeys(e.target.checked ? currentTranslations.map(t => t._id) : [])}
+                      checked={
+                        selectedKeys.length === currentTranslations.length &&
+                        currentTranslations.length > 0
+                      }
+                      onChange={(e) =>
+                        setSelectedKeys(
+                          e.target.checked
+                            ? currentTranslations.map((t) => t._id)
+                            : [],
+                        )
+                      }
                     />
                   </th>
                   <th>Key</th>
@@ -487,11 +522,9 @@ const TranslationManagement = () => {
                         onChange={() => toggleSelect(trans._id)}
                       />
                     </td>
-                    <td className="key-cell">
-                      {trans.key}
-                    </td>
+                    <td className="key-cell">{trans.key}</td>
                     <td className="text-cell">
-                      {trans.translations?.vi?.value || '—'}
+                      {trans.translations?.vi?.value || "—"}
                     </td>
                     <td className="chinese-cell">
                       {editingId === trans._id ? (
@@ -501,13 +534,13 @@ const TranslationManagement = () => {
                           className="edit-textarea"
                         />
                       ) : (
-                        <div>
-                          {trans.translations?.zh?.value || '—'}
-                        </div>
+                        <div>{trans.translations?.zh?.value || "—"}</div>
                       )}
                     </td>
                     <td>
-                      {getStatusBadge(trans.translations?.zh?.status || 'draft')}
+                      {getStatusBadge(
+                        trans.translations?.zh?.status || "draft",
+                      )}
                     </td>
                     <td>
                       <div className="action-buttons">
@@ -528,7 +561,8 @@ const TranslationManagement = () => {
                           </>
                         ) : (
                           <>
-                            {(!trans.translations?.zh?.value || trans.translations.zh.status === 'draft') && (
+                            {(!trans.translations?.zh?.value ||
+                              trans.translations.zh.status === "draft") && (
                               <button
                                 onClick={() => handleAITranslate(trans._id)}
                                 className="ai-btn"
@@ -539,20 +573,23 @@ const TranslationManagement = () => {
                             <button
                               onClick={() => {
                                 setEditingId(trans._id);
-                                setEditValue(trans.translations?.zh?.value || '');
+                                setEditValue(
+                                  trans.translations?.zh?.value || "",
+                                );
                               }}
                               className="edit-btn"
                             >
                               ✏️ Edit
                             </button>
-                            {trans.translations?.zh?.value && trans.translations.zh.status !== 'approved' && (
-                              <button
-                                onClick={() => handleApprove(trans._id)}
-                                className="approve-btn"
-                              >
-                                ✓ Approve
-                              </button>
-                            )}
+                            {trans.translations?.zh?.value &&
+                              trans.translations.zh.status !== "approved" && (
+                                <button
+                                  onClick={() => handleApprove(trans._id)}
+                                  className="approve-btn"
+                                >
+                                  ✓ Approve
+                                </button>
+                              )}
                           </>
                         )}
                       </div>
@@ -569,9 +606,11 @@ const TranslationManagement = () => {
               <div className="pagination-left">
                 <div className="items-per-page">
                   <span>Hiển thị:</span>
-                  <select 
-                    value={itemsPerPage} 
-                    onChange={(e) => handleItemsPerPageChange(Number(e.target.value))}
+                  <select
+                    value={itemsPerPage}
+                    onChange={(e) =>
+                      handleItemsPerPageChange(Number(e.target.value))
+                    }
                   >
                     <option value={5}>5</option>
                     <option value={10}>10</option>
@@ -583,47 +622,55 @@ const TranslationManagement = () => {
                   <span>keys/trang</span>
                 </div>
                 <div className="page-info">
-                  Hiển thị {startIndex + 1}-{Math.min(endIndex, filteredTranslations.length)} trong tổng số {filteredTranslations.length} keys
+                  Hiển thị {startIndex + 1}-
+                  {Math.min(endIndex, filteredTranslations.length)} trong tổng
+                  số {filteredTranslations.length} keys
                 </div>
               </div>
 
               {totalPages > 1 && (
                 <div className="pagination-center">
-                  <button 
+                  <button
                     onClick={() => handlePageChange(currentPage - 1)}
                     disabled={currentPage === 1}
                     className="pagination-btn"
                   >
                     ← Trước
                   </button>
-                  
+
                   <div className="pagination-numbers">
-                    {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => {
-                      if (
-                        page === 1 ||
-                        page === totalPages ||
-                        (page >= currentPage - 1 && page <= currentPage + 1)
-                      ) {
-                        return (
-                          <button
-                            key={page}
-                            onClick={() => handlePageChange(page)}
-                            className={`pagination-number ${currentPage === page ? 'active' : ''}`}
-                          >
-                            {page}
-                          </button>
-                        );
-                      } else if (
-                        page === currentPage - 2 ||
-                        page === currentPage + 2
-                      ) {
-                        return <span key={page} className="pagination-ellipsis">...</span>;
-                      }
-                      return null;
-                    })}
+                    {Array.from({ length: totalPages }, (_, i) => i + 1).map(
+                      (page) => {
+                        if (
+                          page === 1 ||
+                          page === totalPages ||
+                          (page >= currentPage - 1 && page <= currentPage + 1)
+                        ) {
+                          return (
+                            <button
+                              key={page}
+                              onClick={() => handlePageChange(page)}
+                              className={`pagination-number ${currentPage === page ? "active" : ""}`}
+                            >
+                              {page}
+                            </button>
+                          );
+                        } else if (
+                          page === currentPage - 2 ||
+                          page === currentPage + 2
+                        ) {
+                          return (
+                            <span key={page} className="pagination-ellipsis">
+                              ...
+                            </span>
+                          );
+                        }
+                        return null;
+                      },
+                    )}
                   </div>
 
-                  <button 
+                  <button
                     onClick={() => handlePageChange(currentPage + 1)}
                     disabled={currentPage === totalPages}
                     className="pagination-btn"
