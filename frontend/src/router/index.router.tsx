@@ -17,6 +17,7 @@ import CategoryProducts from "../pages/user/categoryProduct";
 import Posts from "../pages/user/post";
 import PostDetail from "../pages/user/postDetail";
 import ColorChoice from "../pages/user/colorChoice";
+import Partner from "../pages/user/partner";
 
 // === ADMIN PAGES ===
 import ProductBulkCategory from "../pages/admin/productBulkCategory";
@@ -48,6 +49,7 @@ const MainRouter = () => {
         <Route path="/posts" element={<Posts />} />
         <Route path="/posts/:slug" element={<PostDetail />} />
         <Route path="/mau-mau" element={<ColorChoice />} />
+        <Route path="/doi-tac" element={<Partner />} />
       </Route>
 
       <Route path="/tai-khoan-ca-nhan" element={<AuthPage />} />
