@@ -20,6 +20,16 @@ interface LanguageProviderProps {
   children: ReactNode;
 }
 
+// ✅ FIX: Dynamic API URL - works for both local and production
+const getApiUrl = () => {
+  // Development: localhost:5173 → use localhost:5000
+  // Production: tongkhonoithattayninh.vn → use same domain
+  if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+    return 'http://localhost:5000/api';
+  }
+  return 'https://tongkhonoithattayninh.vn/api';
+};
+
 export const LanguageProvider: React.FC<LanguageProviderProps> = ({ children }) => {
   const [language, setLanguage] = useState<string>(() => {
     return localStorage.getItem('language') || 'vi';
@@ -31,7 +41,10 @@ export const LanguageProvider: React.FC<LanguageProviderProps> = ({ children }) 
   const loadTranslations = async (lang: string) => {
     try {
       setLoading(true);
-      const response = await axios.get(`https://tongkhonoithattayninh.vn/api/translations`, {
+      const apiUrl = getApiUrl();
+      console.log(`🌐 Loading translations from: ${apiUrl}/translations?lang=${lang}`);
+      
+      const response = await axios.get(`${apiUrl}/translations`, {
         params: { lang }
       });
       

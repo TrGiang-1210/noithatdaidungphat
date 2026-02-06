@@ -10,7 +10,7 @@ const Partner: React.FC = () => {
         <div className="partner-hero__content">
           <h1 className="partner-hero__title">
             MUA NỘI THẤT TRẢ GÓP CÙNG<br />
-            NỘI THẤT ĐỒ GỖ VIỆT VÀ HOME CREDIT
+            NỘI THẤT ĐẠI DŨNG PHÁT VÀ HOME CREDIT
           </h1>
           <p className="partner-hero__subtitle">
             Giải pháp tài chính linh hoạt - Sở hữu ngay nội thất mơ ước
@@ -36,7 +36,7 @@ const Partner: React.FC = () => {
                   những sản phẩm yêu thích.
                 </p>
                 <p>
-                  Hợp tác cùng <strong>Nội Thất Đồ Gỗ Việt</strong>, Home Credit mang đến 
+                  Hợp tác cùng <strong>Nội Thất Đại Dũng Phát</strong>, Home Credit mang đến 
                   cho khách hàng cơ hội sở hữu nội thất cao cấp với các gói trả góp 
                   lãi suất ưu đãi, thủ tục đơn giản và thời gian phê duyệt nhanh chóng.
                 </p>
@@ -129,7 +129,7 @@ const Partner: React.FC = () => {
               <div className="process-step__number">1</div>
               <div className="process-step__content">
                 <h3>Chọn Sản Phẩm</h3>
-                <p>Tham quan showroom và chọn sản phẩm nội thất yêu thích tại Nội Thất Đồ Gỗ Việt</p>
+                <p>Tham quan showroom và chọn sản phẩm nội thất yêu thích tại Nội Thất Đại Dũng Phát</p>
               </div>
             </div>
 
@@ -354,7 +354,7 @@ const Partner: React.FC = () => {
           <div className="partner-cta__content">
             <h2 className="partner-cta__title">Sẵn Sàng Sở Hữu Nội Thất Mơ Ước?</h2>
             <p className="partner-cta__text">
-              Đến ngay showroom Nội Thất Đồ Gỗ Việt để được tư vấn chi tiết 
+              Đến ngay showroom Nội Thất Đại Dũng Phát để được tư vấn chi tiết 
               về các gói trả góp Home Credit phù hợp nhất với bạn!
             </p>
             <div className="partner-cta__buttons">
@@ -368,7 +368,7 @@ const Partner: React.FC = () => {
               </div>
               <div className="partner-cta__contact-item">
                 <i className="icon-location"></i>
-                <span>Địa chỉ: Showroom Nội Thất Đồ Gỗ Việt</span>
+                <span>Địa chỉ: Showroom Nội Thất Đại Dũng Phát</span>
               </div>
             </div>
           </div>

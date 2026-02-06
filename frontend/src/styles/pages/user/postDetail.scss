@@ -1,4 +1,4 @@
-// postDetail.scss
+// postDetail.scss - UPDATED WITH WIDER CONTENT & BETTER IMAGE DISPLAY
 
 .post-detail-loading,
 .post-detail-error {
@@ -99,9 +99,13 @@
   padding: 40px 0 80px;
 
   .container {
-    max-width: 900px;
+    max-width: 1200px; // ✅ TĂNG TỪ 900px LÊN 1200px
     margin: 0 auto;
     padding: 0 20px;
+    
+    @media (min-width: 1400px) {
+      max-width: 1400px; // ✅ Màn hình lớn thì rộng hơn nữa
+    }
   }
 
   // Header
@@ -177,7 +181,8 @@
 
     img {
       width: 100%;
-      height: auto;
+      max-height: 600px; // ✅ TĂNG CHIỀU CAO TỐI ĐA
+      object-fit: cover;
       display: block;
     }
   }
@@ -207,6 +212,24 @@
     p {
       margin-bottom: 20px;
       text-align: justify;
+      
+      // ✅ HỖ TRỢ NHIỀU ẢNH CẠNH NHAU
+      &:has(img + img) {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 20px;
+        text-align: left;
+        
+        img {
+          flex: 1 1 calc(50% - 10px); // 2 ảnh/hàng
+          min-width: 280px;
+          margin: 0 !important;
+          
+          @media (max-width: 768px) {
+            flex: 1 1 100%; // Mobile: 1 ảnh/hàng
+          }
+        }
+      }
     }
 
     // Lists
@@ -238,13 +261,25 @@
       }
     }
 
-    // Images
+    // Images - ✅ CẢI TIẾN ĐỂ ẢNH ĐẸP HƠN
     img {
       max-width: 100%;
-      height: auto;
-      border-radius: 8px;
-      margin: 30px 0;
+      height: auto !important;
+      border-radius: 12px;
+      margin: 30px auto; // ✅ Căn giữa
       display: block;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1); // ✅ Thêm shadow
+      transition: transform 0.3s ease; // ✅ Hiệu ứng hover
+      
+      &:hover {
+        transform: scale(1.02); // ✅ Phóng to nhẹ khi hover
+        box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+      }
+      
+      @media (max-width: 768px) {
+        margin: 20px auto;
+        border-radius: 8px;
+      }
     }
 
     // Blockquote
@@ -388,9 +423,13 @@
   margin-top: 40px;
 
   .container {
-    max-width: 900px;
+    max-width: 1200px; // ✅ TĂNG TỪ 900px LÊN 1200px
     margin: 0 auto;
     padding: 0 20px;
+    
+    @media (min-width: 1400px) {
+      max-width: 1400px;
+    }
   }
 
   // Section Header

@@ -102,17 +102,17 @@ const PostManager: React.FC = () => {
     slug: "",
   });
 
- // ✅ THÊM DEBUG
-console.log('🔍 All env vars:', import.meta.env);
-console.log('🔍 VITE_API_URL:', import.meta.env.VITE_API_URL);
-console.log('🔍 MODE:', import.meta.env.MODE);
+  // ✅ THÊM DEBUG
+  console.log("🔍 All env vars:", import.meta.env);
+  console.log("🔍 VITE_API_URL:", import.meta.env.VITE_API_URL);
+  console.log("🔍 MODE:", import.meta.env.MODE);
 
-const API_URL =
-  import.meta.env.VITE_API_URL || "https://tongkhonoithattayninh.vn/api";
+  const API_URL =
+    import.meta.env.VITE_API_URL || "https://tongkhonoithattayninh.vn/api";
 
-console.log('🔍 Final API_URL:', API_URL);
+  console.log("🔍 Final API_URL:", API_URL);
 
-const token = localStorage.getItem("token");
+  const token = localStorage.getItem("token");
 
   const axiosConfig = {
     headers: { Authorization: `Bearer ${token}` },
@@ -337,11 +337,24 @@ const token = localStorage.getItem("token");
 
   // 🆕 Copy image URL to clipboard
   const copyToClipboard = (url: string) => {
-    // ✅ Generate full URL for deployment
-    const fullUrl = url.startsWith("http")
-      ? url
-      : `https://tongkhonoithattayninh.vn${url}`;
+    // ✅ FIX: Dùng env variable thay vì hardcode
+    let fullUrl = url;
 
+    // Nếu URL chưa có http:// hoặc https://
+    if (!url.startsWith("http://") && !url.startsWith("https://")) {
+      // Lấy base URL từ API_URL (đã được định nghĩa ở đầu component)
+      const apiUrl =
+        import.meta.env.VITE_API_URL || "https://tongkhonoithattayninh.vn/api";
+      const baseUrl = apiUrl.replace(/\/api$/, ""); // Remove /api suffix
+
+      // Đảm bảo path có dấu / ở đầu
+      const normalizedPath = url.startsWith("/") ? url : `/${url}`;
+
+      // Ghép thành URL đầy đủ
+      fullUrl = `${baseUrl}${normalizedPath}`;
+    }
+
+    // Copy to clipboard
     navigator.clipboard
       .writeText(fullUrl)
       .then(() => {
@@ -992,7 +1005,7 @@ const token = localStorage.getItem("token");
                   <div className="form-group">
                     <label>Nội dung bài viết (Tiếng Việt)</label>
                     <Editor
-                      apiKey="6hpw2wtzgzpkwl59fz47i1gznj9gmdczpx2tz68l4v77uqx0"
+                      apiKey="6xggb1bi1xu937evzkkxhjl8469qlt2l03hg1zpep5c4a6i7"
                       onInit={(evt, editor) => (editorRef.current = editor)}
                       value={formData.content.vi}
                       onEditorChange={handleEditorChange}
@@ -1023,7 +1036,7 @@ const token = localStorage.getItem("token");
                           "undo redo | blocks | " +
                           "bold italic forecolor | alignleft aligncenter " +
                           "alignright alignjustify | bullist numlist outdent indent | " +
-                          "removeformat | image media | code | help",
+                          "removeformat | image media | code | fullscreen | help",
                         content_style:
                           "body { font-family:Helvetica,Arial,sans-serif; font-size:14px }",
                         language: "vi",
@@ -1055,7 +1068,7 @@ const token = localStorage.getItem("token");
                   </div>
 
                   {/* 🆕 BULK IMAGE UPLOAD BOX */}
-                  <div className="sidebar-box">
+                  {/* <div className="sidebar-box">
                     <h3>📸 Upload Nhiều Ảnh</h3>
                     <div className="featured-image-box">
                       <input
@@ -1142,7 +1155,7 @@ const token = localStorage.getItem("token");
                         </div>
                       )}
                     </div>
-                  </div>
+                  </div> */}
 
                   {/* Featured Image */}
                   <div className="sidebar-box">

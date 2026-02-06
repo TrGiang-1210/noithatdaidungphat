@@ -1,6 +1,6 @@
-// src/admin/pages/ProductManager.tsx - FIXED MULTILINGUAL ATTRIBUTES
+// src/admin/pages/ProductManager.tsx - WITH CATEGORY FILTER
 import { useState, useEffect, useMemo } from "react";
-import { Plus, Edit2, Trash2, Loader2, X, Search } from "lucide-react";
+import { Plus, Edit2, Trash2, Loader2, X, Search, Filter, Info, ChevronRight } from "lucide-react";
 import axiosInstance from "../../axios";
 import { getImageUrl, getFirstImageUrl } from "@/utils/imageUrl";
 import "@/styles/pages/admin/productManager.scss";
@@ -50,6 +50,11 @@ export default function ProductManager() {
   const [deletingProd, setDeletingProd] = useState<Product | null>(null);
   const [showModal, setShowModal] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  
+  // ✅ NEW: Category filter state
+  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
+  const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
+  
   const [formData, setFormData] = useState({
     name: "",
     sku: "",
@@ -133,25 +138,114 @@ export default function ProductManager() {
     };
   }, [imagePreviews]);
 
-  // Filter products based on search query
+  // ✅ NEW: Filter products by search AND categories
   const filteredProducts = useMemo(() => {
-    if (!searchQuery.trim()) return products;
+    let filtered = products;
     
-    const searchLower = searchQuery.toLowerCase();
-    return products.filter((prod) => {
-      const name = getName(prod.name).toLowerCase();
-      const sku = prod.sku.toLowerCase();
-      const categories = prod.categories
-        .map((c) => getName(c.name).toLowerCase())
-        .join(" ");
-      
-      return (
-        name.includes(searchLower) ||
-        sku.includes(searchLower) ||
-        categories.includes(searchLower)
-      );
+    // Filter by search query
+    if (searchQuery.trim()) {
+      const searchLower = searchQuery.toLowerCase();
+      filtered = filtered.filter((prod) => {
+        const name = getName(prod.name).toLowerCase();
+        const sku = prod.sku.toLowerCase();
+        const categories = prod.categories
+          .map((c) => getName(c.name).toLowerCase())
+          .join(" ");
+        
+        return (
+          name.includes(searchLower) ||
+          sku.includes(searchLower) ||
+          categories.includes(searchLower)
+        );
+      });
+    }
+    
+    // Filter by selected categories
+    if (selectedCategories.length > 0) {
+      filtered = filtered.filter((prod) => {
+        return prod.categories.some((cat) => 
+          selectedCategories.includes(cat._id)
+        );
+      });
+    }
+    
+    return filtered;
+  }, [products, searchQuery, selectedCategories]);
+
+  // ✅ NEW: Get product count for each category
+  const getCategoryProductCount = (categoryId: string): number => {
+    return products.filter((prod) =>
+      prod.categories.some((cat) => cat._id === categoryId)
+    ).length;
+  };
+
+  // ✅ NEW: Toggle expand/collapse category
+  const toggleExpandCategory = (categoryId: string) => {
+    setExpandedCategories((prev) => {
+      const newSet = new Set(prev);
+      if (newSet.has(categoryId)) {
+        newSet.delete(categoryId);
+      } else {
+        newSet.add(categoryId);
+      }
+      return newSet;
     });
-  }, [products, searchQuery]);
+  };
+
+  // ✅ NEW: Handle category filter change
+  const handleCategoryFilterChange = (categoryId: string) => {
+    setSelectedCategories((prev) => {
+      if (prev.includes(categoryId)) {
+        return prev.filter((id) => id !== categoryId);
+      } else {
+        return [...prev, categoryId];
+      }
+    });
+  };
+
+  // ✅ NEW: Clear category filter
+  const clearCategoryFilter = () => {
+    setSelectedCategories([]);
+  };
+
+  // ✅ NEW: Build hierarchical tree from flat categories
+  const buildCategoryTree = (categories: Category[]): Category[] => {
+    const tree: Category[] = [];
+    const categoryMap = new Map<string, Category>();
+    
+    // Create a map of all categories
+    categories.forEach(cat => {
+      categoryMap.set(cat._id, { ...cat, children: [] });
+    });
+    
+    // Build the tree
+    categories.forEach(cat => {
+      const categoryNode = categoryMap.get(cat._id)!;
+      if (cat.level === 0) {
+        tree.push(categoryNode);
+      } else {
+        // Find parent in the original categories list
+        const parent = categories.find(c => {
+          // Check if this category is a direct child of the potential parent
+          const parentPath = c.path.join('/');
+          const childPath = cat.path.slice(0, -1).join('/');
+          return c._id !== cat._id && parentPath === childPath;
+        });
+        
+        if (parent) {
+          const parentNode = categoryMap.get(parent._id);
+          if (parentNode) {
+            parentNode.children = parentNode.children || [];
+            parentNode.children.push(categoryNode);
+          }
+        }
+      }
+    });
+    
+    return tree;
+  };
+
+  const categoryTree = useMemo(() => buildCategoryTree(flatCategories), [flatCategories]);
 
   // Pagination
   const totalPages = Math.ceil(filteredProducts.length / itemsPerPage);
@@ -159,10 +253,10 @@ export default function ProductManager() {
   const endIndex = startIndex + itemsPerPage;
   const currentProducts = filteredProducts.slice(startIndex, endIndex);
 
-  // Reset to page 1 when search query or items per page changes
+  // Reset to page 1 when search query, categories, or items per page changes
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchQuery, itemsPerPage]);
+  }, [searchQuery, selectedCategories, itemsPerPage]);
 
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
@@ -224,8 +318,8 @@ export default function ProductManager() {
     setImagePreviews(prod.images);
     
     const newAttrImgMap = new Map<string, File | string>();
-    prod.attributes?.forEach((attr, attrIdx) => {
-      attr.options?.forEach((opt, optIdx) => {
+    convertedAttributes.forEach((attr, attrIdx) => {
+      attr.options.forEach((opt, optIdx) => {
         if (opt.image) {
           newAttrImgMap.set(`${attrIdx}_${optIdx}`, opt.image);
         }
@@ -235,14 +329,33 @@ export default function ProductManager() {
     setShowModal(true);
   };
 
-  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const formatCurrency = (value: string) => {
+    const num = value.replace(/\D/g, "");
+    return num ? parseInt(num).toLocaleString() : "";
+  };
+
+  const handlePriceChange = (field: "priceOriginal" | "priceSale", value: string) => {
+    const numericValue = value.replace(/\D/g, "");
+    setFormData({ ...formData, [field]: numericValue });
+  };
+
+  const calculateDiscount = () => {
+    const original = parseFloat(formData.priceOriginal);
+    const sale = parseFloat(formData.priceSale);
+    if (original && sale && sale < original) {
+      return Math.round(((original - sale) / original) * 100);
+    }
+    return 0;
+  };
+
+  const handleImagesChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
     if (files.length > 3) {
-      alert("Chỉ được upload tối đa 3 ảnh!");
+      alert("Chỉ được chọn tối đa 3 ảnh");
       return;
     }
     setFormData({ ...formData, images: files });
-    const previews = files.map((file) => URL.createObjectURL(file));
+    const previews = files.map((f) => URL.createObjectURL(f));
     setImagePreviews(previews);
   };
 
@@ -256,9 +369,23 @@ export default function ProductManager() {
     });
   };
 
-  const removeAttribute = (attrIdx: number) => {
-    const newAttrs = formData.attributes.filter((_, i) => i !== attrIdx);
+  const removeAttribute = (index: number) => {
+    const newAttrs = formData.attributes.filter((_, i) => i !== index);
     setFormData({ ...formData, attributes: newAttrs });
+    
+    const newAttrImgMap = new Map(attributeImages);
+    Array.from(attributeImages.keys()).forEach((key) => {
+      const [attrIdx] = key.split("_").map(Number);
+      if (attrIdx === index) {
+        newAttrImgMap.delete(key);
+      } else if (attrIdx > index) {
+        const [, optIdx] = key.split("_").map(Number);
+        const img = attributeImages.get(key);
+        newAttrImgMap.delete(key);
+        newAttrImgMap.set(`${attrIdx - 1}_${optIdx}`, img!);
+      }
+    });
+    setAttributeImages(newAttrImgMap);
   };
 
   const updateAttributeName = (attrIdx: number, name: string) => {
@@ -275,10 +402,22 @@ export default function ProductManager() {
 
   const removeOption = (attrIdx: number, optIdx: number) => {
     const newAttrs = [...formData.attributes];
-    newAttrs[attrIdx].options = newAttrs[attrIdx].options.filter(
-      (_, i) => i !== optIdx
-    );
+    newAttrs[attrIdx].options = newAttrs[attrIdx].options.filter((_, i) => i !== optIdx);
     setFormData({ ...formData, attributes: newAttrs });
+    
+    const newAttrImgMap = new Map(attributeImages);
+    const key = `${attrIdx}_${optIdx}`;
+    newAttrImgMap.delete(key);
+    
+    Array.from(attributeImages.keys()).forEach((k) => {
+      const [aIdx, oIdx] = k.split("_").map(Number);
+      if (aIdx === attrIdx && oIdx > optIdx) {
+        const img = attributeImages.get(k);
+        newAttrImgMap.delete(k);
+        newAttrImgMap.set(`${aIdx}_${oIdx - 1}`, img!);
+      }
+    });
+    setAttributeImages(newAttrImgMap);
   };
 
   const updateOption = (
@@ -288,18 +427,13 @@ export default function ProductManager() {
     value: any
   ) => {
     const newAttrs = [...formData.attributes];
-    (newAttrs[attrIdx].options[optIdx] as any)[field] = value;
-
-    if (field === "label") {
-      newAttrs[attrIdx].options[optIdx].value = value
-        .toLowerCase()
-        .normalize("NFD")
-        .replace(/[\u0300-\u036f]/g, "")
-        .replace(/đ/g, "d")
-        .replace(/[^a-z0-9\s-]/g, "")
-        .replace(/\s+/g, "-");
+    if (field === "isDefault" && value === true) {
+      newAttrs[attrIdx].options.forEach((opt) => (opt.isDefault = false));
     }
-
+    newAttrs[attrIdx].options[optIdx] = {
+      ...newAttrs[attrIdx].options[optIdx],
+      [field]: value,
+    };
     setFormData({ ...formData, attributes: newAttrs });
   };
 
@@ -308,112 +442,76 @@ export default function ProductManager() {
     optIdx: number,
     file: File | null
   ) => {
-    if (file) {
-      const key = `${attrIdx}_${optIdx}`;
-      const newMap = new Map(attributeImages);
-      newMap.set(key, file);
-      setAttributeImages(newMap);
-    }
-  };
-
-  const formatCurrency = (value: string) => {
-    const num = value.replace(/\D/g, "");
-    return num.replace(/\B(?=(\d{3})+(?!\d))/g, ".");
-  };
-
-  const handlePriceChange = (field: "priceOriginal" | "priceSale", value: string) => {
-    const numericValue = value.replace(/\D/g, "");
-    setFormData({ ...formData, [field]: numericValue });
-  };
-
-  const calculateDiscount = () => {
-    const original = parseFloat(formData.priceOriginal) || 0;
-    const sale = parseFloat(formData.priceSale) || 0;
-    if (original > 0 && sale > 0 && sale < original) {
-      const discount = ((original - sale) / original) * 100;
-      return Math.round(discount);
-    }
-    return 0;
+    if (!file) return;
+    const newAttrImgMap = new Map(attributeImages);
+    newAttrImgMap.set(`${attrIdx}_${optIdx}`, file);
+    setAttributeImages(newAttrImgMap);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
-    const data = new FormData();
-    data.append("name", formData.name);
-    data.append("sku", formData.sku);
-    data.append("priceOriginal", (formData.priceOriginal || "0").toString());
-    data.append("priceSale", (formData.priceSale || "0").toString());
-    data.append("quantity", (formData.quantity || "0").toString());
-    data.append("description", formData.description || "");
-
-    if (formData.categories && formData.categories.length > 0) {
-      formData.categories.forEach((cat) => {
-        if (cat) {
-          data.append("categories[]", cat);
-        }
+    
+    try {
+      const form = new FormData();
+      
+      form.append("name", formData.name);
+      form.append("sku", formData.sku);
+      form.append("priceOriginal", formData.priceOriginal);
+      form.append("priceSale", formData.priceSale);
+      form.append("quantity", formData.quantity);
+      form.append("description", formData.description);
+      form.append("hot", formData.hot.toString());
+      form.append("onSale", formData.onSale.toString());
+      
+      formData.categories.forEach((catId) => {
+        form.append("categories[]", catId);
       });
-    }
-
-    data.append("hot", formData.hot.toString());
-    data.append("onSale", formData.onSale.toString());
-
-    if (formData.images && formData.images.length > 0) {
-      formData.images.forEach((file) => data.append("images", file));
-    }
-
-    attributeImages.forEach((file, key) => {
-      if (file instanceof File) {
-        data.append(`attribute_${key}`, file);
-      }
-    });
-
-    // ✅ CRITICAL FIX: Convert attributes to multilingual format
-    if (formData.attributes && formData.attributes.length > 0) {
-      const multilingualAttributes = formData.attributes.map(attr => ({
-        name: { 
-          vi: attr.name || "", 
-          zh: "" 
-        },
-        options: attr.options.map(opt => ({
-          label: { 
-            vi: opt.label || "", 
-            zh: "" 
-          },
-          value: opt.value || "",
-          image: opt.image,
-          isDefault: opt.isDefault || false
-        }))
+      
+      formData.images.forEach((img) => {
+        form.append("images", img);
+      });
+      
+      const attributesForBackend = formData.attributes.map((attr, attrIdx) => ({
+        name: attr.name,
+        options: attr.options.map((opt, optIdx) => {
+          const key = `${attrIdx}_${optIdx}`;
+          const imgFile = attributeImages.get(key);
+          
+          return {
+            label: opt.label,
+            value: opt.value || opt.label.toLowerCase().replace(/\s+/g, "-"),
+            isDefault: opt.isDefault || false,
+            imageKey: imgFile instanceof File ? key : undefined,
+            existingImage: typeof imgFile === 'string' ? imgFile : opt.image,
+          };
+        }),
       }));
       
-      data.append("attributes", JSON.stringify(multilingualAttributes));
-    }
-
-    try {
+      form.append("attributes", JSON.stringify(attributesForBackend));
+      
+      attributeImages.forEach((img, key) => {
+        if (img instanceof File) {
+          form.append(`attributeImages[${key}]`, img);
+        }
+      });
+      
       if (editingProd) {
-        await axiosInstance.put(`/admin/products/${editingProd._id}`, data, {
-          headers: {
-            "Content-Type": "multipart/form-data",
-          },
+        await axiosInstance.put(`/admin/products/${editingProd._id}`, form, {
+          headers: { "Content-Type": "multipart/form-data" },
         });
-        setSuccessMessage("✅ Cập nhật thành công!");
+        setSuccessMessage("Cập nhật sản phẩm thành công!");
       } else {
-        await axiosInstance.post("/admin/products", data, {
-          headers: {
-            "Content-Type": "multipart/form-data",
-          },
+        await axiosInstance.post("/admin/products", form, {
+          headers: { "Content-Type": "multipart/form-data" },
         });
-        setSuccessMessage("✅ Thêm sản phẩm thành công!");
+        setSuccessMessage("Thêm sản phẩm thành công!");
       }
       
-      setTimeout(() => {
-        setSuccessMessage("");
-        setShowModal(false);
-        fetchProducts();
-      }, 1500);
+      setTimeout(() => setSuccessMessage(""), 1500);
+      fetchProducts();
+      setShowModal(false);
     } catch (err: any) {
-      console.error("Lỗi submit:", err);
-      alert(err.response?.data?.message || "Lỗi lưu sản phẩm");
+      alert(err.response?.data?.message || "Lỗi khi lưu sản phẩm");
     }
   };
 
@@ -421,19 +519,20 @@ export default function ProductManager() {
     if (!deletingProd) return;
     try {
       await axiosInstance.delete(`/admin/products/${deletingProd._id}`);
-      setDeletingProd(null);
+      setSuccessMessage("Xóa sản phẩm thành công!");
+      setTimeout(() => setSuccessMessage(""), 1500);
       fetchProducts();
+      setDeletingProd(null);
     } catch (err) {
-      alert("Lỗi xóa sản phẩm");
+      alert("Lỗi khi xóa sản phẩm");
     }
   };
 
   if (loading) {
     return (
-      <div className="product-manager">
-        <div style={{ textAlign: "center", padding: "100px" }}>
-          <Loader2 size={48} className="spin" />
-        </div>
+      <div className="product-manager" style={{ textAlign: "center", padding: "100px" }}>
+        <Loader2 size={48} className="spin" />
+        <p>Đang tải dữ liệu...</p>
       </div>
     );
   }
@@ -442,8 +541,9 @@ export default function ProductManager() {
     <div className="product-manager">
       <div className="page-header">
         <h1 className="page-title">Quản lý sản phẩm</h1>
-        <button onClick={openAddModal} className="btn-primary">
-          <Plus size={20} /> Thêm sản phẩm
+        <button className="btn-primary" onClick={openAddModal}>
+          <Plus size={20} />
+          Thêm sản phẩm
         </button>
       </div>
 
@@ -462,11 +562,146 @@ export default function ProductManager() {
         )}
       </div>
 
+      {/* ✅ NEW: CATEGORY FILTER SECTION */}
+      <div className="category-filter-section">
+        <div className="filter-header">
+          <div className="filter-title">
+            <Filter size={18} />
+            Lọc theo danh mục
+          </div>
+          <button 
+            className="btn-clear-filter"
+            onClick={clearCategoryFilter}
+            disabled={selectedCategories.length === 0}
+          >
+            <X size={16} />
+            Xóa bộ lọc
+          </button>
+        </div>
+
+        <div className="filter-content">
+          <div className="category-tree-wrapper">
+            {categoryTree.length === 0 ? (
+              <div className="empty-categories">
+                Chưa có danh mục nào
+              </div>
+            ) : (
+              categoryTree.map((parentCat) => {
+                const hasChildren = parentCat.children && parentCat.children.length > 0;
+                const isExpanded = expandedCategories.has(parentCat._id);
+                const parentCount = getCategoryProductCount(parentCat._id);
+                
+                return (
+                  <div 
+                    key={parentCat._id} 
+                    className={`category-tree-item ${hasChildren ? 'has-children' : 'no-children'}`}
+                  >
+                    <div className="category-parent">
+                      {hasChildren && (
+                        <div 
+                          className={`expand-icon ${isExpanded ? 'expanded' : ''}`}
+                          onClick={() => toggleExpandCategory(parentCat._id)}
+                        >
+                          <ChevronRight size={16} />
+                        </div>
+                      )}
+                      {!hasChildren && <div className="expand-icon" />}
+                      
+                      <div className="category-checkbox-wrapper">
+                        <input
+                          type="checkbox"
+                          checked={selectedCategories.includes(parentCat._id)}
+                          onChange={() => handleCategoryFilterChange(parentCat._id)}
+                          onClick={(e) => e.stopPropagation()}
+                        />
+                        <span className="category-label">{getName(parentCat.name)}</span>
+                        <span className="category-count">{parentCount}</span>
+                      </div>
+                    </div>
+
+                    {hasChildren && isExpanded && (
+                      <div className="category-children">
+                        {parentCat.children!.map((childCat) => {
+                          const childCount = getCategoryProductCount(childCat._id);
+                          return (
+                            <div 
+                              key={childCat._id} 
+                              className="category-child"
+                              onClick={() => handleCategoryFilterChange(childCat._id)}
+                            >
+                              <input
+                                type="checkbox"
+                                checked={selectedCategories.includes(childCat._id)}
+                                onChange={() => handleCategoryFilterChange(childCat._id)}
+                                onClick={(e) => e.stopPropagation()}
+                              />
+                              <span className="child-label">{getName(childCat.name)}</span>
+                              <span className="child-count">{childCount}</span>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                );
+              })
+            )}
+          </div>
+
+          <div className="selected-categories">
+            <div className="selected-header">Đã chọn</div>
+            {selectedCategories.length > 0 ? (
+              <div className="selected-items">
+                {selectedCategories.map((catId) => {
+                  const category = flatCategories.find(c => c._id === catId);
+                  if (!category) return null;
+                  const count = getCategoryProductCount(catId);
+                  return (
+                    <div key={catId} className="selected-tag">
+                      <span>{getName(category.name)}</span>
+                      <span className="tag-count">{count}</span>
+                      <button onClick={() => handleCategoryFilterChange(catId)}>
+                        <X size={14} />
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
+            ) : (
+              <div className="empty-state">
+                <Filter size={32} />
+                <span>Chưa chọn danh mục nào</span>
+              </div>
+            )}
+          </div>
+        </div>
+
+        <div className="filter-stats">
+          <div className="stats-left">
+            {selectedCategories.length > 0 ? (
+              <>Đang lọc <strong>{filteredProducts.length}</strong> sản phẩm</>
+            ) : (
+              <>Tổng cộng <strong>{products.length}</strong> sản phẩm</>
+            )}
+          </div>
+          <div className="stats-right">
+            <div className="stat-item">
+              <span>Tổng danh mục:</span>
+              <span className="stat-value">{flatCategories.length}</span>
+            </div>
+            <div className="stat-item">
+              <span>Đã chọn:</span>
+              <span className="stat-value">{selectedCategories.length}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <div className="product-table">
         {currentProducts.length === 0 ? (
           <p className="empty">
-            {searchQuery 
-              ? `Không tìm thấy sản phẩm nào với từ khóa "${searchQuery}"`
+            {searchQuery || selectedCategories.length > 0
+              ? `Không tìm thấy sản phẩm nào${searchQuery ? ` với từ khóa "${searchQuery}"` : ''}${selectedCategories.length > 0 ? ' trong danh mục đã chọn' : ''}`
               : "Chưa có sản phẩm nào. Hãy thêm sản phẩm đầu tiên!"
             }
           </p>
@@ -663,30 +898,27 @@ export default function ProductManager() {
               />
 
               <div className="category-select-wrapper">
-                <label>Chọn danh mục (giữ Ctrl/Cmd để chọn nhiều)</label>
+                <label>Danh mục sản phẩm</label>
                 <select
                   multiple
                   value={formData.categories}
-                  onChange={(e) =>
-                    setFormData({
-                      ...formData,
-                      categories: Array.from(
-                        e.target.selectedOptions,
-                        (option) => option.value
-                      ),
-                    })
-                  }
+                  onChange={(e) => {
+                    const options = Array.from(e.target.selectedOptions);
+                    const values = options.map((opt) => opt.value);
+                    setFormData({ ...formData, categories: values });
+                  }}
                 >
-                  {flatCategories.map((cat) => (
-                    <option key={cat._id} value={cat._id}>
-                      {"  ".repeat(cat.level)}
-                      {cat.level > 0 && "└─ "}
-                      {getName(cat.name)}
-                    </option>
-                  ))}
+                  {flatCategories.map((cat) => {
+                    const indent = "  ".repeat(cat.level);
+                    return (
+                      <option key={cat._id} value={cat._id}>
+                        {indent}{getName(cat.name)}
+                      </option>
+                    );
+                  })}
                 </select>
                 <span className="select-hint">
-                  Đã chọn: {formData.categories.length} danh mục
+                  Nhấn Ctrl (Windows) hoặc Cmd (Mac) để chọn nhiều danh mục
                 </span>
               </div>
 
@@ -699,7 +931,7 @@ export default function ProductManager() {
                       setFormData({ ...formData, hot: e.target.checked })
                     }
                   />
-                  🔥 Hot
+                  Sản phẩm Hot
                 </label>
                 <label>
                   <input
@@ -709,7 +941,7 @@ export default function ProductManager() {
                       setFormData({ ...formData, onSale: e.target.checked })
                     }
                   />
-                  💰 On Sale
+                  Đang khuyến mãi
                 </label>
               </div>
 
@@ -717,9 +949,9 @@ export default function ProductManager() {
                 <label className="file-label">Hình ảnh sản phẩm</label>
                 <input
                   type="file"
-                  multiple
                   accept="image/*"
-                  onChange={handleImageChange}
+                  multiple
+                  onChange={handleImagesChange}
                 />
                 <span className="file-hint">
                   Tối đa 3 ảnh, mỗi ảnh dưới 5MB
