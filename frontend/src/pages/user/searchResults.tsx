@@ -61,7 +61,7 @@ const SearchResult: React.FC = () => {
       <div
         style={{ textAlign: "center", padding: "60px 20px", fontSize: "18px" }}
       >
-        {t('search.loading')} {/* ✅ DỊCH */}
+        {t("search.loading")} {/* ✅ DỊCH */}
       </div>
     );
   }
@@ -72,7 +72,7 @@ const SearchResult: React.FC = () => {
         <main className="product-content">
           <div className="product-header">
             <h2 style={{ textAlign: "center" }}>
-              {t('search.pageTitle')}{" "} {/* ✅ DỊCH */}
+              {t("search.pageTitle")} {/* ✅ DỊCH */}
               <em style={{ color: "#d6a041" }}>{query}</em>
             </h2>
             <p
@@ -83,9 +83,11 @@ const SearchResult: React.FC = () => {
                 color: "#666",
               }}
             >
-              {t('search.resultsFound')}{" "} {/* ✅ DỊCH */}
-              <strong style={{ color: "#d6a041" }}>{products.length}</strong>{" "}
-              {t('search.products')} {/* ✅ DỊCH */}
+              {t("search.resultsFound")} {/* ✅ DỊCH */}
+              <strong style={{ color: "#d6a041" }}>
+                {products.length}
+              </strong>{" "}
+              {t("search.products")} {/* ✅ DỊCH */}
             </p>
           </div>
 
@@ -104,7 +106,7 @@ const SearchResult: React.FC = () => {
                     <div style={{ position: "relative" }}>
                       {isOutOfStock && (
                         <span className="badge out-of-stock-badge">
-                          {t('search.outOfStock')} {/* ✅ DỊCH */}
+                          {t("search.outOfStock")} {/* ✅ DỊCH */}
                         </span>
                       )}
                       <img
@@ -120,14 +122,13 @@ const SearchResult: React.FC = () => {
                         }
                         onError={(e) => {
                           e.currentTarget.src =
-                            "https://via.placeholder.com/300x300?text=No+Image";
+                            'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="300" height="300"%3E%3Crect fill="%23f0f0f0" width="300" height="300"/%3E%3Ctext x="50%25" y="50%25" text-anchor="middle" fill="%23999" font-size="18"%3ENo Image%3C/text%3E%3C/svg%3E';
                         }}
                       />
                     </div>
-
-                    <p className="product-brand">{t('search.brand')}</p> {/* ✅ DỊCH */}
+                    <p className="product-brand">{t("search.brand")}</p>{" "}
+                    {/* ✅ DỊCH */}
                     <h4 className="product-name">{product.name}</h4>
-
                     <div className="price-block">
                       <div className="price-left">
                         {product.priceSale < product.priceOriginal ? (
@@ -151,20 +152,22 @@ const SearchResult: React.FC = () => {
                           {Math.round(
                             ((product.priceOriginal - product.priceSale) /
                               product.priceOriginal) *
-                              100
+                              100,
                           )}
                           %
                         </div>
                       )}
                     </div>
-
                     <button
                       className="add-to-cart"
                       onClick={() => handleAddToCart(product)}
                       disabled={isOutOfStock}
                     >
                       <FaShoppingCart />
-                      {isOutOfStock ? t('search.outOfStock') : t('search.addToCart')} {/* ✅ DỊCH */}
+                      {isOutOfStock
+                        ? t("search.outOfStock")
+                        : t("search.addToCart")}{" "}
+                      {/* ✅ DỊCH */}
                     </button>
                   </div>
                 );
@@ -178,10 +181,10 @@ const SearchResult: React.FC = () => {
                 }}
               >
                 <p style={{ fontSize: "18px" }}>
-                  {t('search.noResults')} " {/* ✅ DỊCH */}
+                  {t("search.noResults")} " {/* ✅ DỊCH */}
                   <strong>{query}</strong>"
                 </p>
-                <p>{t('search.suggestions')}</p> {/* ✅ DỊCH */}
+                <p>{t("search.suggestions")}</p> {/* ✅ DỊCH */}
               </div>
             )}
           </div>

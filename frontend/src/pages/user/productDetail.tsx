@@ -38,10 +38,10 @@ type Product = {
 
 const endpointCandidates = (param: string, lang: string) => [
   `https://tongkhonoithattayninh.vn/api/products/slug/${encodeURIComponent(
-    param
+    param,
   )}?lang=${lang}`,
   `https://tongkhonoithattayninh.vn/api/products/${encodeURIComponent(
-    param
+    param,
   )}?lang=${lang}`,
   `https://tongkhonoithattayninh.vn/api/product/${encodeURIComponent(param)}?lang=${lang}`,
 ];
@@ -93,7 +93,7 @@ const ProductDetail: React.FC = () => {
 
       // Fallback to first non-empty value
       const values = Object.values(field).filter(
-        (v) => typeof v === "string" && v.trim()
+        (v) => typeof v === "string" && v.trim(),
       );
       if (values.length > 0) {
         return values[0] as string;
@@ -110,7 +110,7 @@ const ProductDetail: React.FC = () => {
 
   const incrementProductView = async (
     productId: string,
-    productSlug: string
+    productSlug: string,
   ) => {
     if (viewIncrementedRef.current) {
       return;
@@ -138,7 +138,7 @@ const ProductDetail: React.FC = () => {
   useEffect(() => {
     if (!param) {
       setError(
-        t("product.noProductId") || "Không có product id/slug trong URL"
+        t("product.noProductId") || "Không có product id/slug trong URL",
       );
       setLoading(false);
       return;
@@ -192,7 +192,7 @@ const ProductDetail: React.FC = () => {
           product.categories.length === 0
         ) {
           const res = await fetch(
-            `https://tongkhonoithattayninh.vn/api/products?lang=${language}`
+            `https://tongkhonoithattayninh.vn/api/products?lang=${language}`,
           );
           const allProducts = await res.json();
           const filtered = allProducts
@@ -220,7 +220,7 @@ const ProductDetail: React.FC = () => {
         }
 
         const res = await fetch(
-          `https://tongkhonoithattayninh.vn/api/products?lang=${language}`
+          `https://tongkhonoithattayninh.vn/api/products?lang=${language}`,
         );
         const allProducts = await res.json();
 
@@ -242,7 +242,7 @@ const ProductDetail: React.FC = () => {
             .filter(Boolean);
 
           return pCategoryIds.some((catId: string) =>
-            productCategoryIds.includes(catId)
+            productCategoryIds.includes(catId),
           );
         });
 
@@ -270,7 +270,7 @@ const ProductDetail: React.FC = () => {
         setLightboxIndex((prev) => (prev + 1) % productImages.length);
       } else if (e.key === "ArrowLeft") {
         setLightboxIndex(
-          (prev) => (prev - 1 + productImages.length) % productImages.length
+          (prev) => (prev - 1 + productImages.length) % productImages.length,
         );
       }
     };
@@ -323,7 +323,7 @@ const ProductDetail: React.FC = () => {
       ? Math.round(
           ((product.priceOriginal - product.priceSale) /
             product.priceOriginal) *
-            100
+            100,
         )
       : 0;
 
@@ -347,7 +347,7 @@ const ProductDetail: React.FC = () => {
 
   const prevImage = () => {
     setLightboxIndex(
-      (prev) => (prev - 1 + productImages.length) % productImages.length
+      (prev) => (prev - 1 + productImages.length) % productImages.length,
     );
   };
 
@@ -406,7 +406,7 @@ const ProductDetail: React.FC = () => {
         ? Math.round(
             ((product.priceOriginal - product.priceSale) /
               product.priceOriginal) *
-              100
+              100,
           )
         : 0;
 
@@ -426,7 +426,7 @@ const ProductDetail: React.FC = () => {
             alt={safeGetText(product.name, language)}
             onError={(e) => {
               e.currentTarget.src =
-                "https://via.placeholder.com/300x300?text=No+Image";
+                'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="300" height="300"%3E%3Crect fill="%23f0f0f0" width="300" height="300"/%3E%3Ctext x="50%25" y="50%25" text-anchor="middle" fill="%23999" font-size="18"%3ENo Image%3C/text%3E%3C/svg%3E';
             }}
           />
         </div>
@@ -478,7 +478,7 @@ const ProductDetail: React.FC = () => {
                   style={{ cursor: "pointer" }}
                   onError={(e) => {
                     e.currentTarget.src =
-                      "https://via.placeholder.com/600x600?text=No+Image";
+                      'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="600" height="600"%3E%3Crect fill="%23f0f0f0" width="600" height="600"/%3E%3Ctext x="50%25" y="50%25" text-anchor="middle" fill="%23999" font-size="20"%3ENo Image%3C/text%3E%3C/svg%3E';
                   }}
                 />
               </div>
@@ -499,7 +499,7 @@ const ProductDetail: React.FC = () => {
                         alt={`${safeGetText(product.name, language)} ${i + 1}`}
                         onError={(e) => {
                           e.currentTarget.src =
-                            "https://via.placeholder.com/100x100?text=Error";
+                            'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="100" height="100"%3E%3Crect fill="%23f0f0f0" width="100" height="100"/%3E%3Ctext x="50%25" y="50%25" text-anchor="middle" fill="%23999" font-size="12"%3EError%3C/text%3E%3C/svg%3E';
                         }}
                       />
                     </div>
