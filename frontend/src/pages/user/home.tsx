@@ -204,7 +204,7 @@ const Home: React.FC = () => {
             alt={product.name}
             loading="lazy"
             onError={(e) => {
-              e.currentTarget.src = "https://via.placeholder.com/300x300?text=No+Image";
+              e.currentTarget.src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="300" height="300"%3E%3Crect fill="%23f0f0f0" width="300" height="300"/%3E%3Ctext x="50%25" y="50%25" text-anchor="middle" fill="%23999" font-size="18"%3ENo Image%3C/text%3E%3C/svg%3E';
             }}
           />
         </div>
