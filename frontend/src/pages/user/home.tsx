@@ -10,6 +10,8 @@ import banner1 from "@/assets/banner/banner1.jpg";
 import banner2 from "@/assets/banner/banner2.jpg";
 import banner3 from "@/assets/banner/banner3.jpg";
 
+const API_URL = import.meta.env.VITE_API_URL || 'https://tongkhonoithattayninh.vn/api';
+
 interface Product {
   _id: string;
   slug: string;
@@ -29,21 +31,25 @@ interface Category {
   name: string;
   slug: string;
   level: number;
+  parent?: string | null;
   children?: Category[];
 }
 
-// ✅ API CACHE - Lưu kết quả API trong 5 phút
+// ✅ API CACHE - Lưu kết quả API trong 1 phút (giảm từ 5 phút để test dễ hơn)
 const API_CACHE = new Map<string, { data: any; timestamp: number }>();
-const CACHE_DURATION = 5 * 60 * 1000; // 5 phút
+const CACHE_DURATION = 1 * 60 * 1000; // 1 phút
 
-const fetchWithCache = async (url: string) => {
+const fetchWithCache = async (url: string, forceRefresh = false) => {
   const cached = API_CACHE.get(url);
   const now = Date.now();
 
-  if (cached && now - cached.timestamp < CACHE_DURATION) {
+  // Skip cache nếu forceRefresh = true
+  if (!forceRefresh && cached && now - cached.timestamp < CACHE_DURATION) {
+    console.log('📦 Using cached data for:', url);
     return cached.data;
   }
 
+  console.log('🌐 Fetching fresh data from:', url);
   const response = await fetch(url);
   const data = await response.json();
   API_CACHE.set(url, { data, timestamp: now });
@@ -129,12 +135,15 @@ const Home: React.FC = () => {
     const loadData = async () => {
       try {
         setLoading(true);
+        console.log('🚀 Loading home page data...');
 
         // ✅ GỌI API SONG SONG thay vì tuần tự
         const [allProducts, allCategories] = await Promise.all([
           fetchWithCache(`https://tongkhonoithattayninh.vn/api/products?lang=${language}`),
           fetchWithCache(`https://tongkhonoithattayninh.vn/api/categories?lang=${language}`),
         ]);
+
+        console.log('📦 Loaded:', allProducts.length, 'products', allCategories.length, 'categories');
 
         // Filter products (client-side filtering nhanh hơn nhiều API calls)
         const hotProds = allProducts.filter((p: Product) => p.hot === true);
@@ -150,17 +159,54 @@ const Home: React.FC = () => {
         });
         setNewProducts(sortedByDate.slice(0, 8));
 
-        const parentCategories = allCategories.filter((cat: Category) => !cat.parent);
+        const parentCategories = allCategories.filter((cat: Category) => cat.parent === null || cat.parent === undefined);
         setCategories(parentCategories);
 
-        // ✅ GỌI API CATEGORY PRODUCTS SONG SONG
+        // ✅ DEBUG: Kiểm tra categories có children không
+        console.log('📦 Parent Categories:', parentCategories.map(c => ({
+          name: c.name,
+          slug: c.slug,
+          childrenCount: c.children?.length || 0,
+          children: c.children?.map(child => child.name)
+        })));
+
+        // ✅ GỌI API CATEGORY PRODUCTS SONG SONG - Lấy cả products từ category con
         const categoryProds: Record<string, Product[]> = {};
         const categoryPromises = parentCategories.slice(0, 4).map(async (cat: Category) => {
           try {
-            const prods = await fetchWithCache(
-              `https://tongkhonoithattayninh.vn/api/products?category=${cat.slug}&lang=${language}`
+            // Lấy tất cả slugs: category cha + tất cả category con
+            const categorySlugs: string[] = [cat.slug];
+            if (cat.children && cat.children.length > 0) {
+              cat.children.forEach(child => categorySlugs.push(child.slug));
+            }
+
+            // ✅ DEBUG: Xem slugs được thu thập
+            console.log(`📂 Category "${cat.name}":`, {
+              mainSlug: cat.slug,
+              allSlugs: categorySlugs,
+              childrenCount: cat.children?.length || 0
+            });
+
+            // Gọi API song song cho tất cả categories
+            const productsArrays = await Promise.all(
+              categorySlugs.map(slug =>
+                fetchWithCache(
+                  `https://tongkhonoithattayninh.vn/api/products?category=${slug}&lang=${language}`
+                ).catch(() => []) // Nếu lỗi thì trả về mảng rỗng
+              )
             );
-            categoryProds[cat._id] = Array.isArray(prods) ? prods.slice(0, 8) : [];
+
+            // Gộp tất cả products lại, loại bỏ trùng lặp theo _id
+            const allProducts = productsArrays.flat();
+            const uniqueProducts = Array.from(
+              new Map(allProducts.map((p: Product) => [p._id, p])).values()
+            );
+
+            // ✅ DEBUG: Xem kết quả
+            console.log(`✅ Category "${cat.name}": ${uniqueProducts.length} products (from ${categorySlugs.length} categories)`);
+
+            // Giới hạn 12 sản phẩm
+            categoryProds[cat._id] = uniqueProducts.slice(0, 12);
           } catch (err) {
             console.error(`Error loading products for ${cat.name}:`, err);
             categoryProds[cat._id] = [];
@@ -169,6 +215,23 @@ const Home: React.FC = () => {
 
         await Promise.all(categoryPromises);
         setCategoryProducts(categoryProds);
+
+        // ✅ TỔNG KẾT
+        console.log('🎉 Data loading completed!');
+        console.log('📊 Summary:', {
+          hotProducts: hotProds.length,
+          saleProducts: saleProds.length,
+          newProducts: sortedByDate.slice(0, 8).length,
+          categorySections: Object.keys(categoryProds).length,
+          categoryProducts: Object.entries(categoryProds).map(([id, prods]) => {
+            const cat = parentCategories.find(c => c._id === id);
+            return {
+              category: cat?.name,
+              productCount: prods.length
+            };
+          })
+        });
+
       } catch (error) {
         console.error("Lỗi load dữ liệu:", error);
       } finally {
@@ -383,7 +446,7 @@ const Home: React.FC = () => {
         </div>
       </section>
 
-      {/* ==================== DANH MỤC CHA VÀ SẢN PHẨM ==================== */}
+      {/* ==================== DANH MỤC CHA VÀ SẢN PHẨM (bao gồm cả products từ danh mục con) ==================== */}
       {categories.slice(0, 4).map((category) => {
         const products = categoryProducts[category._id] || [];
 
