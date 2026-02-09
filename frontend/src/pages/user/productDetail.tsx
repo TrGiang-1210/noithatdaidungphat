@@ -4,7 +4,7 @@ import { useParams, useNavigate, Link } from "react-router-dom";
 import { useCart } from "@/context/CartContext";
 import "@/styles/pages/user/productDetail.scss";
 import { AuthContext } from "@/context/AuthContext";
-import { getImageUrls, getFirstImageUrl, getImageUrl } from "@/utils/imageUrl";
+import { getFirstImageUrl, getImageUrl } from "../../utils/imageUrl";
 import { ChevronRight } from "lucide-react";
 import { useLanguage } from "@/context/LanguageContext";
 
