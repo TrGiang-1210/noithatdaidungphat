@@ -2,8 +2,8 @@ import React, { useState, useEffect, useMemo } from "react";
 import { toast } from "react-toastify";
 import "@/styles/pages/admin/translateManager.scss";
 
-// const API_URL = "https://tongkhonoithattayninh.vn/api/admin";
-const API_URL = 'http://localhost:5000/api/admin';
+const API_URL = "https://tongkhonoithattayninh.vn/api/admin";
+// const API_URL = 'http://localhost:5000/api/admin';
 const TranslationManagement = () => {
   const [translations, setTranslations] = useState([]);
   const [stats, setStats] = useState({});
