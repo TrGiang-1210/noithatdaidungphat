@@ -8,6 +8,9 @@ import { getFirstImageUrl, getImageUrl } from "../../utils/imageUrl";
 import { ChevronRight } from "lucide-react";
 import { useLanguage } from "@/context/LanguageContext";
 
+const API_URL =
+  import.meta.env.VITE_API_URL || "https://tongkhonoithattayninh.vn/api";
+
 type Product = {
   _id: string;
   name: string;
@@ -36,15 +39,13 @@ type Product = {
   }>;
 };
 
-const endpointCandidates = (param: string, lang: string) => [
-  `https://tongkhonoithattayninh.vn/api/products/slug/${encodeURIComponent(
-    param,
-  )}?lang=${lang}`,
-  `https://tongkhonoithattayninh.vn/api/products/${encodeURIComponent(
-    param,
-  )}?lang=${lang}`,
-  `https://tongkhonoithattayninh.vn/api/product/${encodeURIComponent(param)}?lang=${lang}`,
-];
+const endpointCandidates = (param: string, lang: string) => {
+  const cleanUrl = API_URL.replace(/\/$/, "");
+  return [
+    `${cleanUrl}/products/slug/${encodeURIComponent(param)}?lang=${lang}`,
+    `${cleanUrl}/products/${encodeURIComponent(param)}?lang=${lang}`,
+  ];
+};
 
 const ProductDetail: React.FC = () => {
   const { t, language } = useLanguage();
@@ -112,26 +113,18 @@ const ProductDetail: React.FC = () => {
     productId: string,
     productSlug: string,
   ) => {
-    if (viewIncrementedRef.current) {
-      return;
-    }
-
+    if (viewIncrementedRef.current) return;
     viewIncrementedRef.current = true;
-
     try {
+      const cleanUrl = API_URL.replace(/\/$/, "");
+      // Ưu tiên tăng view theo slug
       const viewUrl = productSlug
-        ? `https://tongkhonoithattayninh.vn/api/products/slug/${productSlug}/increment-view`
-        : `https://tongkhonoithattayninh.vn/api/products/${productId}/increment-view`;
+        ? `${cleanUrl}/products/slug/${productSlug}/increment-view`
+        : `${cleanUrl}/products/${productId}/increment-view`;
 
-      await fetch(viewUrl, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-      });
+      await fetch(viewUrl, { method: "POST" });
     } catch (error) {
-      viewIncrementedRef.current = false;
-      console.error("Error incrementing view:", error);
+      console.warn("Không thể tăng lượt xem:", error);
     }
   };
 
@@ -260,7 +253,10 @@ const ProductDetail: React.FC = () => {
   useEffect(() => {
     if (!showLightbox || !product) return;
 
-    const productImages = getImageUrls(product.images);
+    const productImages =
+      product.images && product.images.length > 0
+        ? product.images.map((img) => getImageUrl(img))
+        : [getImageUrl(null)];
 
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
@@ -316,15 +312,16 @@ const ProductDetail: React.FC = () => {
   if (!product)
     return <div>{t("product.noData") || "Không có dữ liệu sản phẩm"}</div>;
 
-  const productImages = getImageUrls(product.images);
+  const productImages =
+    product.images && product.images.length > 0
+      ? product.images.map((img) => getImageUrl(img))
+      : [getImageUrl(null)];
   const currentImage = productImages[selectedImageIndex];
+  const priceOriginal = Number(product.priceOriginal) || 0;
+  const priceSale = Number(product.priceSale) || 0;
   const discount =
-    product.priceOriginal > product.priceSale
-      ? Math.round(
-          ((product.priceOriginal - product.priceSale) /
-            product.priceOriginal) *
-            100,
-        )
+    priceOriginal > priceSale && priceOriginal > 0
+      ? Math.round(((priceOriginal - priceSale) / priceOriginal) * 100)
       : 0;
 
   // ✅ FIXED: Extract description as plain text
@@ -401,13 +398,11 @@ const ProductDetail: React.FC = () => {
 
   const ProductCard: React.FC<{ product: Product }> = ({ product }) => {
     const isOutOfStock = product.quantity <= 0;
+    const priceOriginal = Number(product.priceOriginal) || 0;
+    const priceSale = Number(product.priceSale) || 0;
     const discount =
-      product.priceOriginal > product.priceSale
-        ? Math.round(
-            ((product.priceOriginal - product.priceSale) /
-              product.priceOriginal) *
-              100,
-          )
+      priceOriginal > priceSale && priceOriginal > 0
+        ? Math.round(((priceOriginal - priceSale) / priceOriginal) * 100)
         : 0;
 
     return (
