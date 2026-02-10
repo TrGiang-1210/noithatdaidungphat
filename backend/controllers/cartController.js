@@ -1,5 +1,5 @@
 // backend/controllers/cartController.js
-const CartService = require('../services/CartService');
+const CartService = require('../services/cartService');
 const Joi = require('joi');
 
 const addItemSchema = Joi.object({
