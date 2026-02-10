@@ -1,8 +1,8 @@
 // controllers/orderController.js - FIXED VERSION
 const OrderService = require("../services/orderService");
-const OrderDetailService = require("../services/OrderDetailService");
+const OrderDetailService = require("../services/orderDetailService");
 const ProductService = require("../services/productService");
-const CartService = require("../services/CartService");
+const CartService = require("../services/cartService");
 const UserService = require("../services/userService");
 const EmailService = require("../services/emailService");
 const Joi = require("joi");
