@@ -28,7 +28,7 @@ const server = http.createServer(app);
 // ✅ KHỞI TẠO SOCKET.IO
 const io = new Server(server, {
   cors: {
-    origin: "http://localhost:5173", // Frontend URL
+    origin: ["https://tongkhonoithattayninh.vn", "http://localhost:5173"], // Cho phép cả web thật và máy nhà
     methods: ["GET", "POST"],
     credentials: true
   }
