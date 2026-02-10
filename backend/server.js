@@ -63,6 +63,20 @@ app.get('/health', (req, res) => {
   });
 });
 
+// 1. Khai báo thư mục chứa code Frontend đã build (dist)
+app.use(express.static(path.join(__dirname, 'public')));
+
+// 2. Với bất kỳ request nào không phải API, hãy trả về file index.html
+app.get('*', (req, res) => {
+  // Kiểm tra nếu request không bắt đầu bằng /api thì mới trả về index.html
+  if (!req.path.startsWith('/api')) {
+    res.sendFile(path.join(__dirname, 'public', 'index.html'));
+  } else {
+    // Nếu gọi /api mà không có route thì mới báo lỗi JSON
+    res.status(404).json({ success: false, message: "API route không tồn tại" });
+  }
+});
+
 // 404 handler
 app.use((req, res) => {
   console.log(`❌ 404: ${req.method} ${req.originalUrl}`);
