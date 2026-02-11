@@ -63,18 +63,25 @@ app.get('/health', (req, res) => {
   });
 });
 
-// 1. Khai báo thư mục chứa code Frontend đã build (dist)
+// 1. Khai báo thư mục chứa code Frontend đã build (dist/public)
 app.use(express.static(path.join(__dirname, 'public')));
 
-// 2. Với bất kỳ request nào không phải API, hãy trả về file index.html
-app.get('*', (req, res) => {
-  // Kiểm tra nếu request không bắt đầu bằng /api thì mới trả về index.html
-  if (!req.path.startsWith('/api')) {
-    res.sendFile(path.join(__dirname, 'public', 'index.html'));
-  } else {
-    // Nếu gọi /api mà không có route thì mới báo lỗi JSON
-    res.status(404).json({ success: false, message: "API route không tồn tại" });
+// 2. Xử lý Single Page Application (SPA) - THAY THẾ DÒNG 70-82 CŨ
+// Dùng middleware thay vì app.get('*') để tránh lỗi path-to-regexp trên Node v22
+app.use((req, res, next) => {
+  // Nếu là yêu cầu GET và không phải gọi vào API, và không phải yêu cầu file tĩnh (có dấu chấm)
+  if (req.method === 'GET' && !req.path.startsWith('/api') && !req.path.includes('.')) {
+    return res.sendFile(path.join(__dirname, 'public', 'index.html'));
   }
+  next();
+});
+
+// 3. Handler cho các route API không tồn tại (404)
+app.use('/api', (req, res) => {
+  res.status(404).json({ 
+    success: false, 
+    message: `API route ${req.method} ${req.originalUrl} không tồn tại` 
+  });
 });
 
 // 404 handler
