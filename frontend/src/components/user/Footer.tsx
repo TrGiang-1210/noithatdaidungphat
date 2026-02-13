@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import { useLanguage } from "@/context/LanguageContext";
 import { FaFacebook, FaYoutube, FaTiktok, FaInstagram } from "react-icons/fa";
 import "@/styles/components/user/footer.scss";
-
+import logoImage from "@/assets/logo_noithatddp-removebg-preview.png";
 interface Category {
   _id: string;
   name: string;
@@ -60,7 +60,7 @@ const Footer: React.FC = () => {
         {/* Cột 1 – Logo + mô tả + Social Media */}
         <div className="footer-col">
           <div className="footer-logo">
-            <img src="./src/assets/logo-ddp-removebg.png" alt="ddp" />
+            <img src={logoImage} alt="ddp" />
           </div>
           <p className="footer-desc">{t("footer.description")}</p>
           <div className="footer-hotline">
