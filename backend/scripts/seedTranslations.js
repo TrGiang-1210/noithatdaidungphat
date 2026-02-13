@@ -56,6 +56,7 @@ const sampleTranslations = [
   { key: 'footer.phone', namespace: 'footer', viText: 'Điện thoại', category: 'UI' },
   { key: 'footer.workingHours', namespace: 'footer', viText: 'Giờ làm việc: 8:00 – 21:00 (T2–CN)', category: 'UI' },
   { key: 'footer.copyright', namespace: 'footer', viText: 'Đại Dũng Phát – All rights reserved.', category: 'UI' },
+  { key: 'footer.followUs', namespace: 'footer', viText: 'Các mạng xã hội khác', category: 'UI' },
   
   // ========== SEARCH RESULTS PAGE ==========
   { key: 'search.pageTitle', namespace: 'search', viText: 'Kết quả tìm kiếm cho:', category: 'UI' },

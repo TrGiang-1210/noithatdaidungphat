@@ -1,7 +1,7 @@
 .ddp-footer {
   background: #001F3F; // Primary (xanh dương đậm)
   color: #fff;
-  padding-top: 40px;
+  padding-top: 0; // Bỏ padding-top vì có map section
   font-family: 'Roboto', sans-serif;
 
   /* Khung căn giữa */
@@ -9,6 +9,31 @@
     max-width: 1200px;
     margin: 0 auto;
     padding: 0 16px;
+  }
+
+  /* Google Map Section */
+  .footer-map-section {
+    background: #003366; // Màu tối hơn một chút
+    padding: 40px 0;
+    margin-bottom: 40px;
+
+    .map-title {
+      text-align: center;
+      font-size: 24px;
+      font-weight: bold;
+      color: #D2B48C; // Accent
+      margin-bottom: 20px;
+    }
+
+    .map-container {
+      border-radius: 8px;
+      overflow: hidden;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+
+      iframe {
+        display: block;
+      }
+    }
   }
 
   /* Grid 4 cột */
@@ -68,7 +93,7 @@
     .working-hours {
       font-size: 14px;
       margin-top: 15px;
-      text-align: left; /* Hoặc center nếu responsive */
+      text-align: left;
     }
   }
 
@@ -90,9 +115,63 @@
     align-items: center;
     font-size: 16px;
     color: #D2B48C; // Accent
+    margin-bottom: 20px;
 
     .phone-icon {
       margin-right: 6px;
+    }
+  }
+
+  /* Social Media Section */
+  .footer-social {
+    margin-top: 20px;
+
+    .social-title {
+      font-size: 16px;
+      font-weight: bold;
+      margin-bottom: 12px;
+      color: #D2B48C; // Accent
+    }
+
+    .social-icons {
+      display: flex;
+      gap: 15px;
+      flex-wrap: wrap;
+
+      .social-icon {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        background: rgba(255, 255, 255, 0.1);
+        color: #fff;
+        font-size: 20px;
+        transition: all 0.3s ease;
+        text-decoration: none;
+
+        &:hover {
+          transform: translateY(-3px);
+          box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+        }
+
+        &.facebook:hover {
+          background: #1877F2;
+        }
+
+        &.youtube:hover {
+          background: #FF0000;
+        }
+
+        &.tiktok:hover {
+          background: #000000;
+        }
+
+        &.instagram:hover {
+          background: #8b03cb;
+        }
+      }
     }
   }
 
@@ -105,36 +184,62 @@
     margin-top: 30px;
     border-top: 1px solid #444;
   }
+
+  .map-link {
+    color: inherit;
+    text-decoration: none;
+    border-bottom: 1px dotted currentColor;
+    transition: color 0.3s ease;
+
+    &:hover {
+      color: #4285f4; // Màu xanh của Google
+      text-decoration: underline;
+    }
+  }
 }
 
 /* Responsive */
 @media (max-width: 768px) {
-  .ddp-footer .footer-grid {
-    flex-direction: column;
-    text-align: center;
-  }
+  .ddp-footer {
+    .footer-map-section {
+      padding: 30px 0;
 
-  .ddp-footer .footer-col {
-    min-width: 100%;
+      .map-title {
+        font-size: 20px;
+        margin-bottom: 15px;
+      }
 
-    .working-hours {
+      .map-container iframe {
+        height: 300px; // Giảm chiều cao trên mobile
+      }
+    }
+
+    .footer-grid {
+      flex-direction: column;
       text-align: center;
     }
-  }
 
-  .ddp-footer .footer-hotline {
-    justify-content: center;
-  }
-}
+    .footer-col {
+      min-width: 100%;
 
-.map-link {
-  color: inherit;
-  text-decoration: none;
-  border-bottom: 1px dotted currentColor;
-  transition: color 0.3s ease;
+      .working-hours {
+        text-align: center;
+      }
+    }
 
-  &:hover {
-    color: #4285f4; // Màu xanh của Google
-    text-decoration: underline;
+    .footer-hotline {
+      justify-content: center;
+    }
+
+    .footer-social {
+      .social-icons {
+        justify-content: center;
+      }
+    }
+
+    .footer-logo {
+      display: flex;
+      justify-content: center;
+    }
   }
 }

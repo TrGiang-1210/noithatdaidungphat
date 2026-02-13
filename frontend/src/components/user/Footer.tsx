@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { useLanguage } from "@/context/LanguageContext";
+import { FaFacebook, FaYoutube, FaTiktok, FaInstagram } from "react-icons/fa";
 import "@/styles/components/user/footer.scss";
 
 interface Category {
@@ -10,14 +11,16 @@ interface Category {
 }
 
 const Footer: React.FC = () => {
-  const { t, language } = useLanguage(); // ✅ Lấy cả language
+  const { t, language } = useLanguage();
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
+
+  // ✅ Thay đổi link này thành link Google Map thực tế của bạn
+  const GOOGLE_MAP_EMBED_URL = "https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3724.421361988654!2d106.4932956!3d10.865125800000001!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x310ad5252083fff3%3A0xeb714f7c1c23d670!2zTuG7mWkgVGjhuqV0IMSQ4bqhaSBExaluZyBQaMOhdCAtIE7hu5lpIFRo4bqldCBS4bq7IMSQ4bq5cCBMb25nIEFu!5e1!3m2!1svi!2s!4v1770954855405!5m2!1svi!2s";
 
   useEffect(() => {
     const fetchCategories = async () => {
       try {
-        // ✅ Thêm ?lang=${language}
         const response = await fetch(
           `https://tongkhonoithattayninh.vn/api/categories?lang=${language}`,
         );
@@ -30,12 +33,31 @@ const Footer: React.FC = () => {
       }
     };
     fetchCategories();
-  }, [language]); // ✅ Re-fetch khi language thay đổi
+  }, [language]);
 
   return (
     <footer className="ddp-footer">
+      {/* Google Map Section */}
+      <div className="footer-map-section">
+        <div className="container">
+          {/* <h3 className="map-title">{t("footer.findUs")}</h3> */}
+          <div className="map-container">
+            <iframe
+              src={GOOGLE_MAP_EMBED_URL}
+              width="100%"
+              height="400"
+              style={{ border: 0 }}
+              allowFullScreen
+              loading="lazy"
+              referrerPolicy="no-referrer-when-downgrade"
+              title="Google Map Location"
+            ></iframe>
+          </div>
+        </div>
+      </div>
+
       <div className="container footer-grid">
-        {/* Cột 1 – Logo + mô tả */}
+        {/* Cột 1 – Logo + mô tả + Social Media */}
         <div className="footer-col">
           <div className="footer-logo">
             <img src="./src/assets/logo-ddp-removebg.png" alt="ddp" />
@@ -44,6 +66,49 @@ const Footer: React.FC = () => {
           <div className="footer-hotline">
             <span className="phone-icon">📞</span>
             <span className="phone-number">0941038839 - 0965708839</span>
+          </div>
+
+          {/* Social Media Icons */}
+          <div className="footer-social">
+            <h4 className="social-title">{t("footer.followUs")}</h4>
+            <div className="social-icons">
+              <a
+                href="https://www.facebook.com/noithatredepla"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="social-icon facebook"
+                aria-label="Facebook"
+              >
+                <FaFacebook />
+              </a>
+              <a
+                href="https://www.youtube.com/@noithatredeplongan"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="social-icon youtube"
+                aria-label="YouTube"
+              >
+                <FaYoutube />
+              </a>
+              <a
+                href="IwY2xjawP7hHtleHRuA2FlbQIxMABicmlkETJQdGJsWGZFTkUxYU14U0I0c3J0YwZhcHBfaWQQMjIyMDM5MTc4ODIwMDg5MgABHkuvH1viNSGCsJUaKKZ1pFoaub_qjCmECNm4YGjNbDguOEtC5pjNEvM16f8v_aem__QX9nwnJ3TQOicrVm50mEA"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="social-icon tiktok"
+                aria-label="TikTok"
+              >
+                <FaTiktok />
+              </a>
+              <a
+                href="https://www.instagram.com/noithatdaidungphat"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="social-icon instagram"
+                aria-label="Instagram"
+              >
+                <FaInstagram />
+              </a>
+            </div>
           </div>
         </div>
 
@@ -70,7 +135,7 @@ const Footer: React.FC = () => {
           </ul>
         </div>
 
-        {/* Cột 3 – Danh mục (làm động) */}
+        {/* Cột 3 – Danh mục */}
         <div className="footer-col">
           <h3 className="footer-title">{t("footer.categories")}</h3>
           {loading ? (
