@@ -1,6 +1,16 @@
 // src/admin/pages/ProductManager.tsx - WITH CATEGORY FILTER
 import { useState, useEffect, useMemo } from "react";
-import { Plus, Edit2, Trash2, Loader2, X, Search, Filter, Info, ChevronRight } from "lucide-react";
+import {
+  Plus,
+  Edit2,
+  Trash2,
+  Loader2,
+  X,
+  Search,
+  Filter,
+  Info,
+  ChevronRight,
+} from "lucide-react";
 import axiosInstance from "../../axios";
 import { getImageUrl, getFirstImageUrl } from "@/utils/imageUrl";
 import "@/styles/pages/admin/productManager.scss";
@@ -15,6 +25,17 @@ interface AttributeOption {
 interface Attribute {
   name: string;
   options: AttributeOption[];
+}
+
+interface Variant {
+  combination: {
+    name: { vi: string; zh: string };
+    option: { vi: string; zh: string };
+  }[];
+  priceOriginal: number;
+  priceSale: number;
+  quantity: number;
+  sku: string;
 }
 
 interface Product {
@@ -50,11 +71,13 @@ export default function ProductManager() {
   const [deletingProd, setDeletingProd] = useState<Product | null>(null);
   const [showModal, setShowModal] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
-  
+
   // ✅ NEW: Category filter state
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
-  const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
-  
+  const [expandedCategories, setExpandedCategories] = useState<Set<string>>(
+    new Set(),
+  );
+
   const [formData, setFormData] = useState({
     name: "",
     sku: "",
@@ -67,22 +90,70 @@ export default function ProductManager() {
     onSale: false,
     images: [] as File[],
     attributes: [] as Attribute[],
+    variants: [] as any[],
   });
   const [imagePreviews, setImagePreviews] = useState<string[]>([]);
-  const [attributeImages, setAttributeImages] = useState<Map<string, File | string>>(
-    new Map()
-  );
+  const [attributeImages, setAttributeImages] = useState<
+    Map<string, File | string>
+  >(new Map());
   const [successMessage, setSuccessMessage] = useState("");
   const [previewImage, setPreviewImage] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(5);
 
+  const generateVariants = () => {
+    if (formData.attributes.length === 0) {
+      alert("Vui lòng thêm thuộc tính trước!");
+      return;
+    }
+
+    // Thuật toán nhân bản (Cartesian Product)
+    let combos: any[][] = [[]];
+    formData.attributes.forEach((attr) => {
+      const newCombos: any[][] = [];
+      attr.options.forEach((opt) => {
+        combos.forEach((combo) => {
+          newCombos.push([
+            ...combo,
+            {
+              name: { vi: attr.name, zh: "" },
+              option: { vi: opt.label, zh: "" },
+            },
+          ]);
+        });
+      });
+      combos = newCombos;
+    });
+
+    // Chuyển kết quả thành mảng variants
+    const newVariants = combos.map((combo, index) => ({
+      combination: combo,
+      priceOriginal: formData.priceOriginal,
+      priceSale: formData.priceSale,
+      quantity: formData.quantity,
+      sku: `${formData.sku}-${index + 1}`,
+    }));
+
+    setFormData({ ...formData, variants: newVariants });
+  };
+
+  // Hàm cập nhật giá trị cho từng ô trong bảng biến thể
+  const handleVariantChange = (
+    index: number,
+    field: keyof Variant,
+    value: any,
+  ) => {
+    const updatedVariants = [...(formData.variants || [])];
+    updatedVariants[index] = { ...updatedVariants[index], [field]: value };
+    setFormData({ ...formData, variants: updatedVariants });
+  };
+
   // ✅ Helper: Safely get name (multilingual support)
   const getName = (name: any): string => {
-    if (typeof name === 'object' && name !== null && name.vi) {
+    if (typeof name === "object" && name !== null && name.vi) {
       return name.vi;
     }
-    return String(name || '');
+    return String(name || "");
   };
 
   const fetchProducts = async () => {
@@ -103,7 +174,7 @@ export default function ProductManager() {
       const flatten = (
         cats: Category[],
         level = 0,
-        path: string[] = []
+        path: string[] = [],
       ): Category[] => {
         let list: Category[] = [];
         cats.forEach((cat) => {
@@ -111,7 +182,7 @@ export default function ProductManager() {
           list.push({ ...cat, level, path: [...path, catName] });
           if (cat.children?.length) {
             list = list.concat(
-              flatten(cat.children, level + 1, [...path, catName])
+              flatten(cat.children, level + 1, [...path, catName]),
             );
           }
         });
@@ -141,7 +212,7 @@ export default function ProductManager() {
   // ✅ NEW: Filter products by search AND categories
   const filteredProducts = useMemo(() => {
     let filtered = products;
-    
+
     // Filter by search query
     if (searchQuery.trim()) {
       const searchLower = searchQuery.toLowerCase();
@@ -151,7 +222,7 @@ export default function ProductManager() {
         const categories = prod.categories
           .map((c) => getName(c.name).toLowerCase())
           .join(" ");
-        
+
         return (
           name.includes(searchLower) ||
           sku.includes(searchLower) ||
@@ -159,23 +230,23 @@ export default function ProductManager() {
         );
       });
     }
-    
+
     // Filter by selected categories
     if (selectedCategories.length > 0) {
       filtered = filtered.filter((prod) => {
-        return prod.categories.some((cat) => 
-          selectedCategories.includes(cat._id)
+        return prod.categories.some((cat) =>
+          selectedCategories.includes(cat._id),
         );
       });
     }
-    
+
     return filtered;
   }, [products, searchQuery, selectedCategories]);
 
   // ✅ NEW: Get product count for each category
   const getCategoryProductCount = (categoryId: string): number => {
     return products.filter((prod) =>
-      prod.categories.some((cat) => cat._id === categoryId)
+      prod.categories.some((cat) => cat._id === categoryId),
     ).length;
   };
 
@@ -212,26 +283,26 @@ export default function ProductManager() {
   const buildCategoryTree = (categories: Category[]): Category[] => {
     const tree: Category[] = [];
     const categoryMap = new Map<string, Category>();
-    
+
     // Create a map of all categories
-    categories.forEach(cat => {
+    categories.forEach((cat) => {
       categoryMap.set(cat._id, { ...cat, children: [] });
     });
-    
+
     // Build the tree
-    categories.forEach(cat => {
+    categories.forEach((cat) => {
       const categoryNode = categoryMap.get(cat._id)!;
       if (cat.level === 0) {
         tree.push(categoryNode);
       } else {
         // Find parent in the original categories list
-        const parent = categories.find(c => {
+        const parent = categories.find((c) => {
           // Check if this category is a direct child of the potential parent
-          const parentPath = c.path.join('/');
-          const childPath = cat.path.slice(0, -1).join('/');
+          const parentPath = c.path.join("/");
+          const childPath = cat.path.slice(0, -1).join("/");
           return c._id !== cat._id && parentPath === childPath;
         });
-        
+
         if (parent) {
           const parentNode = categoryMap.get(parent._id);
           if (parentNode) {
@@ -241,11 +312,14 @@ export default function ProductManager() {
         }
       }
     });
-    
+
     return tree;
   };
 
-  const categoryTree = useMemo(() => buildCategoryTree(flatCategories), [flatCategories]);
+  const categoryTree = useMemo(
+    () => buildCategoryTree(flatCategories),
+    [flatCategories],
+  );
 
   // Pagination
   const totalPages = Math.ceil(filteredProducts.length / itemsPerPage);
@@ -260,7 +334,7 @@ export default function ProductManager() {
 
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
   const handleItemsPerPageChange = (value: number) => {
@@ -282,6 +356,7 @@ export default function ProductManager() {
       onSale: false,
       images: [],
       attributes: [],
+      variants: prod.variants || [],
     });
     setImagePreviews([]);
     setAttributeImages(new Map());
@@ -290,18 +365,18 @@ export default function ProductManager() {
 
   const openEditModal = (prod: Product) => {
     setEditingProd(prod);
-    
+
     // ✅ Convert multilingual attributes back to simple string format for editing
-    const convertedAttributes = (prod.attributes || []).map(attr => ({
+    const convertedAttributes = (prod.attributes || []).map((attr) => ({
       name: getName(attr.name),
-      options: (attr.options || []).map(opt => ({
+      options: (attr.options || []).map((opt) => ({
         label: getName(opt.label),
         value: opt.value || "",
         image: opt.image,
-        isDefault: opt.isDefault || false
-      }))
+        isDefault: opt.isDefault || false,
+      })),
     }));
-    
+
     setFormData({
       name: getName(prod.name),
       sku: prod.sku,
@@ -314,9 +389,10 @@ export default function ProductManager() {
       onSale: prod.onSale || false,
       images: [],
       attributes: convertedAttributes,
+      variants: prod.variants || [],
     });
     setImagePreviews(prod.images);
-    
+
     const newAttrImgMap = new Map<string, File | string>();
     convertedAttributes.forEach((attr, attrIdx) => {
       attr.options.forEach((opt, optIdx) => {
@@ -334,7 +410,10 @@ export default function ProductManager() {
     return num ? parseInt(num).toLocaleString() : "";
   };
 
-  const handlePriceChange = (field: "priceOriginal" | "priceSale", value: string) => {
+  const handlePriceChange = (
+    field: "priceOriginal" | "priceSale",
+    value: string,
+  ) => {
     const numericValue = value.replace(/\D/g, "");
     setFormData({ ...formData, [field]: numericValue });
   };
@@ -372,7 +451,7 @@ export default function ProductManager() {
   const removeAttribute = (index: number) => {
     const newAttrs = formData.attributes.filter((_, i) => i !== index);
     setFormData({ ...formData, attributes: newAttrs });
-    
+
     const newAttrImgMap = new Map(attributeImages);
     Array.from(attributeImages.keys()).forEach((key) => {
       const [attrIdx] = key.split("_").map(Number);
@@ -402,13 +481,15 @@ export default function ProductManager() {
 
   const removeOption = (attrIdx: number, optIdx: number) => {
     const newAttrs = [...formData.attributes];
-    newAttrs[attrIdx].options = newAttrs[attrIdx].options.filter((_, i) => i !== optIdx);
+    newAttrs[attrIdx].options = newAttrs[attrIdx].options.filter(
+      (_, i) => i !== optIdx,
+    );
     setFormData({ ...formData, attributes: newAttrs });
-    
+
     const newAttrImgMap = new Map(attributeImages);
     const key = `${attrIdx}_${optIdx}`;
     newAttrImgMap.delete(key);
-    
+
     Array.from(attributeImages.keys()).forEach((k) => {
       const [aIdx, oIdx] = k.split("_").map(Number);
       if (aIdx === attrIdx && oIdx > optIdx) {
@@ -424,7 +505,7 @@ export default function ProductManager() {
     attrIdx: number,
     optIdx: number,
     field: keyof AttributeOption,
-    value: any
+    value: any,
   ) => {
     const newAttrs = [...formData.attributes];
     if (field === "isDefault" && value === true) {
@@ -440,7 +521,7 @@ export default function ProductManager() {
   const handleAttributeImageChange = (
     attrIdx: number,
     optIdx: number,
-    file: File | null
+    file: File | null,
   ) => {
     if (!file) return;
     const newAttrImgMap = new Map(attributeImages);
@@ -448,74 +529,85 @@ export default function ProductManager() {
     setAttributeImages(newAttrImgMap);
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    try {
-      const form = new FormData();
-      
-      form.append("name", formData.name);
-      form.append("sku", formData.sku);
-      form.append("priceOriginal", formData.priceOriginal);
-      form.append("priceSale", formData.priceSale);
-      form.append("quantity", formData.quantity);
-      form.append("description", formData.description);
-      form.append("hot", formData.hot.toString());
-      form.append("onSale", formData.onSale.toString());
-      
-      formData.categories.forEach((catId) => {
-        form.append("categories[]", catId);
-      });
-      
-      formData.images.forEach((img) => {
-        form.append("images", img);
-      });
-      
-      const attributesForBackend = formData.attributes.map((attr, attrIdx) => ({
-        // Ép kiểu về object đa ngôn ngữ cho name
-        name: { vi: attr.name, zh: "" }, 
-        options: attr.options.map((opt, optIdx) => {
-          const key = `${attrIdx}_${optIdx}`;
-          const imgFile = attributeImages.get(key);
-          
-          return {
-            // Ép kiểu về object đa ngôn ngữ cho label
-            label: { vi: opt.label, zh: "" }, 
-            value: opt.value || opt.label.toLowerCase().replace(/\s+/g, "-"),
-            isDefault: opt.isDefault || false,
-            imageKey: imgFile instanceof File ? key : undefined,
-            existingImage: typeof imgFile === 'string' ? imgFile : opt.image,
-          };
-        }),
-      }));
-      
-      form.append("attributes", JSON.stringify(attributesForBackend));
-      
-      attributeImages.forEach((img, key) => {
-        if (img instanceof File) {
-          form.append(`attributeImages[${key}]`, img);
-        }
-      });
-      
-      if (editingProd) {
-        await axiosInstance.put(`/admin/products/${editingProd._id}`, form, {
-          headers: { "Content-Type": "multipart/form-data" },
-        });
-        setSuccessMessage("Cập nhật sản phẩm thành công!");
-      } else {
-        await axiosInstance.post("/admin/products", form, {
-          headers: { "Content-Type": "multipart/form-data" },
-        });
-        setSuccessMessage("Thêm sản phẩm thành công!");
-      }
-      
-      setTimeout(() => setSuccessMessage(""), 1500);
-      fetchProducts();
-      setShowModal(false);
-    } catch (err: any) {
-      alert(err.response?.data?.message || "Lỗi khi lưu sản phẩm");
+const handleSubmit = async (e: React.FormEvent) => {
+  e.preventDefault();
+
+  try {
+    const form = new FormData();
+
+    // 1. Các trường cơ bản
+    form.append("name", typeof formData.name === 'string' ? formData.name : JSON.stringify(formData.name));
+    form.append("sku", formData.sku);
+    form.append("priceOriginal", formData.priceOriginal.toString());
+    form.append("priceSale", formData.priceSale.toString());
+    form.append("quantity", formData.quantity.toString());
+    form.append("description", typeof formData.description === 'string' ? formData.description : JSON.stringify(formData.description));
+    form.append("hot", formData.hot.toString());
+    form.append("onSale", formData.onSale.toString());
+
+    // 2. Xử lý Categories
+    formData.categories.forEach((catId) => {
+      form.append("categories[]", catId);
+    });
+
+    // 3. Xử lý Ảnh chính
+    formData.images.forEach((img) => {
+      form.append("images", img);
+    });
+
+    // 4. Xử lý Attributes (Thuộc tính)
+    const attributesForBackend = formData.attributes.map((attr, attrIdx) => ({
+      name: { vi: attr.name, zh: "" },
+      options: attr.options.map((opt, optIdx) => {
+        const key = `${attrIdx}_${optIdx}`;
+        const imgFile = attributeImages.get(key);
+        return {
+          label: { vi: opt.label, zh: "" },
+          value: opt.value || opt.label.toLowerCase().replace(/\s+/g, "-"),
+          isDefault: opt.isDefault || false,
+          imageKey: imgFile instanceof File ? key : undefined,
+          existingImage: typeof imgFile === "string" ? imgFile : opt.image,
+        };
+      }),
+    }));
+    form.append("attributes", JSON.stringify(attributesForBackend));
+
+    // ==========================================
+    // PHẦN B: LƯU BIẾN THỂ (VARIANTS) - THÊM VÀO ĐÂY
+    // ==========================================
+    if (formData.variants && formData.variants.length > 0) {
+      form.append("variants", JSON.stringify(formData.variants));
     }
-  };
+    // ==========================================
+
+    // 5. Xử lý Ảnh của thuộc tính (nếu có)
+    attributeImages.forEach((img, key) => {
+      if (img instanceof File) {
+        form.append(`attributeImages[${key}]`, img);
+      }
+    });
+
+    // 6. Gửi API
+    if (editingProd) {
+      await axiosInstance.put(`/admin/products/${editingProd._id}`, form, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
+      setSuccessMessage("Cập nhật sản phẩm thành công!");
+    } else {
+      await axiosInstance.post("/admin/products", form, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
+      setSuccessMessage("Thêm sản phẩm thành công!");
+    }
+
+    setTimeout(() => setSuccessMessage(""), 1500);
+    fetchProducts();
+    setShowModal(false);
+  } catch (err: any) {
+    console.error("Submit error:", err);
+    alert(err.response?.data?.message || "Lỗi khi lưu sản phẩm");
+  }
+};
 
   const handleDelete = async () => {
     if (!deletingProd) return;
@@ -532,7 +624,10 @@ export default function ProductManager() {
 
   if (loading) {
     return (
-      <div className="product-manager" style={{ textAlign: "center", padding: "100px" }}>
+      <div
+        className="product-manager"
+        style={{ textAlign: "center", padding: "100px" }}
+      >
         <Loader2 size={48} className="spin" />
         <p>Đang tải dữ liệu...</p>
       </div>
@@ -571,7 +666,7 @@ export default function ProductManager() {
             <Filter size={18} />
             Lọc theo danh mục
           </div>
-          <button 
+          <button
             className="btn-clear-filter"
             onClick={clearCategoryFilter}
             disabled={selectedCategories.length === 0}
@@ -584,39 +679,42 @@ export default function ProductManager() {
         <div className="filter-content">
           <div className="category-tree-wrapper">
             {categoryTree.length === 0 ? (
-              <div className="empty-categories">
-                Chưa có danh mục nào
-              </div>
+              <div className="empty-categories">Chưa có danh mục nào</div>
             ) : (
               categoryTree.map((parentCat) => {
-                const hasChildren = parentCat.children && parentCat.children.length > 0;
+                const hasChildren =
+                  parentCat.children && parentCat.children.length > 0;
                 const isExpanded = expandedCategories.has(parentCat._id);
                 const parentCount = getCategoryProductCount(parentCat._id);
-                
+
                 return (
-                  <div 
-                    key={parentCat._id} 
-                    className={`category-tree-item ${hasChildren ? 'has-children' : 'no-children'}`}
+                  <div
+                    key={parentCat._id}
+                    className={`category-tree-item ${hasChildren ? "has-children" : "no-children"}`}
                   >
                     <div className="category-parent">
                       {hasChildren && (
-                        <div 
-                          className={`expand-icon ${isExpanded ? 'expanded' : ''}`}
+                        <div
+                          className={`expand-icon ${isExpanded ? "expanded" : ""}`}
                           onClick={() => toggleExpandCategory(parentCat._id)}
                         >
                           <ChevronRight size={16} />
                         </div>
                       )}
                       {!hasChildren && <div className="expand-icon" />}
-                      
+
                       <div className="category-checkbox-wrapper">
                         <input
                           type="checkbox"
                           checked={selectedCategories.includes(parentCat._id)}
-                          onChange={() => handleCategoryFilterChange(parentCat._id)}
+                          onChange={() =>
+                            handleCategoryFilterChange(parentCat._id)
+                          }
                           onClick={(e) => e.stopPropagation()}
                         />
-                        <span className="category-label">{getName(parentCat.name)}</span>
+                        <span className="category-label">
+                          {getName(parentCat.name)}
+                        </span>
                         <span className="category-count">{parentCount}</span>
                       </div>
                     </div>
@@ -624,20 +722,30 @@ export default function ProductManager() {
                     {hasChildren && isExpanded && (
                       <div className="category-children">
                         {parentCat.children!.map((childCat) => {
-                          const childCount = getCategoryProductCount(childCat._id);
+                          const childCount = getCategoryProductCount(
+                            childCat._id,
+                          );
                           return (
-                            <div 
-                              key={childCat._id} 
+                            <div
+                              key={childCat._id}
                               className="category-child"
-                              onClick={() => handleCategoryFilterChange(childCat._id)}
+                              onClick={() =>
+                                handleCategoryFilterChange(childCat._id)
+                              }
                             >
                               <input
                                 type="checkbox"
-                                checked={selectedCategories.includes(childCat._id)}
-                                onChange={() => handleCategoryFilterChange(childCat._id)}
+                                checked={selectedCategories.includes(
+                                  childCat._id,
+                                )}
+                                onChange={() =>
+                                  handleCategoryFilterChange(childCat._id)
+                                }
                                 onClick={(e) => e.stopPropagation()}
                               />
-                              <span className="child-label">{getName(childCat.name)}</span>
+                              <span className="child-label">
+                                {getName(childCat.name)}
+                              </span>
                               <span className="child-count">{childCount}</span>
                             </div>
                           );
@@ -655,7 +763,7 @@ export default function ProductManager() {
             {selectedCategories.length > 0 ? (
               <div className="selected-items">
                 {selectedCategories.map((catId) => {
-                  const category = flatCategories.find(c => c._id === catId);
+                  const category = flatCategories.find((c) => c._id === catId);
                   if (!category) return null;
                   const count = getCategoryProductCount(catId);
                   return (
@@ -681,9 +789,13 @@ export default function ProductManager() {
         <div className="filter-stats">
           <div className="stats-left">
             {selectedCategories.length > 0 ? (
-              <>Đang lọc <strong>{filteredProducts.length}</strong> sản phẩm</>
+              <>
+                Đang lọc <strong>{filteredProducts.length}</strong> sản phẩm
+              </>
             ) : (
-              <>Tổng cộng <strong>{products.length}</strong> sản phẩm</>
+              <>
+                Tổng cộng <strong>{products.length}</strong> sản phẩm
+              </>
             )}
           </div>
           <div className="stats-right">
@@ -703,9 +815,8 @@ export default function ProductManager() {
         {currentProducts.length === 0 ? (
           <p className="empty">
             {searchQuery || selectedCategories.length > 0
-              ? `Không tìm thấy sản phẩm nào${searchQuery ? ` với từ khóa "${searchQuery}"` : ''}${selectedCategories.length > 0 ? ' trong danh mục đã chọn' : ''}`
-              : "Chưa có sản phẩm nào. Hãy thêm sản phẩm đầu tiên!"
-            }
+              ? `Không tìm thấy sản phẩm nào${searchQuery ? ` với từ khóa "${searchQuery}"` : ""}${selectedCategories.length > 0 ? " trong danh mục đã chọn" : ""}`
+              : "Chưa có sản phẩm nào. Hãy thêm sản phẩm đầu tiên!"}
           </p>
         ) : (
           <table>
@@ -740,7 +851,9 @@ export default function ProductManager() {
                   <td>{prod.priceOriginal.toLocaleString()} ₫</td>
                   <td>{prod.priceSale.toLocaleString()} ₫</td>
                   <td>{prod.quantity}</td>
-                  <td>{prod.categories.map((c) => getName(c.name)).join(", ")}</td>
+                  <td>
+                    {prod.categories.map((c) => getName(c.name)).join(", ")}
+                  </td>
                   <td className="actions">
                     <button
                       onClick={() => openEditModal(prod)}
@@ -767,9 +880,11 @@ export default function ProductManager() {
           <div className="pagination-left">
             <div className="items-per-page">
               <span>Hiển thị:</span>
-              <select 
-                value={itemsPerPage} 
-                onChange={(e) => handleItemsPerPageChange(Number(e.target.value))}
+              <select
+                value={itemsPerPage}
+                onChange={(e) =>
+                  handleItemsPerPageChange(Number(e.target.value))
+                }
               >
                 <option value={5}>5</option>
                 <option value={10}>10</option>
@@ -780,47 +895,55 @@ export default function ProductManager() {
               <span>sản phẩm/trang</span>
             </div>
             <div className="page-info">
-              Hiển thị {startIndex + 1}-{Math.min(endIndex, filteredProducts.length)} trong tổng số {filteredProducts.length} sản phẩm
+              Hiển thị {startIndex + 1}-
+              {Math.min(endIndex, filteredProducts.length)} trong tổng số{" "}
+              {filteredProducts.length} sản phẩm
             </div>
           </div>
 
           {totalPages > 1 && (
             <div className="pagination-center">
-              <button 
+              <button
                 onClick={() => handlePageChange(currentPage - 1)}
                 disabled={currentPage === 1}
                 className="pagination-btn"
               >
                 ← Trước
               </button>
-              
+
               <div className="pagination-numbers">
-                {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => {
-                  if (
-                    page === 1 ||
-                    page === totalPages ||
-                    (page >= currentPage - 1 && page <= currentPage + 1)
-                  ) {
-                    return (
-                      <button
-                        key={page}
-                        onClick={() => handlePageChange(page)}
-                        className={`pagination-number ${currentPage === page ? 'active' : ''}`}
-                      >
-                        {page}
-                      </button>
-                    );
-                  } else if (
-                    page === currentPage - 2 ||
-                    page === currentPage + 2
-                  ) {
-                    return <span key={page} className="pagination-ellipsis">...</span>;
-                  }
-                  return null;
-                })}
+                {Array.from({ length: totalPages }, (_, i) => i + 1).map(
+                  (page) => {
+                    if (
+                      page === 1 ||
+                      page === totalPages ||
+                      (page >= currentPage - 1 && page <= currentPage + 1)
+                    ) {
+                      return (
+                        <button
+                          key={page}
+                          onClick={() => handlePageChange(page)}
+                          className={`pagination-number ${currentPage === page ? "active" : ""}`}
+                        >
+                          {page}
+                        </button>
+                      );
+                    } else if (
+                      page === currentPage - 2 ||
+                      page === currentPage + 2
+                    ) {
+                      return (
+                        <span key={page} className="pagination-ellipsis">
+                          ...
+                        </span>
+                      );
+                    }
+                    return null;
+                  },
+                )}
               </div>
 
-              <button 
+              <button
                 onClick={() => handlePageChange(currentPage + 1)}
                 disabled={currentPage === totalPages}
                 className="pagination-btn"
@@ -864,7 +987,9 @@ export default function ProductManager() {
                 type="text"
                 placeholder="Giá gốc (₫)"
                 value={formatCurrency(formData.priceOriginal)}
-                onChange={(e) => handlePriceChange("priceOriginal", e.target.value)}
+                onChange={(e) =>
+                  handlePriceChange("priceOriginal", e.target.value)
+                }
                 required
               />
 
@@ -873,11 +998,15 @@ export default function ProductManager() {
                   type="text"
                   placeholder="Giá bán (₫)"
                   value={formatCurrency(formData.priceSale)}
-                  onChange={(e) => handlePriceChange("priceSale", e.target.value)}
+                  onChange={(e) =>
+                    handlePriceChange("priceSale", e.target.value)
+                  }
                   required
                 />
                 {calculateDiscount() > 0 && (
-                  <span className="discount-badge">-{calculateDiscount()}%</span>
+                  <span className="discount-badge">
+                    -{calculateDiscount()}%
+                  </span>
                 )}
               </div>
 
@@ -914,7 +1043,8 @@ export default function ProductManager() {
                     const indent = "  ".repeat(cat.level);
                     return (
                       <option key={cat._id} value={cat._id}>
-                        {indent}{getName(cat.name)}
+                        {indent}
+                        {getName(cat.name)}
                       </option>
                     );
                   })}
@@ -1023,7 +1153,7 @@ export default function ProductManager() {
                                 attrIdx,
                                 optIdx,
                                 "label",
-                                e.target.value
+                                e.target.value,
                               )
                             }
                           />
@@ -1036,7 +1166,7 @@ export default function ProductManager() {
                                 handleAttributeImageChange(
                                   attrIdx,
                                   optIdx,
-                                  e.target.files?.[0] || null
+                                  e.target.files?.[0] || null,
                                 )
                               }
                               id={`attr-img-${attrIdx}-${optIdx}`}
@@ -1050,32 +1180,35 @@ export default function ProductManager() {
                             {attributeImages.has(`${attrIdx}_${optIdx}`) && (
                               <span className="file-selected">✓</span>
                             )}
-                            {(attributeImages.get(`${attrIdx}_${optIdx}`) || opt.image) && (
+                            {(attributeImages.get(`${attrIdx}_${optIdx}`) ||
+                              opt.image) && (
                               <img
-                                src={
-                                  (() => {
-                                    const img = attributeImages.get(`${attrIdx}_${optIdx}`);
-                                    if (img instanceof File) {
-                                      return URL.createObjectURL(img);
-                                    }
-                                    if (typeof img === 'string') {
-                                      return getImageUrl(img);
-                                    }
-                                    if (opt.image) {
-                                      return getImageUrl(opt.image);
-                                    }
-                                    return '';
-                                  })()
-                                }
+                                src={(() => {
+                                  const img = attributeImages.get(
+                                    `${attrIdx}_${optIdx}`,
+                                  );
+                                  if (img instanceof File) {
+                                    return URL.createObjectURL(img);
+                                  }
+                                  if (typeof img === "string") {
+                                    return getImageUrl(img);
+                                  }
+                                  if (opt.image) {
+                                    return getImageUrl(opt.image);
+                                  }
+                                  return "";
+                                })()}
                                 alt="preview"
                                 className="attr-img-preview"
                                 onClick={(e) => {
                                   e.stopPropagation();
-                                  const img = attributeImages.get(`${attrIdx}_${optIdx}`);
-                                  let imgUrl = '';
+                                  const img = attributeImages.get(
+                                    `${attrIdx}_${optIdx}`,
+                                  );
+                                  let imgUrl = "";
                                   if (img instanceof File) {
                                     imgUrl = URL.createObjectURL(img);
-                                  } else if (typeof img === 'string') {
+                                  } else if (typeof img === "string") {
                                     imgUrl = getImageUrl(img);
                                   } else if (opt.image) {
                                     imgUrl = getImageUrl(opt.image);
@@ -1095,7 +1228,7 @@ export default function ProductManager() {
                                   attrIdx,
                                   optIdx,
                                   "isDefault",
-                                  e.target.checked
+                                  e.target.checked,
                                 )
                               }
                             />
@@ -1122,6 +1255,101 @@ export default function ProductManager() {
                     </div>
                   </div>
                 ))}
+              </div>
+
+              {/* Bảng biến thể */}
+              <div className="variants-section">
+                <div className="variants-header">
+                  <h4>Phân loại hàng (Biến thể)</h4>
+                  <button
+                    type="button"
+                    className="btn-generate"
+                    onClick={generateVariants}
+                  >
+                    Tạo danh sách phân loại
+                  </button>
+                </div>
+
+                {formData.variants && formData.variants.length > 0 && (
+                  <div className="variants-table-wrapper">
+                    <table className="variants-table">
+                      <thead>
+                        <tr>
+                          <th>Phân loại</th>
+                          <th>Giá bán (VNĐ)</th>
+                          <th>Kho hàng</th>
+                          <th>SKU</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {formData.variants.map((v, idx) => (
+                          <tr key={idx}>
+                            <td>
+                              <span className="variant-label">
+                                {v.combination
+                                  .map((c: any) => c.option.vi)
+                                  .join(" / ")}
+                              </span>
+                            </td>
+                            <td>
+                              <input
+                                type="number"
+                                className="price-input"
+                                value={v.priceSale}
+                                onChange={(e) => {
+                                  const newVariants = [
+                                    ...(formData.variants || []),
+                                  ];
+                                  newVariants[idx].priceSale = Number(
+                                    e.target.value,
+                                  );
+                                  setFormData({
+                                    ...formData,
+                                    variants: newVariants,
+                                  });
+                                }}
+                              />
+                            </td>
+                            <td>
+                              <input
+                                type="number"
+                                value={v.quantity}
+                                onChange={(e) => {
+                                  const newVariants = [
+                                    ...(formData.variants || []),
+                                  ];
+                                  newVariants[idx].quantity = Number(
+                                    e.target.value,
+                                  );
+                                  setFormData({
+                                    ...formData,
+                                    variants: newVariants,
+                                  });
+                                }}
+                              />
+                            </td>
+                            <td>
+                              <input
+                                type="text"
+                                value={v.sku}
+                                onChange={(e) => {
+                                  const newVariants = [
+                                    ...(formData.variants || []),
+                                  ];
+                                  newVariants[idx].sku = e.target.value;
+                                  setFormData({
+                                    ...formData,
+                                    variants: newVariants,
+                                  });
+                                }}
+                              />
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
               </div>
             </form>
 
@@ -1169,9 +1397,15 @@ export default function ProductManager() {
       )}
 
       {previewImage && (
-        <div className="image-preview-modal" onClick={() => setPreviewImage(null)}>
+        <div
+          className="image-preview-modal"
+          onClick={() => setPreviewImage(null)}
+        >
           <div className="preview-content" onClick={(e) => e.stopPropagation()}>
-            <button className="close-preview" onClick={() => setPreviewImage(null)}>
+            <button
+              className="close-preview"
+              onClick={() => setPreviewImage(null)}
+            >
               <X size={24} />
             </button>
             <img src={previewImage} alt="Preview" />

@@ -48,7 +48,7 @@
   .search-box {
     position: relative;
     margin-bottom: 1.5rem;
-    
+
     svg {
       position: absolute;
       left: 1rem;
@@ -56,7 +56,7 @@
       transform: translateY(-50%);
       color: #94a3b8;
     }
-    
+
     input {
       width: 95%;
       padding: 0.75rem 1rem 0.75rem 2.75rem;
@@ -65,7 +65,7 @@
       font-size: 0.95rem;
       transition: all 0.2s;
       background: white;
-      
+
       &:focus {
         outline: none;
         border-color: #3b82f6;
@@ -850,7 +850,8 @@
       }
 
       @keyframes pulse {
-        0%, 100% {
+        0%,
+        100% {
           transform: scale(1);
         }
         50% {
@@ -1103,7 +1104,9 @@
       font-size: 15px;
       font-weight: 600;
       box-shadow: 0 8px 24px rgba(16, 185, 129, 0.4);
-      animation: slideIn 0.3s ease, fadeOut 0.3s ease 1.2s;
+      animation:
+        slideIn 0.3s ease,
+        fadeOut 0.3s ease 1.2s;
       z-index: 9999;
     }
 
@@ -1561,6 +1564,136 @@
 
   form {
     max-height: 70vh;
+
+    // Thay thế đoạn .variants-section cũ bằng đoạn này
+    .variants-section {
+      width: 100%; // Ép rộng bằng section Attribute ở trên
+      margin-top: 30px;
+      margin-bottom: 20px;
+      // Bỏ border và padding bao ngoài để nó sát lề như các section khác
+
+      .variants-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 12px 0;
+        margin-bottom: 15px;
+        border-bottom: 2px solid #10b981; // Đường kẻ xanh đặc trưng của bạn
+
+        h4 {
+          font-size: 18px;
+          color: #1f2937;
+          font-weight: 700;
+          margin: 0;
+          text-transform: uppercase;
+          letter-spacing: 0.5px;
+        }
+
+        .btn-generate {
+          padding: 8px 18px;
+          background: #3b82f6;
+          color: white;
+          border: none;
+          border-radius: 6px;
+          font-weight: 600;
+          font-size: 13px;
+          cursor: pointer;
+          transition: all 0.2s ease;
+          box-shadow: 0 2px 5px rgba(59, 130, 246, 0.2);
+
+          &:hover {
+            background: #2563eb;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+          }
+        }
+      }
+
+      .variants-table-wrapper {
+        width: 100%; // Đảm bảo chiếm trọn không gian
+        background: #fff;
+        border: 1px solid #e5e7eb;
+        border-radius: 8px;
+        overflow: hidden;
+
+        .variants-table {
+          width: 100%;
+          border-collapse: collapse;
+          table-layout: fixed; // Ép các cột chia tỉ lệ cố định
+
+          th {
+            background: #f8fafc;
+            padding: 14px 15px;
+            text-align: left;
+            font-size: 12px;
+            font-weight: 700;
+            color: #64748b;
+            text-transform: uppercase;
+            border-bottom: 1px solid #e5e7eb;
+          }
+
+          td {
+            padding: 12px 15px;
+            border-bottom: 1px solid #f1f5f9;
+
+            // Tỉ lệ cột
+            &:nth-child(1) {
+              width: 35%;
+            } // Cột Phân loại rộng nhất
+            &:nth-child(2) {
+              width: 25%;
+            } // Cột Giá
+            &:nth-child(3) {
+              width: 15%;
+            } // Cột Kho
+            &:nth-child(4) {
+              width: 25%;
+            } // Cột SKU
+
+            .variant-label {
+              display: block;
+              font-weight: 600;
+              color: #111827;
+              font-size: 14px;
+              // Nếu tên biến thể dài quá thì cho hiện dấu ...
+              white-space: nowrap;
+              overflow: hidden;
+              text-overflow: ellipsis;
+            }
+
+            input {
+              width: 100%;
+              padding: 8px 12px;
+              border: 1px solid #d1d5db;
+              border-radius: 6px;
+              font-size: 14px;
+              background: #fff;
+              transition: border-color 0.2s;
+
+              &:focus {
+                outline: none;
+                border-color: #10b981;
+                box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1);
+              }
+
+              &.price-input {
+                color: #ef4444;
+                font-weight: 700;
+                background: #fffafb; // Màu nền nhẹ cho ô giá
+              }
+            }
+          }
+
+          tr:last-child td {
+            border-bottom: none;
+          }
+
+          tr:hover {
+            background: #f9fafb;
+          }
+        }
+      }
+    }
   }
 }
 

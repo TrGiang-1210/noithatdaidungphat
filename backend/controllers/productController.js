@@ -7,90 +7,94 @@ const mongoose = require("mongoose");
 /**
  * Helper: Transform product data theo language
  */
-function transformProduct(prod, lang = 'vi') {
+function transformProduct(prod, lang = "vi") {
   const product = prod.toObject ? prod.toObject() : prod;
-  
+
   // ✅ FIX: Helper: Extract string từ multilingual field
   const getText = (field) => {
     // Null/undefined → empty string
-    if (!field) return '';
-    
+    if (!field) return "";
+
     // Đã là string → return luôn
-    if (typeof field === 'string') return field;
-    
+    if (typeof field === "string") return field;
+
     // Object → extract theo priority: lang → vi → en → first available
-    if (typeof field === 'object' && field !== null) {
+    if (typeof field === "object" && field !== null) {
       // Try requested language
-      if (field[lang] && typeof field[lang] === 'string' && field[lang].trim()) {
+      if (
+        field[lang] &&
+        typeof field[lang] === "string" &&
+        field[lang].trim()
+      ) {
         return field[lang];
       }
-      
+
       // Fallback to Vietnamese
-      if (field.vi && typeof field.vi === 'string' && field.vi.trim()) {
+      if (field.vi && typeof field.vi === "string" && field.vi.trim()) {
         return field.vi;
       }
-      
+
       // Fallback to English
-      if (field.en && typeof field.en === 'string' && field.en.trim()) {
+      if (field.en && typeof field.en === "string" && field.en.trim()) {
         return field.en;
       }
-      
+
       // Fallback to first non-empty value
-      const values = Object.values(field).filter(v => 
-        typeof v === 'string' && v.trim()
+      const values = Object.values(field).filter(
+        (v) => typeof v === "string" && v.trim(),
       );
       if (values.length > 0) {
         return values[0];
       }
-      
+
       // ✅ FIX: No valid translation found - KHÔNG log warning nữa, chỉ return ''
-      return '';
+      return "";
     }
-    
+
     // Unknown type → stringify
     return String(field);
   };
-  
+
   return {
     ...product,
-    
+
     // ✅ CRITICAL: Convert name to string
     name: getText(product.name),
-    
-    // ✅ CRITICAL: Convert description to string  
+
+    // ✅ CRITICAL: Convert description to string
     description: getText(product.description),
-    
+
     // ✅ Transform attributes
-    attributes: Array.isArray(product.attributes) 
-      ? product.attributes.map(attr => ({
+    attributes: Array.isArray(product.attributes)
+      ? product.attributes.map((attr) => ({
           ...attr,
           // Convert attribute name to string
           name: getText(attr.name),
-          
+
           // Convert each option label to string
           options: Array.isArray(attr.options)
-            ? attr.options.map(opt => ({
+            ? attr.options.map((opt) => ({
                 ...opt,
-                label: getText(opt.label)
+                label: getText(opt.label),
               }))
-            : []
+            : [],
         }))
       : [],
-    
+
     // ✅ Transform categories (if populated)
     categories: Array.isArray(product.categories)
-      ? product.categories.map(cat => {
+      ? product.categories.map((cat) => {
           // If it's just an ObjectId string, keep it
-          if (typeof cat === 'string') return cat;
-          
+          if (typeof cat === "string") return cat;
+
           // If it's a populated object, transform it
           return {
             ...cat,
             name: getText(cat.name),
-            description: getText(cat.description)
+            description: getText(cat.description),
           };
         })
-      : []
+      : [],
   };
 }
 
@@ -110,7 +114,7 @@ const normalizeString = (s) => {
 // GET /api/products
 exports.getProducts = async (req, res) => {
   try {
-    const { lang = 'vi' } = req.query;
+    const { lang = "vi" } = req.query;
     let filters = {};
 
     // Lọc theo danh mục
@@ -122,7 +126,9 @@ exports.getProducts = async (req, res) => {
       if (!category) return res.json([]);
 
       const getChildIds = async (parentId) => {
-        const children = await Category.find({ parent: parentId }).select("_id");
+        const children = await Category.find({ parent: parentId }).select(
+          "_id",
+        );
         let ids = children.map((c) => c._id);
         for (const child of children) {
           ids = ids.concat(await getChildIds(child._id));
@@ -137,8 +143,10 @@ exports.getProducts = async (req, res) => {
     // Lọc giá
     if (req.query.minPrice || req.query.maxPrice) {
       filters.priceSale = {};
-      if (req.query.minPrice) filters.priceSale.$gte = Number(req.query.minPrice);
-      if (req.query.maxPrice) filters.priceSale.$lte = Number(req.query.maxPrice);
+      if (req.query.minPrice)
+        filters.priceSale.$gte = Number(req.query.minPrice);
+      if (req.query.maxPrice)
+        filters.priceSale.$lte = Number(req.query.maxPrice);
     }
 
     // Sắp xếp
@@ -148,12 +156,12 @@ exports.getProducts = async (req, res) => {
     if (req.query.sort === "-sold") sort = { sold: -1 };
 
     const products = await Product.find(filters)
-      .populate('categories')
+      .populate("categories")
       .sort(sort)
       .lean();
 
     // ✅ Transform theo language
-    const transformed = products.map(prod => transformProduct(prod, lang));
+    const transformed = products.map((prod) => transformProduct(prod, lang));
 
     res.json(transformed);
   } catch (err) {
@@ -165,7 +173,7 @@ exports.getProducts = async (req, res) => {
 // GET /api/products/search
 exports.searchProducts = async (req, res) => {
   try {
-    const { lang = 'vi' } = req.query;
+    const { lang = "vi" } = req.query;
     const raw = (req.query.query || req.query.q || "").toString().trim();
     if (!raw) return res.json([]);
 
@@ -180,19 +188,19 @@ exports.searchProducts = async (req, res) => {
     const normalNormalizedRegex = new RegExp(escapeRegex(rawNormalized), "i");
     const fuzzyNormalizedRegex = new RegExp(
       rawNormalized.split("").map(escapeRegex).join(".*"),
-      "i"
+      "i",
     );
 
     // ✅ Tìm kiếm trong cả name.vi và name.zh
     const orConditions = [
-      { 'name.vi': { $regex: normalRegex } },
-      { 'name.zh': { $regex: normalRegex } },
+      { "name.vi": { $regex: normalRegex } },
+      { "name.zh": { $regex: normalRegex } },
       { slug: { $regex: normalRegex } },
-      { 'name.vi': { $regex: fuzzyRegex } },
-      { 'name.zh': { $regex: fuzzyRegex } },
+      { "name.vi": { $regex: fuzzyRegex } },
+      { "name.zh": { $regex: fuzzyRegex } },
       { slug: { $regex: fuzzyRegex } },
-      { 'description.vi': { $regex: normalRegex } },
-      { 'description.zh': { $regex: normalRegex } },
+      { "description.vi": { $regex: normalRegex } },
+      { "description.zh": { $regex: normalRegex } },
       { sku: { $regex: normalRegex } },
     ];
 
@@ -203,31 +211,33 @@ exports.searchProducts = async (req, res) => {
     const products = await query.lean();
 
     // ✅ Transform theo language
-    const transformed = products.map(prod => transformProduct(prod, lang));
+    const transformed = products.map((prod) => transformProduct(prod, lang));
 
     return res.json(Array.isArray(transformed) ? transformed : []);
   } catch (err) {
     console.error("searchProducts error:", err);
-    return res.status(500).json({ message: err.message || "Error searching products" });
+    return res
+      .status(500)
+      .json({ message: err.message || "Error searching products" });
   }
 };
 
 // GET /api/products/:id
 exports.getProductById = async (req, res) => {
   try {
-    const { lang = 'vi', raw } = req.query;  // ← THÊM PARAM raw
-    
+    const { lang = "vi", raw } = req.query; // ← THÊM PARAM raw
+
     const p = await Product.findById(req.params.id)
-      .populate('categories')
+      .populate("categories")
       .lean();
-    
+
     if (!p) return res.status(404).json({ message: "Product not found" });
-    
+
     // ✅ NẾU raw=true → TRẢ VỀ NGUYÊN GỐC (KHÔNG TRANSFORM)
-    if (raw === 'true' || raw === true) {
+    if (raw === "true" || raw === true) {
       return res.json(p);
     }
-    
+
     // ✅ NẾU KHÔNG → TRANSFORM NHƯ BÌNH THƯỜNG
     const transformed = transformProduct(p, lang);
     return res.json(transformed);
@@ -240,14 +250,14 @@ exports.getProductById = async (req, res) => {
 // GET /api/products/slug/:slug
 exports.getProductBySlug = async (req, res) => {
   try {
-    const { lang = 'vi' } = req.query;
-    
+    const { lang = "vi" } = req.query;
+
     const p = await Product.findOne({ slug: req.params.slug })
-      .populate('categories')
+      .populate("categories")
       .lean();
-    
+
     if (!p) return res.status(404).json({ message: "Product not found" });
-    
+
     const transformed = transformProduct(p, lang);
     return res.json(transformed);
   } catch (err) {
@@ -261,18 +271,18 @@ exports.incrementView = async (req, res) => {
   try {
     const { id, slug } = req.params;
     let product;
-    
+
     if (id) {
       product = await Product.findByIdAndUpdate(
         id,
         { $inc: { view: 1 } },
-        { new: true }
+        { new: true },
       );
     } else if (slug) {
       product = await Product.findOneAndUpdate(
         { slug: slug },
         { $inc: { view: 1 } },
-        { new: true }
+        { new: true },
       );
     }
 
@@ -280,15 +290,15 @@ exports.incrementView = async (req, res) => {
       return res.status(404).json({ message: "Product not found" });
     }
 
-    return res.json({ 
-      success: true, 
-      view: product.view 
+    return res.json({
+      success: true,
+      view: product.view,
     });
   } catch (err) {
     console.error("incrementView error:", err);
-    return res.status(500).json({ 
+    return res.status(500).json({
       success: false,
-      message: err.message || "Server error" 
+      message: err.message || "Server error",
     });
   }
 };
@@ -296,7 +306,7 @@ exports.incrementView = async (req, res) => {
 // GET /api/products/search-suggestions
 exports.searchSuggestions = async (req, res) => {
   try {
-    const { lang = 'vi' } = req.query;
+    const { lang = "vi" } = req.query;
     let q = (req.query.q || "").toString().trim();
 
     if (!q || q.length < 1) {
@@ -322,10 +332,10 @@ exports.searchSuggestions = async (req, res) => {
     // ✅ Tìm trong cả name.vi và name.zh
     const products = await Product.find({
       $or: [
-        { 'name.vi': { $in: searchPatterns } },
-        { 'name.zh': { $in: searchPatterns } },
-        { 'description.vi': { $in: searchPatterns } },
-        { 'description.zh': { $in: searchPatterns } },
+        { "name.vi": { $in: searchPatterns } },
+        { "name.zh": { $in: searchPatterns } },
+        { "description.vi": { $in: searchPatterns } },
+        { "description.zh": { $in: searchPatterns } },
         { sku: { $in: searchPatterns } },
         { sku: { $regex: escapedQ, $options: "i" } },
       ],
@@ -335,7 +345,7 @@ exports.searchSuggestions = async (req, res) => {
       .lean();
 
     // ✅ Transform theo language
-    const transformed = products.map(prod => transformProduct(prod, lang));
+    const transformed = products.map((prod) => transformProduct(prod, lang));
 
     // Sắp xếp theo độ ưu tiên
     transformed.sort((a, b) => {
@@ -348,7 +358,8 @@ exports.searchSuggestions = async (req, res) => {
 
       const aName = normalize(a.name);
       const bName = normalize(b.name);
-      if (aName.includes(normalizedQ) && !bName.includes(normalizedQ)) return -1;
+      if (aName.includes(normalizedQ) && !bName.includes(normalizedQ))
+        return -1;
       if (!aName.includes(normalizedQ) && bName.includes(normalizedQ)) return 1;
 
       return 0;
@@ -368,11 +379,15 @@ exports.bulkUpdateCategories = async (req, res) => {
     const { productIds, categoryIds } = req.body;
 
     if (!Array.isArray(productIds) || !Array.isArray(categoryIds)) {
-      return res.status(400).json({ message: "productIds và categoryIds phải là mảng" });
+      return res
+        .status(400)
+        .json({ message: "productIds và categoryIds phải là mảng" });
     }
 
     if (productIds.length === 0 || categoryIds.length === 0) {
-      return res.status(400).json({ message: "Chọn ít nhất 1 sản phẩm và 1 danh mục" });
+      return res
+        .status(400)
+        .json({ message: "Chọn ít nhất 1 sản phẩm và 1 danh mục" });
     }
 
     const validCategoryObjectIds = categoryIds.map((id) => {
@@ -384,7 +399,7 @@ exports.bulkUpdateCategories = async (req, res) => {
 
     const result = await Product.updateMany(
       { _id: { $in: productIds } },
-      { $set: { categories: validCategoryObjectIds } }
+      { $set: { categories: validCategoryObjectIds } },
     );
 
     return res.json({
@@ -404,7 +419,7 @@ exports.getAllProductsAdmin = async (req, res) => {
       .populate("categories", "name slug")
       .sort({ created_at: -1 })
       .lean();
-    
+
     // ✅ Admin panel: giữ nguyên format multilingual (không transform)
     res.json(products);
   } catch (err) {
@@ -417,14 +432,36 @@ exports.getAllProductsAdmin = async (req, res) => {
 exports.createProduct = async (req, res) => {
   try {
     const {
-      name, sku, description, priceOriginal, priceSale, quantity,
-      material, color, size, categories, hot, onSale, attributes
+      name,
+      sku,
+      description,
+      priceOriginal,
+      priceSale,
+      quantity,
+      material,
+      color,
+      size,
+      categories,
+      hot,
+      onSale,
+      attributes,
     } = req.body;
 
     if (!name || !sku || !priceOriginal || !priceSale || !quantity) {
-      return res.status(400).json({ 
-        message: "Thiếu thông tin bắt buộc: name, sku, priceOriginal, priceSale, quantity" 
+      return res.status(400).json({
+        message:
+          "Thiếu thông tin bắt buộc: name, sku, priceOriginal, priceSale, quantity",
       });
+    }
+
+    if (req.body.variants) {
+      try {
+        const parsedVariants = JSON.parse(req.body.variants);
+        // Chuẩn hóa dữ liệu đa ngôn ngữ cho variants nếu cần
+        product.variants = parsedVariants;
+      } catch (e) {
+        console.error("Error parsing variants:", e);
+      }
     }
 
     const existingSku = await Product.findOne({ sku });
@@ -433,7 +470,7 @@ exports.createProduct = async (req, res) => {
     }
 
     // Tạo slug từ name.vi hoặc name (nếu là string)
-    const nameForSlug = typeof name === 'object' ? name.vi : name;
+    const nameForSlug = typeof name === "object" ? name.vi : name;
     const slug = nameForSlug
       .toLowerCase()
       .normalize("NFD")
@@ -448,7 +485,9 @@ exports.createProduct = async (req, res) => {
     // Xử lý images
     let images = [];
     if (req.files && req.files.length > 0) {
-      const mainImages = req.files.filter(f => !f.fieldname.startsWith('attribute_'));
+      const mainImages = req.files.filter(
+        (f) => !f.fieldname.startsWith("attribute_"),
+      );
       images = mainImages.map((file) => `/uploads/products/${file.filename}`);
     }
 
@@ -456,12 +495,14 @@ exports.createProduct = async (req, res) => {
     let categoryIds = [];
     if (categories) {
       if (Array.isArray(categories)) {
-        categoryIds = categories.filter(id => mongoose.Types.ObjectId.isValid(id));
+        categoryIds = categories.filter((id) =>
+          mongoose.Types.ObjectId.isValid(id),
+        );
       } else if (typeof categories === "string") {
         categoryIds = categories
           .split(",")
           .map((id) => id.trim())
-          .filter(id => mongoose.Types.ObjectId.isValid(id));
+          .filter((id) => mongoose.Types.ObjectId.isValid(id));
       }
     }
 
@@ -469,16 +510,15 @@ exports.createProduct = async (req, res) => {
     let parsedAttributes = [];
     if (attributes) {
       try {
-        parsedAttributes = typeof attributes === 'string' 
-          ? JSON.parse(attributes) 
-          : attributes;
+        parsedAttributes =
+          typeof attributes === "string" ? JSON.parse(attributes) : attributes;
 
         // Upload ảnh cho attributes
         if (req.files && req.files.length > 0) {
           parsedAttributes.forEach((attr, attrIdx) => {
             attr.options.forEach((opt, optIdx) => {
               const fieldName = `attribute_${attrIdx}_${optIdx}`;
-              const file = req.files.find(f => f.fieldname === fieldName);
+              const file = req.files.find((f) => f.fieldname === fieldName);
               if (file) {
                 opt.image = `/uploads/products/${file.filename}`;
               }
@@ -492,13 +532,13 @@ exports.createProduct = async (req, res) => {
 
     // ✅ Convert name/description sang multilingual format
     const productData = {
-      slug, sku,
-      name: typeof name === 'string' 
-        ? { vi: name, zh: '' } 
-        : name,
-      description: typeof description === 'string'
-        ? { vi: description || '', zh: '' }
-        : (description || { vi: '', zh: '' }),
+      slug,
+      sku,
+      name: typeof name === "string" ? { vi: name, zh: "" } : name,
+      description:
+        typeof description === "string"
+          ? { vi: description || "", zh: "" }
+          : description || { vi: "", zh: "" },
       priceOriginal: Number(priceOriginal),
       priceSale: Number(priceSale),
       quantity: Number(quantity),
@@ -513,7 +553,7 @@ exports.createProduct = async (req, res) => {
     };
 
     const product = await Product.create(productData);
-    
+
     const savedProduct = await Product.findById(product._id)
       .populate("categories", "name slug")
       .lean();
@@ -534,8 +574,19 @@ exports.updateProduct = async (req, res) => {
     }
 
     const {
-      name, sku, description, priceOriginal, priceSale, quantity,
-      material, color, size, categories, hot, onSale, attributes
+      name,
+      sku,
+      description,
+      priceOriginal,
+      priceSale,
+      quantity,
+      material,
+      color,
+      size,
+      categories,
+      hot,
+      onSale,
+      attributes,
     } = req.body;
 
     // Kiểm tra SKU trùng
@@ -549,12 +600,10 @@ exports.updateProduct = async (req, res) => {
 
     // Cập nhật name
     if (name) {
-      product.name = typeof name === 'string' 
-        ? { vi: name, zh: '' } 
-        : name;
-      
+      product.name = typeof name === "string" ? { vi: name, zh: "" } : name;
+
       // Update slug từ name.vi
-      const nameForSlug = typeof name === 'object' ? name.vi : name;
+      const nameForSlug = typeof name === "object" ? name.vi : name;
       product.slug = nameForSlug
         .toLowerCase()
         .normalize("NFD")
@@ -569,30 +618,35 @@ exports.updateProduct = async (req, res) => {
 
     // Cập nhật description
     if (description !== undefined) {
-      product.description = typeof description === 'string'
-        ? { vi: description || '', zh: '' }
-        : description;
+      product.description =
+        typeof description === "string"
+          ? { vi: description || "", zh: "" }
+          : description;
     }
 
-    if (priceOriginal !== undefined) product.priceOriginal = Number(priceOriginal);
+    if (priceOriginal !== undefined)
+      product.priceOriginal = Number(priceOriginal);
     if (priceSale !== undefined) product.priceSale = Number(priceSale);
     if (quantity !== undefined) product.quantity = Number(quantity);
     if (material !== undefined) product.material = material;
     if (color !== undefined) product.color = color;
     if (size !== undefined) product.size = size;
     if (hot !== undefined) product.hot = hot === "true" || hot === true;
-    if (onSale !== undefined) product.onSale = onSale === "true" || onSale === true;
+    if (onSale !== undefined)
+      product.onSale = onSale === "true" || onSale === true;
 
     // Xử lý categories
     if (categories !== undefined) {
       let categoryIds = [];
       if (Array.isArray(categories)) {
-        categoryIds = categories.filter(id => mongoose.Types.ObjectId.isValid(id));
+        categoryIds = categories.filter((id) =>
+          mongoose.Types.ObjectId.isValid(id),
+        );
       } else if (typeof categories === "string") {
         categoryIds = categories
           .split(",")
           .map((id) => id.trim())
-          .filter(id => mongoose.Types.ObjectId.isValid(id));
+          .filter((id) => mongoose.Types.ObjectId.isValid(id));
       }
       product.categories = categoryIds;
     }
@@ -600,15 +654,14 @@ exports.updateProduct = async (req, res) => {
     // Xử lý attributes
     if (attributes !== undefined) {
       try {
-        let parsedAttributes = typeof attributes === 'string' 
-          ? JSON.parse(attributes) 
-          : attributes;
+        let parsedAttributes =
+          typeof attributes === "string" ? JSON.parse(attributes) : attributes;
 
         if (req.files && req.files.length > 0) {
           parsedAttributes.forEach((attr, attrIdx) => {
             attr.options.forEach((opt, optIdx) => {
               const fieldName = `attribute_${attrIdx}_${optIdx}`;
-              const file = req.files.find(f => f.fieldname === fieldName);
+              const file = req.files.find((f) => f.fieldname === fieldName);
               if (file) {
                 opt.image = `/uploads/products/${file.filename}`;
               }
@@ -622,16 +675,30 @@ exports.updateProduct = async (req, res) => {
       }
     }
 
+    if (req.body.variants) {
+      try {
+        const parsedVariants = JSON.parse(req.body.variants);
+        // Chuẩn hóa dữ liệu đa ngôn ngữ cho variants nếu cần
+        product.variants = parsedVariants;
+      } catch (e) {
+        console.error("Error parsing variants:", e);
+      }
+    }
+
     // Xử lý images
     if (req.files && req.files.length > 0) {
-      const mainImages = req.files.filter(f => !f.fieldname.startsWith('attribute_'));
+      const mainImages = req.files.filter(
+        (f) => !f.fieldname.startsWith("attribute_"),
+      );
       if (mainImages.length > 0) {
-        product.images = mainImages.map((file) => `/uploads/products/${file.filename}`);
+        product.images = mainImages.map(
+          (file) => `/uploads/products/${file.filename}`,
+        );
       }
     }
 
     await product.save();
-    
+
     const updatedProduct = await Product.findById(product._id)
       .populate("categories", "name slug")
       .lean();

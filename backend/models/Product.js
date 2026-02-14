@@ -39,6 +39,18 @@ const productSchema = new mongoose.Schema({
     }]
   }],
 
+  variants: [{
+    combination: [{
+      name: { vi: String, zh: String }, // Tên thuộc tính: ví dụ "Chất liệu"
+      option: { vi: String, zh: String } // Giá trị: ví dụ "Quy chuẩn"
+    }],
+    priceOriginal: { type: Number, default: 0 },
+    priceSale: { type: Number, default: 0 },
+    quantity: { type: Number, default: 0 },
+    sku: { type: String },
+    image: { type: String } 
+  }],
+
   quantity: { type: Number, required: true },
   categories: [{
     type: mongoose.Schema.Types.ObjectId,
