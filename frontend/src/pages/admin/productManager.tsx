@@ -472,13 +472,15 @@ export default function ProductManager() {
       });
       
       const attributesForBackend = formData.attributes.map((attr, attrIdx) => ({
-        name: attr.name,
+        // Ép kiểu về object đa ngôn ngữ cho name
+        name: { vi: attr.name, zh: "" }, 
         options: attr.options.map((opt, optIdx) => {
           const key = `${attrIdx}_${optIdx}`;
           const imgFile = attributeImages.get(key);
           
           return {
-            label: opt.label,
+            // Ép kiểu về object đa ngôn ngữ cho label
+            label: { vi: opt.label, zh: "" }, 
             value: opt.value || opt.label.toLowerCase().replace(/\s+/g, "-"),
             isDefault: opt.isDefault || false,
             imageKey: imgFile instanceof File ? key : undefined,
