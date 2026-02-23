@@ -356,7 +356,7 @@ export default function ProductManager() {
       onSale: false,
       images: [],
       attributes: [],
-      variants: prod.variants || [],
+      variants: [],
     });
     setImagePreviews([]);
     setAttributeImages(new Map());
