@@ -47,7 +47,7 @@ type CartContextType = {
   totalQuantity: number;
   loadCart: () => Promise<void>;
   reloadCart: () => Promise<void>;
-  addToCart: (product: Product, quantity?: number) => Promise<boolean>;
+  addToCart: (product: Product, quantity?: number, selectedAttributes?: Record<string, string>) => Promise<boolean>;
   updateItem: (productId: string, quantity: number) => Promise<void>;
   removeItem: (productId: string) => Promise<void>;
   clearCart: () => Promise<void>;
@@ -95,6 +95,13 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({
       size: prod.size,
       selectedAttributes: prod.selectedAttributes || {},
     };
+  };
+
+  // ✅ Tạo key duy nhất cho mỗi item = productId + attributes
+  // Cùng sản phẩm nhưng khác thuộc tính → key khác → nằm riêng
+  const makeCartKey = (productId: string, attrs: Record<string, string> = {}) => {
+    const sortedAttrs = Object.keys(attrs).sort().map(k => `${k}:${attrs[k]}`).join("|");
+    return `${productId}__${sortedAttrs}`;
   };
 
   const showSuccessToast = (message: string) => {
@@ -248,16 +255,15 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({
   };
 
   const addToCart = useCallback(
-    async (product: Product, quantity = 1): Promise<boolean> => {
+    async (product: Product, quantity = 1, selectedAttributes?: Record<string, string>): Promise<boolean> => {
       const normalizedProduct = normalizeProduct(product);
       const token = localStorage.getItem("token");
 
-      console.log(
-        "➕ Adding to cart:",
-        normalizedProduct._id,
-        "with attributes:",
-        product.selectedAttributes
-      );
+      // Ưu tiên selectedAttributes truyền vào, nếu không thì lấy từ product object
+      const attrs = selectedAttributes || product.selectedAttributes || {};
+      const newKey = makeCartKey(normalizedProduct._id, attrs);
+
+      console.log("➕ Adding to cart:", normalizedProduct._id, "key:", newKey, "attrs:", attrs);
 
       if (token) {
         try {
@@ -270,28 +276,17 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({
 
           setCart((prev) => {
             const existing = prev.items.find(
-              (i) => i.product._id === normalizedProduct._id
+              (i) => makeCartKey(i.product._id, i.selectedAttributes) === newKey
             );
             let newItems;
             if (existing) {
               newItems = prev.items.map((i) =>
-                i.product._id === normalizedProduct._id
-                  ? {
-                      ...i,
-                      quantity: i.quantity + quantity,
-                      selectedAttributes: product.selectedAttributes || {},
-                    }
+                makeCartKey(i.product._id, i.selectedAttributes) === newKey
+                  ? { ...i, quantity: i.quantity + quantity }
                   : i
               );
             } else {
-              newItems = [
-                ...prev.items,
-                {
-                  product: normalizedProduct,
-                  quantity,
-                  selectedAttributes: product.selectedAttributes || {},
-                },
-              ];
+              newItems = [...prev.items, { product: normalizedProduct, quantity, selectedAttributes: attrs }];
             }
             const newTotal = newItems.reduce((s, i) => s + i.quantity, 0);
             const newCart = { items: newItems, totalQuantity: newTotal };
@@ -307,28 +302,17 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({
       // GUEST FLOW
       setCart((prev) => {
         const existing = prev.items.find(
-          (i) => i.product._id === normalizedProduct._id
+          (i) => makeCartKey(i.product._id, i.selectedAttributes) === newKey
         );
         let newItems;
         if (existing) {
           newItems = prev.items.map((i) =>
-            i.product._id === normalizedProduct._id
-              ? {
-                  ...i,
-                  quantity: i.quantity + quantity,
-                  selectedAttributes: product.selectedAttributes || {},
-                }
+            makeCartKey(i.product._id, i.selectedAttributes) === newKey
+              ? { ...i, quantity: i.quantity + quantity }
               : i
           );
         } else {
-          newItems = [
-            ...prev.items,
-            {
-              product: normalizedProduct,
-              quantity,
-              selectedAttributes: product.selectedAttributes || {},
-            },
-          ];
+          newItems = [...prev.items, { product: normalizedProduct, quantity, selectedAttributes: attrs }];
         }
         const newTotal = newItems.reduce((s, i) => s + i.quantity, 0);
         const newCart = { items: newItems, totalQuantity: newTotal };
