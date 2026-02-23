@@ -37,6 +37,15 @@ type Product = {
       isDefault?: boolean;
     }>;
   }>;
+  variants?: Array<{
+    combination: Array<{
+      name: { vi: string; zh: string };
+      option: { vi: string; zh: string };
+    }>;
+    priceOriginal: number;
+    priceSale: number;
+    quantity: number;
+  }>;
 };
 
 const endpointCandidates = (param: string, lang: string) => {
@@ -348,22 +357,52 @@ const ProductDetail: React.FC = () => {
     );
   };
 
-  const handleAdd = async (qty: number = 1, buyNow: boolean = false) => {
-    if (!product) return;
+  // ================= TÌM BIẾN THỂ ĐANG ĐƯỢC CHỌN =================
+  const activeVariant = useMemo(() => {
+  if (!product?.variants || product.variants.length === 0) return null;
 
-    // ✅ THÊM selectedAttributes vào product trước khi thêm vào giỏ
-    const productWithAttributes = {
+  return product.variants.find((variant) => {
+    return variant.combination.every((comb) => {
+      // 1. Tìm attribute tương ứng trong product.attributes
+      const targetAttr = product.attributes?.find(
+        (attr) => safeGetText(attr.name, "vi") === comb.name.vi
+      );
+      if (!targetAttr) return false;
+
+      // 2. Lấy giá trị người dùng đang chọn cho Attribute này
+      const currentSelectedValue = selectedAttributes[safeGetText(targetAttr.name, language)];
+
+      // 3. Kiểm tra xem Option đang chọn có khớp với Option trong biến thể không
+      const matchingOption = targetAttr.options.find(
+        (opt) => (opt.value || safeGetText(opt.label, language)) === currentSelectedValue
+      );
+
+      return safeGetText(matchingOption?.label, "vi") === comb.option.vi;
+    });
+  });
+}, [product, selectedAttributes, language]);
+
+  // Lấy các thông số hiển thị (Nếu có biến thể thì lấy của biến thể, không thì lấy mặc định)
+  const displayPriceSale = activeVariant ? activeVariant.priceSale : product?.priceSale || 0;
+  const displayPriceOriginal = activeVariant ? activeVariant.priceOriginal : product?.priceOriginal || 0;
+  const displayQuantity = activeVariant ? activeVariant.quantity : product?.quantity || 0;
+  const displaySku = activeVariant ? activeVariant.sku : product?.sku;
+  // ================================================================
+
+ const handleAdd = () => {
+    if (!product) return;
+    
+    // Ghi đè giá và sku theo biến thể đang chọn
+    const productToCart = {
       ...product,
-      selectedAttributes: selectedAttributes, // ← GỬI THUỘC TÍNH ĐÃ CHỌN
+      priceSale: displayPriceSale,
+      priceOriginal: displayPriceOriginal,
+      sku: displaySku || product.sku,
     };
 
-    await addToCart(productWithAttributes, qty);
-
-    if (buyNow) {
-      setTimeout(() => {
-        navigate("/thanh-toan");
-      }, 300);
-    }
+    addToCart(productToCart, qty, selectedAttributes);
+    setIsAdding(true);
+    setTimeout(() => setIsAdding(false), 500);
   };
 
   const actionArea = (
@@ -432,11 +471,11 @@ const ProductDetail: React.FC = () => {
           <div className="product-price">
             <div className="price-left">
               <span className="price-sale">
-                {product.priceSale.toLocaleString()}₫
+                {displayPriceSale.toLocaleString()}₫
               </span>
               {discount > 0 && (
                 <span className="price-original">
-                  {product.priceOriginal.toLocaleString()}₫
+                  {displayPriceOriginal.toLocaleString()}₫
                 </span>
               )}
             </div>
@@ -458,7 +497,7 @@ const ProductDetail: React.FC = () => {
               {discount > 0 && <div className="sale-badge">-{discount}%</div>}
 
               <div className="main-image">
-                {product.quantity <= 0 && (
+                {displayQuantity <= 0 && (
                   <div className="out-of-stock-overlay">
                     <span className="out-of-stock-text">
                       {t("product.outOfStock")}
@@ -520,7 +559,7 @@ const ProductDetail: React.FC = () => {
             <div className="meta-info">
               {t("product.sku")}:{" "}
               <strong>
-                {product.sku || product._id?.slice(-8).toUpperCase()}
+                {displaySku || product._id?.slice(-8).toUpperCase()}
               </strong>
             </div>
 
