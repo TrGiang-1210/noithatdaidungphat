@@ -1279,6 +1279,7 @@ const handleSubmit = async (e: React.FormEvent) => {
                           <th>Giá bán (VNĐ)</th>
                           <th>Kho hàng</th>
                           <th>SKU</th>
+                          <th style={{ width: "50px", textAlign: "center" }}>Xóa</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -1343,6 +1344,44 @@ const handleSubmit = async (e: React.FormEvent) => {
                                   });
                                 }}
                               />
+                            </td>
+                            <td style={{ textAlign: "center" }}>
+                              <button
+                                type="button"
+                                title="Xóa biến thể này"
+                                onClick={() => {
+                                  const newVariants = (formData.variants || []).filter(
+                                    (_, i) => i !== idx
+                                  );
+                                  setFormData({ ...formData, variants: newVariants });
+                                }}
+                                style={{
+                                  background: "#ef4444",
+                                  color: "white",
+                                  border: "none",
+                                  borderRadius: "50%",
+                                  width: "28px",
+                                  height: "28px",
+                                  display: "inline-flex",
+                                  alignItems: "center",
+                                  justifyContent: "center",
+                                  cursor: "pointer",
+                                  fontSize: "16px",
+                                  lineHeight: 1,
+                                  transition: "background 0.2s, transform 0.2s",
+                                  flexShrink: 0,
+                                }}
+                                onMouseEnter={e => {
+                                  (e.currentTarget as HTMLButtonElement).style.background = "#dc2626";
+                                  (e.currentTarget as HTMLButtonElement).style.transform = "scale(1.15)";
+                                }}
+                                onMouseLeave={e => {
+                                  (e.currentTarget as HTMLButtonElement).style.background = "#ef4444";
+                                  (e.currentTarget as HTMLButtonElement).style.transform = "scale(1)";
+                                }}
+                              >
+                                ×
+                              </button>
                             </td>
                           </tr>
                         ))}

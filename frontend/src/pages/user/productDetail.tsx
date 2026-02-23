@@ -1,5 +1,5 @@
 // src/pages/productDetail.tsx - FIXED VERSION WITH PROPER MULTILINGUAL SUPPORT
-import React, { useEffect, useState, useContext, useRef } from "react";
+import React, { useEffect, useState, useContext, useRef, useMemo } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { useCart } from "@/context/CartContext";
 import "@/styles/pages/user/productDetail.scss";
@@ -310,6 +310,84 @@ const ProductDetail: React.FC = () => {
     }));
   };
 
+  // ================= TÌM BIẾN THỂ ĐANG ĐƯỢC CHỌN =================
+  // ⚠️ useMemo phải đặt TRƯỚC early return để tuân thủ Rules of Hooks
+  const activeVariant = useMemo(() => {
+    if (!product?.variants || product.variants.length === 0) return null;
+
+    return product.variants.find((variant) => {
+      return variant.combination.every((comb) => {
+        const targetAttr = product.attributes?.find(
+          (attr) => safeGetText(attr.name, "vi") === comb.name.vi,
+        );
+        if (!targetAttr) return false;
+
+        const currentSelectedValue =
+          selectedAttributes[safeGetText(targetAttr.name, language)];
+
+        const matchingOption = targetAttr.options.find(
+          (opt) =>
+            (opt.value || safeGetText(opt.label, language)) ===
+            currentSelectedValue,
+        );
+
+        return safeGetText(matchingOption?.label, "vi") === comb.option.vi;
+      });
+    });
+  }, [product, selectedAttributes, language]);
+
+  // ================= TÍNH OPTIONS HỢP LỆ ĐỘNG THEO SELECTION HIỆN TẠI =================
+  // Với mỗi attribute, chỉ hiện options mà khi kết hợp với các attribute KHÁC đang chọn
+  // thì vẫn còn tồn tại ít nhất 1 biến thể hợp lệ.
+  const getValidOptionsForAttr = useMemo(() => {
+    if (!product?.variants || product.variants.length === 0) return null;
+
+    return (targetAttrNameLang: string, targetAttrNameVi: string) => {
+      const validOptionLabelsVi = new Set<string>();
+
+      product.variants.forEach((variant: any) => {
+        // Lấy option của attribute đang xét trong variant này
+        const combForTarget = variant.combination.find(
+          (c: any) => (c.name?.vi || c.name) === targetAttrNameVi
+        );
+        if (!combForTarget) return;
+
+        // Kiểm tra các attribute KHÁC (không phải target) có khớp với selection hiện tại không
+        const otherCombsMatch = variant.combination.every((c: any) => {
+          const cAttrNameVi = c.name?.vi || c.name;
+          // Bỏ qua chính attribute đang xét
+          if (cAttrNameVi === targetAttrNameVi) return true;
+
+          // Tìm attribute tương ứng trong product.attributes
+          const matchedAttr = product.attributes?.find(
+            (a: any) => safeGetText(a.name, "vi") === cAttrNameVi
+          );
+          if (!matchedAttr) return true;
+
+          const attrNameInLang = safeGetText(matchedAttr.name, language);
+          const currentVal = selectedAttributes[attrNameInLang];
+          if (!currentVal) return true; // Chưa chọn thì bỏ qua
+
+          // Tìm option tương ứng
+          const matchedOpt = matchedAttr.options.find(
+            (opt: any) => (opt.value || safeGetText(opt.label, language)) === currentVal
+          );
+          const selectedLabelVi = safeGetText(matchedOpt?.label, "vi");
+          const combOptionVi = c.option?.vi || c.option;
+
+          return selectedLabelVi === combOptionVi;
+        });
+
+        if (otherCombsMatch) {
+          validOptionLabelsVi.add(combForTarget.option?.vi || combForTarget.option);
+        }
+      });
+
+      return validOptionLabelsVi;
+    };
+  }, [product, selectedAttributes, language]);
+  // ================================================================
+
   if (loading)
     return <div>{t("common.loading") || "Đang tải sản phẩm..."}</div>;
   if (error)
@@ -357,41 +435,22 @@ const ProductDetail: React.FC = () => {
     );
   };
 
-  // ================= TÌM BIẾN THỂ ĐANG ĐƯỢC CHỌN =================
-  const activeVariant = useMemo(() => {
-  if (!product?.variants || product.variants.length === 0) return null;
-
-  return product.variants.find((variant) => {
-    return variant.combination.every((comb) => {
-      // 1. Tìm attribute tương ứng trong product.attributes
-      const targetAttr = product.attributes?.find(
-        (attr) => safeGetText(attr.name, "vi") === comb.name.vi
-      );
-      if (!targetAttr) return false;
-
-      // 2. Lấy giá trị người dùng đang chọn cho Attribute này
-      const currentSelectedValue = selectedAttributes[safeGetText(targetAttr.name, language)];
-
-      // 3. Kiểm tra xem Option đang chọn có khớp với Option trong biến thể không
-      const matchingOption = targetAttr.options.find(
-        (opt) => (opt.value || safeGetText(opt.label, language)) === currentSelectedValue
-      );
-
-      return safeGetText(matchingOption?.label, "vi") === comb.option.vi;
-    });
-  });
-}, [product, selectedAttributes, language]);
-
   // Lấy các thông số hiển thị (Nếu có biến thể thì lấy của biến thể, không thì lấy mặc định)
-  const displayPriceSale = activeVariant ? activeVariant.priceSale : product?.priceSale || 0;
-  const displayPriceOriginal = activeVariant ? activeVariant.priceOriginal : product?.priceOriginal || 0;
-  const displayQuantity = activeVariant ? activeVariant.quantity : product?.quantity || 0;
+  const displayPriceSale = activeVariant
+    ? activeVariant.priceSale
+    : product?.priceSale || 0;
+  const displayPriceOriginal = activeVariant
+    ? activeVariant.priceOriginal
+    : product?.priceOriginal || 0;
+  const displayQuantity = activeVariant
+    ? activeVariant.quantity
+    : product?.quantity || 0;
   const displaySku = activeVariant ? activeVariant.sku : product?.sku;
   // ================================================================
 
- const handleAdd = () => {
+  const handleAdd = () => {
     if (!product) return;
-    
+
     // Ghi đè giá và sku theo biến thể đang chọn
     const productToCart = {
       ...product,
@@ -400,7 +459,7 @@ const ProductDetail: React.FC = () => {
       sku: displaySku || product.sku,
     };
 
-    addToCart(productToCart, qty, selectedAttributes);
+    addToCart(productToCart, quantity, selectedAttributes);
     setIsAdding(true);
     setTimeout(() => setIsAdding(false), 500);
   };
@@ -565,12 +624,12 @@ const ProductDetail: React.FC = () => {
 
             <div className="price-area">
               <span className="current-price">
-                {product.priceSale?.toLocaleString()}₫
+                {displayPriceSale.toLocaleString()}₫
               </span>
               {discount > 0 && (
                 <>
                   <span className="old-price">
-                    {product.priceOriginal?.toLocaleString()}₫
+                    {displayPriceOriginal.toLocaleString()}₫
                   </span>
                   <span className="discount-tag">-{discount}%</span>
                 </>
@@ -582,13 +641,23 @@ const ProductDetail: React.FC = () => {
               <div className="options-group">
                 {product.attributes.map((attr, attrIdx) => {
                   const attrName = safeGetText(attr.name, language);
+                  const attrNameVi = safeGetText(attr.name, "vi");
+
+                  // Lấy set options hợp lệ dựa vào các attribute khác đang chọn
+                  const validSet = getValidOptionsForAttr
+                    ? getValidOptionsForAttr(attrName, attrNameVi)
+                    : null;
 
                   return (
                     <div key={attrIdx} className="option-item">
                       <label>{attrName}:</label>
 
                       <div className="option-buttons">
-                        {attr.options.map((opt, optIdx) => {
+                        {attr.options.filter((opt) => {
+                          if (!validSet) return true;
+                          const optLabelVi = safeGetText(opt.label, "vi");
+                          return validSet.has(optLabelVi);
+                        }).map((opt, optIdx) => {
                           const isSelected =
                             selectedAttributes[attrName] === opt.value;
                           const optionLabel = safeGetText(opt.label, language);

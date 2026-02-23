@@ -1,9 +1,7 @@
 // src/styles/pages/admin/productManager.scss - FULL ENHANCED WITH CATEGORY FILTER
 .product-manager {
-  // padding: 24px;
   background: #f8f9fa;
 
-  // Header trang
   .page-header {
     display: flex;
     justify-content: space-between;
@@ -44,7 +42,6 @@
     }
   }
 
-  // Search box (giữa page-header và product-table)
   .search-box {
     position: relative;
     margin-bottom: 1.5rem;
@@ -110,9 +107,7 @@
         align-items: center;
         gap: 8px;
 
-        svg {
-          color: #3b82f6;
-        }
+        svg { color: #3b82f6; }
       }
 
       .btn-clear-filter {
@@ -157,22 +152,12 @@
         overflow-y: auto;
         padding: 8px;
 
-        &::-webkit-scrollbar {
-          width: 8px;
-        }
-
-        &::-webkit-scrollbar-track {
-          background: #f3f4f6;
-          border-radius: 4px;
-        }
-
+        &::-webkit-scrollbar { width: 8px; }
+        &::-webkit-scrollbar-track { background: #f3f4f6; border-radius: 4px; }
         &::-webkit-scrollbar-thumb {
           background: #d1d5db;
           border-radius: 4px;
-
-          &:hover {
-            background: #9ca3af;
-          }
+          &:hover { background: #9ca3af; }
         }
 
         .category-tree-item {
@@ -187,9 +172,7 @@
             transition: all 0.2s;
             user-select: none;
 
-            &:hover {
-              background: #f3f4f6;
-            }
+            &:hover { background: #f3f4f6; }
 
             .expand-icon {
               display: flex;
@@ -202,9 +185,7 @@
               color: #6b7280;
               flex-shrink: 0;
 
-              &.expanded {
-                transform: rotate(90deg);
-              }
+              &.expanded { transform: rotate(90deg); }
             }
 
             .category-checkbox-wrapper {
@@ -256,9 +237,7 @@
               transition: all 0.2s;
               margin-bottom: 2px;
 
-              &:hover {
-                background: #f9fafb;
-              }
+              &:hover { background: #f9fafb; }
 
               input[type="checkbox"] {
                 width: 16px;
@@ -269,11 +248,7 @@
                 flex-shrink: 0;
               }
 
-              .child-label {
-                font-size: 13px;
-                color: #4b5563;
-                flex: 1;
-              }
+              .child-label { font-size: 13px; color: #4b5563; flex: 1; }
 
               .child-count {
                 background: #f3f4f6;
@@ -288,29 +263,13 @@
             }
           }
 
-          &.has-children {
-            .category-parent {
-              font-weight: 700;
-            }
-          }
-
-          &.no-children {
-            .expand-icon {
-              opacity: 0;
-              pointer-events: none;
-            }
-          }
+          &.has-children .category-parent { font-weight: 700; }
+          &.no-children .expand-icon { opacity: 0; pointer-events: none; }
         }
 
         @keyframes slideDown {
-          from {
-            opacity: 0;
-            max-height: 0;
-          }
-          to {
-            opacity: 1;
-            max-height: 500px;
-          }
+          from { opacity: 0; max-height: 0; }
+          to { opacity: 1; max-height: 500px; }
         }
 
         .empty-categories {
@@ -381,10 +340,7 @@
               color: white;
               padding: 0;
 
-              &:hover {
-                background: rgba(255, 255, 255, 0.3);
-                transform: rotate(90deg);
-              }
+              &:hover { background: rgba(255, 255, 255, 0.3); transform: rotate(90deg); }
             }
 
             &:hover {
@@ -405,9 +361,7 @@
           text-align: center;
           gap: 8px;
 
-          svg {
-            color: #d1d5db;
-          }
+          svg { color: #d1d5db; }
         }
       }
     }
@@ -423,11 +377,7 @@
 
       .stats-left {
         color: #6b7280;
-
-        strong {
-          color: #3b82f6;
-          font-weight: 700;
-        }
+        strong { color: #3b82f6; font-weight: 700; }
       }
 
       .stats-right {
@@ -440,24 +390,15 @@
           gap: 6px;
           color: #6b7280;
 
-          .stat-value {
-            font-weight: 700;
-            color: #1f2937;
-          }
+          .stat-value { font-weight: 700; color: #1f2937; }
         }
       }
     }
   }
 
   @keyframes slideIn {
-    from {
-      opacity: 0;
-      transform: scale(0.8) translateY(-10px);
-    }
-    to {
-      opacity: 1;
-      transform: scale(1) translateY(0);
-    }
+    from { opacity: 0; transform: scale(0.8) translateY(-10px); }
+    to { opacity: 1; transform: scale(1) translateY(0); }
   }
 
   // Bảng sản phẩm
@@ -491,13 +432,8 @@
           border-bottom: 1px solid #e5e7eb;
           white-space: nowrap;
 
-          &:first-child {
-            border-top-left-radius: 12px;
-          }
-
-          &:last-child {
-            border-top-right-radius: 12px;
-          }
+          &:first-child { border-top-left-radius: 12px; }
+          &:last-child { border-top-right-radius: 12px; }
         }
       }
 
@@ -509,9 +445,7 @@
           border-left: 4px solid #3b82f6;
         }
 
-        &:last-child td {
-          border-bottom: none;
-        }
+        &:last-child td { border-bottom: none; }
 
         td {
           padding: 14px 16px;
@@ -534,9 +468,7 @@
             }
           }
 
-          svg {
-            color: white;
-          }
+          svg { color: white; }
 
           &.actions {
             .btn-small {
@@ -552,9 +484,7 @@
               transition: all 0.2s;
               margin-right: 6px;
 
-              &:last-child {
-                margin-right: 0;
-              }
+              &:last-child { margin-right: 0; }
 
               &:first-child {
                 background: #3b82f6;
@@ -578,9 +508,7 @@
                 }
               }
 
-              &:active {
-                transform: translateY(0);
-              }
+              &:active { transform: translateY(0); }
             }
           }
         }
@@ -588,7 +516,7 @@
     }
   }
 
-  // Integrated Pagination
+  // Pagination
   .pagination {
     display: flex;
     justify-content: space-between;
@@ -624,10 +552,7 @@
           transition: all 0.2s;
           background: white;
 
-          &:hover {
-            border-color: #3b82f6;
-          }
-
+          &:hover { border-color: #3b82f6; }
           &:focus {
             outline: none;
             border-color: #3b82f6;
@@ -636,18 +561,10 @@
         }
       }
 
-      .page-info {
-        font-size: 14px;
-        color: #6b7280;
-        font-weight: 500;
-      }
+      .page-info { font-size: 14px; color: #6b7280; font-weight: 500; }
     }
 
-    .pagination-center {
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-    }
+    .pagination-center { display: flex; align-items: center; gap: 0.5rem; }
 
     .pagination-btn {
       padding: 0.5rem 1rem;
@@ -669,14 +586,8 @@
         box-shadow: 0 2px 4px rgba(59, 130, 246, 0.2);
       }
 
-      &:disabled {
-        opacity: 0.4;
-        cursor: not-allowed;
-      }
-
-      &:active:not(:disabled) {
-        transform: translateY(0);
-      }
+      &:disabled { opacity: 0.4; cursor: not-allowed; }
+      &:active:not(:disabled) { transform: translateY(0); }
     }
 
     .pagination-numbers {
@@ -711,35 +622,24 @@
           box-shadow: 0 2px 4px rgba(59, 130, 246, 0.3);
         }
 
-        &:active {
-          transform: translateY(0);
-        }
+        &:active { transform: translateY(0); }
       }
 
-      .pagination-ellipsis {
-        padding: 0.5rem;
-        color: #9ca3af;
-        font-weight: 600;
-      }
+      .pagination-ellipsis { padding: 0.5rem; color: #9ca3af; font-weight: 600; }
     }
   }
 
-  // Loading spinner
   .spin {
     animation: spin 1s linear infinite;
     color: #3b82f6;
   }
 
   @keyframes spin {
-    from {
-      transform: rotate(0deg);
-    }
-    to {
-      transform: rotate(360deg);
-    }
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
   }
 
-  // Modal
+  // Modal overlay
   .modal-overlay {
     position: fixed;
     inset: 0;
@@ -750,22 +650,24 @@
     z-index: 999;
     backdrop-filter: blur(4px);
     animation: fadeIn 0.2s ease;
+    // Đẩy modal ra khỏi vùng sidebar (sidebar thường ~250px)
+    padding-left: 260px;
+
+    @media (max-width: 768px) {
+      padding-left: 0;
+    }
   }
 
   @keyframes fadeIn {
-    from {
-      opacity: 0;
-    }
-    to {
-      opacity: 1;
-    }
+    from { opacity: 0; }
+    to { opacity: 1; }
   }
 
   .modal {
     background: white;
     border-radius: 16px;
-    width: 700px;
-    max-width: 94vw;
+    // Mặc định modal thường (xác nhận xóa, v.v.)
+    width: min(640px, 90vw);
     max-height: 90vh;
     box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
     overflow: hidden;
@@ -791,7 +693,6 @@
       overflow-y: auto;
       flex: 1;
 
-      // Form fields
       input:not([type="checkbox"]):not([type="file"]),
       textarea {
         padding: 12px 16px;
@@ -801,6 +702,7 @@
         font-family: inherit;
         transition: all 0.2s;
         box-sizing: border-box;
+        width: 100%;
 
         &:focus {
           outline: none;
@@ -808,12 +710,9 @@
           box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
         }
 
-        &::placeholder {
-          color: #9ca3af;
-        }
+        &::placeholder { color: #9ca3af; }
       }
 
-      // Full width elements
       textarea,
       .category-select-wrapper,
       .checkbox-group,
@@ -823,16 +722,13 @@
         grid-column: 1 / -1;
       }
 
-      // Price with discount badge
       .price-with-discount {
         position: relative;
         display: flex;
         align-items: center;
         gap: 12px;
 
-        input {
-          flex: 1;
-        }
+        input { flex: 1; }
 
         .discount-badge {
           position: absolute;
@@ -850,32 +746,18 @@
       }
 
       @keyframes pulse {
-        0%,
-        100% {
-          transform: scale(1);
-        }
-        50% {
-          transform: scale(1.05);
-        }
+        0%, 100% { transform: scale(1); }
+        50% { transform: scale(1.05); }
       }
 
-      textarea {
-        min-height: 100px;
-        resize: vertical;
-      }
+      textarea { min-height: 100px; resize: vertical; }
 
-      // Category select với label
       .category-select-wrapper {
         display: flex;
         flex-direction: column;
         gap: 8px;
 
-        label {
-          font-size: 14px;
-          font-weight: 600;
-          color: #374151;
-          margin: 0;
-        }
+        label { font-size: 14px; font-weight: 600; color: #374151; margin: 0; }
 
         select[multiple] {
           height: 160px;
@@ -898,28 +780,14 @@
             border-radius: 6px;
             margin-bottom: 4px;
             cursor: pointer;
-            transition: background 0.15s;
 
-            &:hover {
-              background: #eff6ff;
-            }
-
-            &:checked {
-              background: #dbeafe;
-              color: #1e40af;
-              font-weight: 500;
-            }
+            &:checked { background: #dbeafe; color: #1e40af; font-weight: 500; }
           }
         }
 
-        .select-hint {
-          font-size: 13px;
-          color: #6b7280;
-          font-style: italic;
-        }
+        .select-hint { font-size: 13px; color: #6b7280; font-style: italic; }
       }
 
-      // Checkbox group
       .checkbox-group {
         display: flex;
         gap: 24px;
@@ -942,23 +810,16 @@
             accent-color: #3b82f6;
           }
 
-          &:hover {
-            color: #1f2937;
-          }
+          &:hover { color: #1f2937; }
         }
       }
 
-      // File input wrapper
       .file-input-wrapper {
         display: flex;
         flex-direction: column;
         gap: 8px;
 
-        .file-label {
-          font-size: 14px;
-          font-weight: 600;
-          color: #374151;
-        }
+        .file-label { font-size: 14px; font-weight: 600; color: #374151; }
 
         input[type="file"] {
           padding: 10px;
@@ -967,10 +828,7 @@
           border-radius: 8px;
           transition: all 0.2s;
 
-          &:hover {
-            border-color: #3b82f6;
-            background: #f8faff;
-          }
+          &:hover { border-color: #3b82f6; background: #f8faff; }
 
           &::file-selector-button {
             padding: 8px 16px;
@@ -983,21 +841,13 @@
             transition: all 0.2s;
             margin-right: 12px;
 
-            &:hover {
-              background: #2563eb;
-              transform: translateY(-1px);
-            }
+            &:hover { background: #2563eb; transform: translateY(-1px); }
           }
         }
 
-        .file-hint {
-          font-size: 13px;
-          color: #6b7280;
-          font-style: italic;
-        }
+        .file-hint { font-size: 13px; color: #6b7280; font-style: italic; }
       }
 
-      // Image previews
       .image-previews {
         display: flex;
         gap: 12px;
@@ -1042,10 +892,7 @@
         &:first-child {
           background: #e5e7eb;
           color: #374151;
-
-          &:hover {
-            background: #d1d5db;
-          }
+          &:hover { background: #d1d5db; }
         }
 
         &.btn-primary,
@@ -1059,9 +906,7 @@
             box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
           }
 
-          &:active {
-            transform: translateY(0);
-          }
+          &:active { transform: translateY(0); }
         }
 
         &.btn-danger {
@@ -1074,9 +919,7 @@
             box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
           }
 
-          &:active {
-            transform: translateY(0);
-          }
+          &:active { transform: translateY(0); }
         }
       }
     }
@@ -1087,12 +930,9 @@
       color: #4b5563;
       line-height: 1.6;
 
-      strong {
-        color: #1f2937;
-      }
+      strong { color: #1f2937; }
     }
 
-    // Success message
     .success-message {
       position: fixed;
       top: 20px;
@@ -1104,43 +944,14 @@
       font-size: 15px;
       font-weight: 600;
       box-shadow: 0 8px 24px rgba(16, 185, 129, 0.4);
-      animation:
-        slideIn 0.3s ease,
-        fadeOut 0.3s ease 1.2s;
+      animation: slideIn 0.3s ease, fadeOut 0.3s ease 1.2s;
       z-index: 9999;
-    }
-
-    @keyframes slideIn {
-      from {
-        transform: translateX(400px);
-        opacity: 0;
-      }
-      to {
-        transform: translateX(0);
-        opacity: 1;
-      }
-    }
-
-    @keyframes fadeOut {
-      from {
-        opacity: 1;
-      }
-      to {
-        opacity: 0;
-      }
     }
   }
 
-  // Animation
   @keyframes modalPop {
-    from {
-      opacity: 0;
-      transform: scale(0.9) translateY(-20px);
-    }
-    to {
-      opacity: 1;
-      transform: scale(1) translateY(0);
-    }
+    from { opacity: 0; transform: scale(0.9) translateY(-20px); }
+    to { opacity: 1; transform: scale(1) translateY(0); }
   }
 
   // Responsive
@@ -1152,13 +963,9 @@
       align-items: stretch;
       gap: 16px;
 
-      .btn-primary {
-        width: 100%;
-        justify-content: center;
-      }
+      .btn-primary { width: 100%; justify-content: center; }
     }
 
-    // Category filter responsive
     .category-filter-section {
       padding: 1rem;
 
@@ -1167,20 +974,14 @@
         align-items: stretch;
         gap: 12px;
 
-        .btn-clear-filter {
-          width: 100%;
-          justify-content: center;
-        }
+        .btn-clear-filter { width: 100%; justify-content: center; }
       }
 
       .filter-content {
         flex-direction: column;
 
         .category-tree-wrapper,
-        .selected-categories {
-          width: 100%;
-          max-height: 300px;
-        }
+        .selected-categories { width: 100%; max-height: 300px; }
       }
 
       .filter-stats {
@@ -1188,10 +989,7 @@
         gap: 12px;
         align-items: flex-start;
 
-        .stats-right {
-          width: 100%;
-          justify-content: space-between;
-        }
+        .stats-right { width: 100%; justify-content: space-between; }
       }
     }
 
@@ -1206,33 +1004,14 @@
         align-items: flex-start;
         width: 100%;
 
-        .items-per-page {
-          width: 100%;
-          justify-content: space-between;
-        }
-
-        .page-info {
-          font-size: 13px;
-        }
+        .items-per-page { width: 100%; justify-content: space-between; }
+        .page-info { font-size: 13px; }
       }
 
-      .pagination-center {
-        width: 100%;
-        justify-content: center;
-        flex-wrap: wrap;
-      }
-
-      .pagination-btn {
-        padding: 0.375rem 0.75rem;
-        font-size: 13px;
-      }
-
+      .pagination-center { width: 100%; justify-content: center; flex-wrap: wrap; }
+      .pagination-btn { padding: 0.375rem 0.75rem; font-size: 13px; }
       .pagination-numbers {
-        .pagination-number {
-          min-width: 36px;
-          height: 36px;
-          font-size: 13px;
-        }
+        .pagination-number { min-width: 36px; height: 36px; font-size: 13px; }
       }
     }
 
@@ -1240,18 +1019,12 @@
       table {
         font-size: 13px;
 
-        thead th {
-          padding: 10px 8px;
-          font-size: 13px;
-        }
+        thead th { padding: 10px 8px; font-size: 13px; }
 
         tbody td {
           padding: 10px 8px;
 
-          .thumbnail {
-            width: 50px;
-            height: 50px;
-          }
+          .thumbnail { width: 50px; height: 50px; }
 
           &.actions {
             white-space: nowrap;
@@ -1261,10 +1034,7 @@
               font-size: 11px;
               margin-right: 4px;
 
-              svg {
-                width: 14px;
-                height: 14px;
-              }
+              svg { width: 14px; height: 14px; }
             }
           }
         }
@@ -1280,38 +1050,21 @@
         padding: 16px;
         gap: 12px;
 
-        input,
-        select,
-        textarea {
-          padding: 10px 12px;
-          font-size: 14px;
-        }
-
-        .image-previews img {
-          width: 80px;
-          height: 80px;
-        }
+        input, select, textarea { padding: 10px 12px; font-size: 14px; }
+        .image-previews img { width: 80px; height: 80px; }
       }
 
       .modal-actions {
         padding: 16px;
-
-        button {
-          padding: 8px 16px;
-          font-size: 13px;
-        }
+        button { padding: 8px 16px; font-size: 13px; }
       }
     }
   }
 
   @media (max-width: 480px) {
     .product-table table {
-      thead th,
-      tbody td {
-        &:nth-child(4),
-        &:nth-child(5) {
-          display: none;
-        }
+      thead th, tbody td {
+        &:nth-child(4), &:nth-child(5) { display: none; }
       }
     }
 
@@ -1319,10 +1072,7 @@
       .selected-categories .selected-items .selected-tag {
         font-size: 12px;
         padding: 5px 10px;
-
-        .tag-count {
-          font-size: 11px;
-        }
+        .tag-count { font-size: 11px; }
       }
     }
   }
@@ -1341,11 +1091,7 @@
     align-items: center;
     margin-bottom: 16px;
 
-    .section-label {
-      font-size: 16px;
-      font-weight: 700;
-      color: #1f2937;
-    }
+    .section-label { font-size: 16px; font-weight: 700; color: #1f2937; }
 
     .btn-add-attribute {
       display: flex;
@@ -1361,10 +1107,7 @@
       cursor: pointer;
       transition: all 0.2s;
 
-      &:hover {
-        background: #059669;
-        transform: translateY(-1px);
-      }
+      &:hover { background: #059669; transform: translateY(-1px); }
     }
   }
 
@@ -1406,9 +1149,7 @@
         cursor: pointer;
         transition: all 0.2s;
 
-        &:hover {
-          background: #dc2626;
-        }
+        &:hover { background: #dc2626; }
       }
     }
 
@@ -1439,10 +1180,7 @@
           border-radius: 4px;
           font-size: 14px;
 
-          &:focus {
-            outline: none;
-            border-color: #3b82f6;
-          }
+          &:focus { outline: none; border-color: #3b82f6; }
         }
 
         .option-image-upload {
@@ -1450,9 +1188,7 @@
           align-items: center;
           gap: 8px;
 
-          input[type="file"] {
-            display: none;
-          }
+          input[type="file"] { display: none; }
 
           .file-label-small {
             padding: 6px 12px;
@@ -1465,16 +1201,10 @@
             transition: all 0.2s;
             white-space: nowrap;
 
-            &:hover {
-              background: #4f46e5;
-            }
+            &:hover { background: #4f46e5; }
           }
 
-          .file-selected {
-            color: #10b981;
-            font-weight: 600;
-            font-size: 16px;
-          }
+          .file-selected { color: #10b981; font-weight: 600; font-size: 16px; }
 
           .attr-img-preview {
             width: 40px;
@@ -1494,9 +1224,7 @@
               z-index: 10;
             }
 
-            &:active {
-              transform: scale(1.05);
-            }
+            &:active { transform: scale(1.05); }
           }
         }
 
@@ -1526,9 +1254,7 @@
           cursor: pointer;
           transition: all 0.2s;
 
-          &:hover {
-            background: #ef4444;
-          }
+          &:hover { background: #ef4444; }
         }
       }
 
@@ -1547,178 +1273,202 @@
         cursor: pointer;
         transition: all 0.2s;
 
-        &:hover {
-          border-color: #3b82f6;
-          color: #3b82f6;
-          background: #eff6ff;
-        }
+        &:hover { border-color: #3b82f6; color: #3b82f6; background: #eff6ff; }
       }
     }
   }
 }
 
-// ==================== MODAL LARGE (cho form có attributes) ====================
+// ==================== MODAL LARGE (form thêm/sửa sản phẩm) ====================
 .modal-large {
-  width: 900px;
-  max-width: 95vw;
+  // Rộng hơn để hiển thị đủ thông tin biến thể
+  // padding-left trong overlay đã đẩy sang phải để tránh sidebar
+  width: min(1100px, 92vw) !important;
 
   form {
-    max-height: 70vh;
+    max-height: 72vh;
+    // 3 cột cho các field cơ bản để tận dụng không gian rộng
+    grid-template-columns: 1fr 1fr 1fr;
 
-    // Thay thế đoạn .variants-section cũ bằng đoạn này
+    // Override: các field cần full width
+    textarea,
+    .category-select-wrapper,
+    .checkbox-group,
+    .file-input-wrapper,
+    .image-previews,
+    .price-with-discount,
+    .attributes-section,
     .variants-section {
-      width: 205%; // Ép rộng bằng section Attribute ở trên
-      margin-top: 30px;
-      margin-bottom: 20px;
-      // Bỏ border và padding bao ngoài để nó sát lề như các section khác
+      grid-column: 1 / -1;
+    }
 
-      .variants-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        padding: 12px 0;
-        margin-bottom: 15px;
-        border-bottom: 2px solid #10b981; // Đường kẻ xanh đặc trưng của bạn
+    // 2 cột cho Tên & SKU
+    input[placeholder="Tên sản phẩm"] { grid-column: 1 / 3; }
+    input[placeholder="SKU"] { grid-column: 3 / 4; }
+  }
 
-        h4 {
-          font-size: 18px;
-          color: #1f2937;
-          font-weight: 700;
-          margin: 0;
-          text-transform: uppercase;
-          letter-spacing: 0.5px;
-        }
+  // ==================== VARIANTS TABLE ====================
+  .variants-section {
+    width: 100%;
+    margin-top: 24px;
+    margin-bottom: 8px;
 
-        .btn-generate {
-          padding: 8px 18px;
-          background: #3b82f6;
-          color: white;
-          border: none;
-          border-radius: 6px;
-          font-weight: 600;
-          font-size: 13px;
-          cursor: pointer;
-          transition: all 0.2s ease;
-          box-shadow: 0 2px 5px rgba(59, 130, 246, 0.2);
+    .variants-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px 0;
+      margin-bottom: 15px;
+      border-bottom: 2px solid #10b981;
 
-          &:hover {
-            background: #2563eb;
-            transform: translateY(-1px);
-            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
-          }
-        }
+      h4 {
+        font-size: 16px;
+        color: #1f2937;
+        font-weight: 700;
+        margin: 0;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
       }
 
-      .variants-table-wrapper {
-        width: 100%; // Đảm bảo chiếm trọn không gian
-        background: #fff;
-        border: 1px solid #e5e7eb;
-        border-radius: 8px;
-        overflow: hidden;
+      .btn-generate {
+        padding: 8px 18px;
+        background: #3b82f6;
+        color: white;
+        border: none;
+        border-radius: 6px;
+        font-weight: 600;
+        font-size: 13px;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        box-shadow: 0 2px 5px rgba(59, 130, 246, 0.2);
 
-        .variants-table {
-          width: 100%;
-          border-collapse: collapse;
-          table-layout: fixed; // Ép các cột chia tỉ lệ cố định
+        &:hover {
+          background: #2563eb;
+          transform: translateY(-1px);
+          box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+        }
+      }
+    }
 
-          th {
-            background: #f8fafc;
-            padding: 14px 15px;
-            text-align: left;
-            font-size: 12px;
-            font-weight: 700;
-            color: #64748b;
-            text-transform: uppercase;
-            border-bottom: 1px solid #e5e7eb;
+    .variants-table-wrapper {
+      width: 100%;
+      background: #fff;
+      border: 1px solid #e5e7eb;
+      border-radius: 8px;
+      overflow: hidden;
+
+      .variants-table {
+        width: 100%;
+        border-collapse: collapse;
+        table-layout: fixed;
+
+        th {
+          background: #f8fafc;
+          padding: 13px 16px;
+          text-align: left;
+          font-size: 12px;
+          font-weight: 700;
+          color: #64748b;
+          text-transform: uppercase;
+          letter-spacing: 0.4px;
+          border-bottom: 1px solid #e5e7eb;
+        }
+
+        td {
+          padding: 11px 16px;
+          border-bottom: 1px solid #f1f5f9;
+          vertical-align: middle;
+
+          // Tỉ lệ cột cân đối hơn khi modal rộng
+          &:nth-child(1) { width: 32%; } // Phân loại
+          &:nth-child(2) { width: 22%; } // Giá bán
+          &:nth-child(3) { width: 14%; } // Kho
+          &:nth-child(4) { width: 24%; } // SKU
+          &:nth-child(5) { width: 8%;  text-align: center; } // Xóa
+
+          .variant-label {
+            display: block;
+            font-weight: 600;
+            color: #111827;
+            font-size: 14px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
           }
 
-          td {
-            padding: 12px 15px;
-            border-bottom: 1px solid #f1f5f9;
+          input {
+            width: 100%;
+            padding: 8px 12px;
+            border: 1px solid #d1d5db;
+            border-radius: 6px;
+            font-size: 14px;
+            background: #fff;
+            transition: border-color 0.2s;
+            box-sizing: border-box;
 
-            // Tỉ lệ cột
-            &:nth-child(1) {
-              width: 35%;
-            } // Cột Phân loại rộng nhất
-            &:nth-child(2) {
-              width: 25%;
-            } // Cột Giá
-            &:nth-child(3) {
-              width: 15%;
-            } // Cột Kho
-            &:nth-child(4) {
-              width: 25%;
-            } // Cột SKU
-
-            .variant-label {
-              display: block;
-              font-weight: 600;
-              color: #111827;
-              font-size: 14px;
-              // Nếu tên biến thể dài quá thì cho hiện dấu ...
-              white-space: nowrap;
-              overflow: hidden;
-              text-overflow: ellipsis;
+            &:focus {
+              outline: none;
+              border-color: #10b981;
+              box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1);
             }
 
-            input {
-              width: 100%;
-              padding: 8px 12px;
-              border: 1px solid #d1d5db;
-              border-radius: 6px;
-              font-size: 14px;
-              background: #fff;
-              transition: border-color 0.2s;
-
-              &:focus {
-                outline: none;
-                border-color: #10b981;
-                box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1);
-              }
-
-              &.price-input {
-                color: #ef4444;
-                font-weight: 700;
-                background: #fffafb; // Màu nền nhẹ cho ô giá
-              }
+            &.price-input {
+              color: #ef4444;
+              font-weight: 700;
+              background: #fffafb;
             }
-          }
-
-          tr:last-child td {
-            border-bottom: none;
-          }
-
-          tr:hover {
-            background: #f9fafb;
           }
         }
+
+        tr:last-child td { border-bottom: none; }
+        tr:hover td { background: #f9fafb; }
       }
     }
   }
 }
 
-// ==================== RESPONSIVE ====================
-@media (max-width: 768px) {
-  .attributes-section {
-    .attribute-card {
-      .options-list {
-        .option-item {
-          grid-template-columns: 1fr;
-          gap: 10px;
+// ==================== RESPONSIVE cho modal-large ====================
+@media (max-width: 1024px) {
+  .modal-large {
+    width: min(900px, 94vw) !important;
 
-          .option-image-upload {
-            justify-content: flex-start;
-          }
-        }
+    form {
+      grid-template-columns: 1fr 1fr;
+
+      input[placeholder="Tên sản phẩm"] { grid-column: 1 / 2; }
+      input[placeholder="SKU"] { grid-column: 2 / 3; }
+    }
+  }
+}
+
+@media (max-width: 768px) {
+  .modal-large {
+    width: 95vw !important;
+
+    form {
+      grid-template-columns: 1fr;
+      max-height: 75vh;
+
+      input[placeholder="Tên sản phẩm"],
+      input[placeholder="SKU"] { grid-column: 1 / -1; }
+    }
+
+    .variants-section .variants-table-wrapper {
+      overflow-x: auto;
+
+      .variants-table {
+        min-width: 600px;
+        table-layout: auto;
       }
     }
   }
 
-  .modal-large {
-    width: 95vw;
+  .attributes-section {
+    .attribute-card .options-list .option-item {
+      grid-template-columns: 1fr;
+      gap: 10px;
 
-    form {
-      max-height: 75vh;
+      .option-image-upload { justify-content: flex-start; }
     }
   }
 }
@@ -1768,21 +1518,12 @@
       transition: all 0.2s;
       box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
 
-      &:hover {
-        background: white;
-        transform: rotate(90deg);
-      }
+      &:hover { background: white; transform: rotate(90deg); }
     }
   }
 
   @keyframes zoomIn {
-    from {
-      opacity: 0;
-      transform: scale(0.5);
-    }
-    to {
-      opacity: 1;
-      transform: scale(1);
-    }
+    from { opacity: 0; transform: scale(0.5); }
+    to { opacity: 1; transform: scale(1); }
   }
 }

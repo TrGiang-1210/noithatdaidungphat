@@ -161,7 +161,12 @@ const PayCart: React.FC = () => {
               }
             }
 
-            labels[item.product._id] = {
+            // Dùng key = productId + attrs để phân biệt cùng sp khác thuộc tính
+            const sortedAttrs = Object.keys(item.selectedAttributes).sort()
+              .map(k => `${k}:${(item.selectedAttributes as Record<string,string>)[k]}`).join("|");
+            const cartKey = `${item.product._id}__${sortedAttrs}`;
+
+            labels[cartKey] = {
               keys: translatedKeys,
               values: translatedValues,
             };
@@ -530,13 +535,15 @@ const PayCart: React.FC = () => {
                         const hasAttrs = Object.keys(attrs).length > 0;
 
                         if (hasAttrs) {
-                          // Lấy labels đã convert (nếu có)
-                          const productLabels = attributeLabels[product._id];
+                          // Tạo cartKey giống lúc lưu để lấy đúng labels
+                          const sortedAttrs = Object.keys(attrs).sort()
+                            .map(k => `${k}:${(attrs as Record<string,string>)[k]}`).join("|");
+                          const cartKey = `${product._id}__${sortedAttrs}`;
+                          const productLabels = attributeLabels[cartKey];
 
                           return (
                             <div className="selected-attributes">
                               {Object.entries(attrs).map(([key, value]) => {
-                                // ✅ LẤY KEY VÀ VALUE ĐÃ DỊCH
                                 const translatedKey = productLabels?.keys?.[key] || key;
                                 const translatedValue = productLabels?.values?.[key] || value;
 
