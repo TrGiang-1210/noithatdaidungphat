@@ -8,7 +8,7 @@ import { getImageUrl, getFirstImageUrl } from "@/utils/imageUrl";
 import { triggerUserLogout } from "@/utils/authEvents";
 import "@/styles/components/user/header.scss";
 // ✅ Import logo như một module
-import logoImage from "@/assets/logo_noithatddp-removebg-preview.png";
+import logoImage from "@/assets/new_logo_ntddp_removebg_edited-removebg-preview.png";
 
 interface Category {
   _id: string;

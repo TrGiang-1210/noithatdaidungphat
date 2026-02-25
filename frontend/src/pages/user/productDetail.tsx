@@ -175,6 +175,7 @@ const ProductDetail: React.FC = () => {
 
     fetchProduct();
     setSelectedImageIndex(0);
+    window.scrollTo({ top: 0, behavior: "instant" });
 
     return () => {
       viewIncrementedRef.current = false;
@@ -446,6 +447,10 @@ const ProductDetail: React.FC = () => {
     ? activeVariant.quantity
     : product?.quantity || 0;
   const displaySku = activeVariant ? activeVariant.sku : product?.sku;
+  const displayDiscount =
+    displayPriceOriginal > displayPriceSale && displayPriceOriginal > 0
+      ? Math.round(((displayPriceOriginal - displayPriceSale) / displayPriceOriginal) * 100)
+      : 0;
   // ================================================================
 
   const handleAdd = () => {
@@ -553,7 +558,6 @@ const ProductDetail: React.FC = () => {
         <div className="new-layout">
           <div className="left-column">
             <div className="image-area">
-              {discount > 0 && <div className="sale-badge">-{discount}%</div>}
 
               <div className="main-image">
                 {displayQuantity <= 0 && (
@@ -626,12 +630,12 @@ const ProductDetail: React.FC = () => {
               <span className="current-price">
                 {displayPriceSale.toLocaleString()}₫
               </span>
-              {discount > 0 && (
+              {displayDiscount > 0 && (
                 <>
                   <span className="old-price">
                     {displayPriceOriginal.toLocaleString()}₫
                   </span>
-                  <span className="discount-tag">-{discount}%</span>
+                  <span className="discount-tag">-{displayDiscount}%</span>
                 </>
               )}
             </div>

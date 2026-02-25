@@ -1,10 +1,16 @@
+// ===================================================================
+// home.scss - OPTIMIZED & CLEANED UP
+// ===================================================================
+
 .home-page {
   font-family: sans-serif;
   color: #333;
   background: #f8f8f8;
 }
 
-/* ==================== BANNER - CHUẨN 100% DOGOVIET.COM ==================== */
+// ===================================================================
+// BANNER
+// ===================================================================
 .banner-section {
   padding: 20px 0;
   background: #f5f5f5;
@@ -13,7 +19,7 @@
     max-width: 1200px;
     margin: 0 auto;
     padding: 0 15px;
-    padding-left: 335px !important; /* Chuẩn như dogoviet - chừa chỗ dropdown 320px */
+    padding-left: 335px !important;
   }
 
   .slider-wrapper {
@@ -36,11 +42,14 @@
       display: flex;
       height: 100%;
       transition: transform 0.6s ease;
+      // ✅ GPU acceleration đúng chỗ - chỉ trên element thực sự animate
+      will-change: transform;
     }
 
     .slide {
       min-width: 100%;
       height: 100%;
+      flex-shrink: 0;
     }
 
     .slide-img {
@@ -48,6 +57,7 @@
       height: 100%;
       object-fit: cover;
       display: block;
+      // ✅ Xóa lazy skeleton fake - browser tự handle, không cần override
     }
 
     .slider-nav {
@@ -63,19 +73,15 @@
       cursor: pointer;
       border-radius: 50%;
       z-index: 10;
-      transition: all 0.3s;
+      transition: background 0.3s, transform 0.3s;
 
       &:hover {
         background: #c19a6b;
         transform: translateY(-50%) scale(1.1);
       }
 
-      &.prev {
-        left: 15px;
-      }
-      &.next {
-        right: 15px;
-      }
+      &.prev { left: 15px; }
+      &.next { right: 15px; }
     }
 
     .slider-pagination {
@@ -93,7 +99,7 @@
         background: rgba(255, 255, 255, 0.6);
         border-radius: 50%;
         cursor: pointer;
-        transition: all 0.3s;
+        transition: background 0.3s, transform 0.3s;
 
         &.active {
           background: #c19a6b;
@@ -103,16 +109,13 @@
     }
   }
 
-  /* Mobile: full width */
   @media (max-width: 992px) {
     .banner-container {
       padding-left: 15px !important;
     }
-
     .slider {
       height: 280px;
     }
-
     .slider-nav {
       width: 40px;
       height: 40px;
@@ -121,12 +124,13 @@
   }
 }
 
-/* ==================== PRODUCT SECTIONS (Bán chạy, Mới, Danh mục) ==================== */
+// ===================================================================
+// PRODUCT SECTIONS
+// ===================================================================
 .product-section {
   padding: 50px 0;
   background: #fff;
 
-  // Màu nền xen kẽ cho các section
   &:nth-child(even) {
     background: #fafafa;
   }
@@ -137,7 +141,7 @@
     padding: 0 16px;
   }
 
-  /* ==================== SECTION HEADER với nút "Xem tất cả" ==================== */
+  // ── Section Header ──
   .section-header {
     display: flex;
     justify-content: space-between;
@@ -152,12 +156,7 @@
       color: #333;
       text-transform: uppercase;
       letter-spacing: 0.5px;
-      position: relative;
       margin: 0;
-
-      &::after {
-        display: none; // Tắt thanh gạch cũ vì đã có border-bottom
-      }
     }
 
     .view-all {
@@ -168,10 +167,10 @@
       font-weight: 600;
       font-size: 15px;
       text-decoration: none;
-      transition: all 0.3s;
       padding: 8px 16px;
       border-radius: 6px;
       border: 1px solid #d6a041;
+      transition: background 0.3s, color 0.3s, gap 0.3s, box-shadow 0.3s;
 
       &:hover {
         background: #d6a041;
@@ -188,20 +187,9 @@
         transform: translateX(3px);
       }
     }
-
-    @media (max-width: 768px) {
-      .section-title {
-        font-size: 22px;
-      }
-
-      .view-all {
-        font-size: 13px;
-        padding: 6px 12px;
-      }
-    }
   }
 
-  /* ==================== PRODUCT GRID - 4 CỘT DESKTOP, 2 CỘT MOBILE ==================== */
+  // ── Product Grid ──
   .product-grid {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
@@ -216,25 +204,21 @@
       grid-template-columns: repeat(2, 1fr);
       gap: 16px;
     }
-
-    @media (max-width: 480px) {
-      grid-template-columns: repeat(2, 1fr);
-      gap: 12px;
-    }
   }
 
-  /* ==================== PRODUCT CARD - GIỐNG HÌNH BẠN GỬI ==================== */
+  // ── Product Card ──
   .product-card {
     background: #fff;
     border-radius: 12px;
     overflow: hidden;
     border: 1px solid #eee;
-    transition: all 0.3s ease;
     text-decoration: none;
     color: inherit;
     display: flex;
     flex-direction: column;
     position: relative;
+    // ✅ transition chỉ trên property cụ thể, không dùng "all" (tốn CPU hơn)
+    transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease;
 
     &:hover {
       transform: translateY(-8px);
@@ -242,11 +226,12 @@
       border-color: #d6a041;
     }
 
-    /* ==================== PRODUCT IMAGE với BADGE GIẢM GIÁ ==================== */
+    // ── Product Image ──
     .product-image {
       position: relative;
       width: 100%;
-      // padding-top: 20%; // Tỷ lệ 1:1 (vuông)
+      // ✅ Chỉ định nghĩa 1 lần duy nhất (fix bug trùng lặp)
+      padding-top: 100%; // Tỷ lệ 1:1 chuẩn
       overflow: hidden;
       background: #f8f8f8;
 
@@ -262,10 +247,10 @@
     }
 
     &:hover .product-image img {
-      transform: scale(1.08);
+      transform: scale(1.06);
     }
 
-    /* ==================== PRODUCT INFO ==================== */
+    // ── Product Info ──
     .product-info {
       padding: 15px;
       flex: 1;
@@ -292,7 +277,7 @@
       color: #d6a041;
     }
 
-    /* ==================== PRODUCT PRICE - GIÁ BÊN TRÁI, % BÊN PHẢI ==================== */
+    // ── Product Price ──
     .product-price {
       display: flex;
       justify-content: space-between;
@@ -327,36 +312,204 @@
         font-weight: 700;
         white-space: nowrap;
         box-shadow: 0 2px 6px rgba(255, 68, 68, 0.3);
+        flex-shrink: 0;
       }
     }
 
-    @media (max-width: 768px) {
+    // ── Out of stock ──
+    &.out-of-stock {
+      opacity: 0.75;
+
+      &::after {
+        content: "";
+        position: absolute;
+        inset: 0;
+        background: rgba(255, 255, 255, 0.45);
+        pointer-events: none;
+      }
+    }
+  }
+
+  @media (max-width: 768px) {
+    padding: 35px 0;
+
+    .section-header {
+      .section-title { font-size: 22px; }
+      .view-all { font-size: 13px; padding: 6px 12px; }
+    }
+
+    .product-card {
+      // ✅ Tắt hover animation trên mobile (tiết kiệm GPU)
+      &:hover {
+        transform: none;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+      }
+
+      &:hover .product-image img {
+        transform: none;
+      }
+
       .product-name {
         font-size: 14px;
         min-height: 38px;
       }
 
       .product-price {
-        gap: 6px;
-
-        .price-sale {
-          font-size: 17px;
-        }
-
-        .price-original {
-          font-size: 13px;
-        }
-
-        .discount-percent {
-          font-size: 12px;
-          padding: 4px 8px;
-        }
+        .price-sale { font-size: 17px; }
+        .price-original { font-size: 13px; }
+        .discount-percent { font-size: 12px; padding: 4px 8px; }
       }
+    }
+  }
+
+  @media (max-width: 480px) {
+    padding: 25px 0;
+
+    .section-header {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 12px;
+
+      .view-all { align-self: flex-end; }
     }
   }
 }
 
-/* ==================== LOADING STATE ==================== */
+// ===================================================================
+// BADGE HẾT HÀNG
+// ===================================================================
+.badge.out-of-stock-badge {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background: rgb(57, 57, 57);
+  color: white;
+  padding: 6px 12px;
+  border-radius: 4px;
+  font-weight: bold;
+  font-size: 13px;
+  z-index: 10;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+// ===================================================================
+// PRODUCT DETAIL - OUT OF STOCK OVERLAY
+// ===================================================================
+.out-of-stock-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 5;
+}
+
+.out-of-stock-text {
+  background: #e74c3c;
+  color: white;
+  padding: 15px 30px;
+  font-size: 24px;
+  font-weight: bold;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+// ===================================================================
+// DISABLED BUTTON
+// ===================================================================
+button:disabled,
+button.disabled {
+  background: #bdc3c7 !important;
+  cursor: not-allowed !important;
+  opacity: 0.6;
+}
+
+// ===================================================================
+// CAROUSEL
+// ===================================================================
+.product-carousel-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+
+  .carousel-nav {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 10;
+    background: rgba(0, 0, 0, 0.5);
+    border: none;
+    color: white;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: background 0.25s ease, transform 0.25s ease;
+
+    &:hover {
+      background: rgba(0, 0, 0, 0.8);
+      transform: translateY(-50%) scale(1.1);
+    }
+
+    &.prev { left: -20px; }
+    &.next { right: -20px; }
+  }
+}
+
+.product-carousel {
+  flex: 1;
+  overflow: hidden;
+  // ✅ GPU acceleration chỉ trên wrapper carousel, không phải mọi card
+  will-change: contents;
+
+  .product-carousel-inner {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 20px;
+
+    .carousel-item {
+      min-width: 0; // Fix overflow
+    }
+  }
+
+  @media (max-width: 1200px) {
+    .product-carousel-inner {
+      grid-template-columns: repeat(3, 1fr);
+    }
+  }
+
+  @media (max-width: 768px) {
+    .product-carousel-inner {
+      grid-template-columns: repeat(2, 1fr);
+      gap: 15px;
+    }
+  }
+
+  @media (max-width: 480px) {
+    .product-carousel-inner {
+      grid-template-columns: repeat(2, 1fr);
+      gap: 10px;
+    }
+  }
+}
+
+@media (max-width: 768px) {
+  .product-carousel-wrapper .carousel-nav {
+    width: 32px;
+    height: 32px;
+
+    &.prev { left: -12px; }
+    &.next { right: -12px; }
+  }
+}
+
+// ===================================================================
+// LOADING & SPINNER (giữ lại cho các trang khác dùng)
+// ===================================================================
 .loading-container {
   text-align: center;
   padding: 100px 20px;
@@ -378,299 +531,56 @@
   }
 }
 
-@keyframes spin {
-  0% {
-    transform: rotate(0deg);
-  }
-  100% {
-    transform: rotate(360deg);
-  }
-}
-
-/* ==================== RESPONSIVE ADJUSTMENTS ==================== */
-@media (max-width: 1200px) {
-  .product-section .container {
-    max-width: 100%;
-    padding: 0 20px;
-  }
-}
-
-@media (max-width: 768px) {
-  .product-section {
-    padding: 35px 0;
-  }
-
-  .banner-section .slider {
-    height: 250px;
-  }
-}
-
-@media (max-width: 480px) {
-  .product-section {
-    padding: 25px 0;
-  }
-
-  .product-section .section-header {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 12px;
-
-    .view-all {
-      align-self: flex-end;
-    }
-  }
-}
-
-// CSS cho badge hết hàng
-.badge.out-of-stock-badge {
-  position: absolute;
-  top: 10px;
-  right: 10px;
-  background: rgb(57, 57, 57);
-  color: white;
-  padding: 6px 12px;
-  border-radius: 4px;
-  font-weight: bold;
-  font-size: 13px;
-  z-index: 10;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-}
-
-// CSS cho card hết hàng
-.product-card.out-of-stock {
-  opacity: 0.7;
-  position: relative;
-}
-
-.product-card.out-of-stock::after {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(255, 255, 255, 0.5);
-  pointer-events: none;
-}
-
-// Disable button khi hết hàng
-button:disabled,
-button.disabled {
-  background: #bdc3c7 !important;
-  cursor: not-allowed !important;
-  opacity: 0.6;
-}
-
-// Overlay cho product detail
-.out-of-stock-overlay {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.6);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 5;
-}
-
-.out-of-stock-text {
-  background: #e74c3c;
-  color: white;
-  padding: 15px 30px;
-  font-size: 24px;
-  font-weight: bold;
-  border-radius: 8px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-}
-
-// ==================== PRODUCT CAROUSEL ====================
-.product-carousel-wrapper {
-  position: relative;
-  display: flex;
-  align-items: center;
-  gap: 20px;
-  
-  .carousel-nav {
-    position: absolute;
-    top: 50%;
-    transform: translateY(-50%);
-    z-index: 10;
-    background: rgba(0, 0, 0, 0.5);
-    border: none;
-    color: white;
-    width: 40px;
-    height: 40px;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    
-    &:hover {
-      background: rgba(0, 0, 0, 0.8);
-      transform: translateY(-50%) scale(1.1);
-    }
-    
-    &.prev {
-      left: -20px;
-    }
-    
-    &.next {
-      right: -20px;
-    }
-  }
-}
-
-.product-carousel {
-  flex: 1;
-  overflow: hidden;
-  
-  .product-carousel-inner {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 20px;
-    
-    .carousel-item {
-      min-width: 0; // Fix overflow issue
-    }
-  }
-}
-
-// Responsive
-@media (max-width: 1200px) {
-  .product-carousel {
-    .product-carousel-inner {
-      grid-template-columns: repeat(3, 1fr);
-    }
-  }
-}
-
-@media (max-width: 768px) {
-  .product-carousel-wrapper {
-    .carousel-nav {
-      width: 35px;
-      height: 35px;
-      
-      &.prev {
-        left: -10px;
-      }
-      
-      &.next {
-        right: -10px;
-      }
-    }
-  }
-  
-  .product-carousel {
-    .product-carousel-inner {
-      grid-template-columns: repeat(2, 1fr);
-      gap: 15px;
-    }
-  }
-}
-
-@media (max-width: 480px) {
-  .product-carousel {
-    .product-carousel-inner {
-      grid-template-columns: 1fr;
-      gap: 10px;
-    }
-  }
-}
-// ✅ THÊM VÀO FILE home.scss CỦA BẠN
-
-// ==================== IMAGE SKELETON LOADING ====================
-.image-skeleton {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: linear-gradient(
-    90deg,
-    #f0f0f0 25%,
-    #e0e0e0 50%,
-    #f0f0f0 75%
-  );
-  background-size: 200% 100%;
-  animation: shimmer 1.5s infinite;
-}
-
+// ===================================================================
+// SKELETON LOADING (cho progressive render của home.tsx mới)
+// ===================================================================
 @keyframes shimmer {
-  0% {
-    background-position: -200% 0;
-  }
-  100% {
-    background-position: 200% 0;
-  }
+  0%   { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
 }
 
-// ==================== OPTIMIZED PRODUCT IMAGE ====================
-.product-card {
+// Mixin tái sử dụng
+%shimmer-base {
+  background: linear-gradient(90deg, #f0f0f0 25%, #e4e4e4 50%, #f0f0f0 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.4s ease-in-out infinite;
+}
+
+.skeleton-line {
+  @extend %shimmer-base;
+  border-radius: 6px;
+  display: block;
+}
+
+.product-card.skeleton {
+  pointer-events: none;
+  border-color: #eee;
+
+  &:hover {
+    transform: none;
+    box-shadow: none;
+    border-color: #eee;
+  }
+
+  .skeleton-box {
+    @extend %shimmer-base;
+    position: absolute;
+    inset: 0;
+    border-radius: 0;
+  }
+
   .product-image {
-    position: relative;
-    width: 100%;
-    padding-top: 100%; // Tỷ lệ 1:1
-    overflow: hidden;
-    background: #f8f8f8;
-
-    img {
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-      transition: transform 0.4s ease;
-      
-      // ✅ Tối ưu rendering
-      will-change: transform;
-      backface-visibility: hidden;
-      transform: translateZ(0);
-    }
+    padding-top: 100%;
   }
 
-  // ✅ Giảm animation complexity
-  &:hover .product-image img {
-    transform: scale(1.05) translateZ(0); // Giảm từ 1.08 xuống 1.05
+  .product-info {
+    gap: 12px;
   }
 }
 
-// ==================== PERFORMANCE OPTIMIZATIONS ====================
-// ✅ Disable animations trên mobile để tăng performance
-@media (max-width: 768px) {
-  .product-card:hover .product-image img {
-    transform: none; // Tắt animation trên mobile
-  }
-
-  .product-card:hover {
-    transform: none; // Tắt hover effect trên mobile
-    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08); // Giảm shadow
-  }
-}
-
-// ✅ Optimize carousel animations
-.slider-inner,
-.product-carousel-inner {
-  will-change: transform;
-  backface-visibility: hidden;
-  transform: translateZ(0);
-}
-
-// ✅ Lazy load placeholder cho banner
-.slide-img {
-  &[loading="lazy"] {
-    min-height: 420px;
-    background: linear-gradient(
-      90deg,
-      #e0e0e0 25%,
-      #d0d0d0 50%,
-      #e0e0e0 75%
-    );
-    background-size: 200% 100%;
-    animation: shimmer 1.5s infinite;
-  }
+// ===================================================================
+// KEYFRAMES (1 chỗ duy nhất)
+// ===================================================================
+@keyframes spin {
+  to { transform: rotate(360deg); }
 }
