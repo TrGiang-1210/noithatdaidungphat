@@ -1276,7 +1276,9 @@ const handleSubmit = async (e: React.FormEvent) => {
                       <thead>
                         <tr>
                           <th>Phân loại</th>
+                          <th>Giá gốc (VNĐ)</th>
                           <th>Giá bán (VNĐ)</th>
+                          <th style={{ width: "80px", textAlign: "center" }}>% Giảm</th>
                           <th>Kho hàng</th>
                           <th>SKU</th>
                           <th style={{ width: "50px", textAlign: "center" }}>Xóa</th>
@@ -1295,8 +1297,29 @@ const handleSubmit = async (e: React.FormEvent) => {
                             <td>
                               <input
                                 type="number"
+                                style={{ color: "#6b7280" }}
+                                value={v.priceOriginal}
+                                placeholder="Giá gốc"
+                                onChange={(e) => {
+                                  const newVariants = [
+                                    ...(formData.variants || []),
+                                  ];
+                                  newVariants[idx].priceOriginal = Number(
+                                    e.target.value,
+                                  );
+                                  setFormData({
+                                    ...formData,
+                                    variants: newVariants,
+                                  });
+                                }}
+                              />
+                            </td>
+                            <td>
+                              <input
+                                type="number"
                                 className="price-input"
                                 value={v.priceSale}
+                                placeholder="Giá bán"
                                 onChange={(e) => {
                                   const newVariants = [
                                     ...(formData.variants || []),
@@ -1310,6 +1333,30 @@ const handleSubmit = async (e: React.FormEvent) => {
                                   });
                                 }}
                               />
+                            </td>
+                            <td style={{ textAlign: "center" }}>
+                              {(() => {
+                                const orig = Number(v.priceOriginal);
+                                const sale = Number(v.priceSale);
+                                if (orig > 0 && sale > 0 && sale < orig) {
+                                  const pct = Math.round(((orig - sale) / orig) * 100);
+                                  return (
+                                    <span style={{
+                                      background: "linear-gradient(135deg, #ef4444, #dc2626)",
+                                      color: "white",
+                                      padding: "4px 10px",
+                                      borderRadius: "20px",
+                                      fontSize: "12px",
+                                      fontWeight: 700,
+                                      whiteSpace: "nowrap",
+                                      boxShadow: "0 2px 6px rgba(239,68,68,0.3)",
+                                    }}>
+                                      -{pct}%
+                                    </span>
+                                  );
+                                }
+                                return <span style={{ color: "#d1d5db", fontSize: "13px" }}>—</span>;
+                              })()}
                             </td>
                             <td>
                               <input

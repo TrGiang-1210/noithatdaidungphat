@@ -1,48 +1,47 @@
 .ddp-footer {
-  background: #001F3F; // Primary (xanh dương đậm)
+  background: #001F3F;
   color: #fff;
-  padding-top: 0; // Bỏ padding-top vì có map section
+  padding-top: 0;
   font-family: 'Roboto', sans-serif;
 
-  /* Khung căn giữa */
   .container {
     max-width: 1200px;
     margin: 0 auto;
     padding: 0 16px;
   }
 
-  /* Google Map Section */
+  // ── Google Map ──────────────────────────────────────────────────
   .footer-map-section {
-    background: #003366; // Màu tối hơn một chút
+    background: #003366;
     padding: 40px 0;
     margin-bottom: 40px;
-
-    .map-title {
-      text-align: center;
-      font-size: 24px;
-      font-weight: bold;
-      color: #D2B48C; // Accent
-      margin-bottom: 20px;
-    }
 
     .map-container {
       border-radius: 8px;
       overflow: hidden;
       box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
 
-      iframe {
-        display: block;
+      iframe { display: block; }
+
+      // ✅ Placeholder giữ chiều cao khi iframe chưa load → tránh layout shift
+      .map-placeholder {
+        width: 100%;
+        height: 400px;
+        background: linear-gradient(90deg, #002a52 25%, #003a70 50%, #002a52 75%);
+        background-size: 200% 100%;
+        animation: mapShimmer 1.6s ease-in-out infinite;
       }
     }
   }
 
-  /* Grid 4 cột */
+  // ── Footer Grid ─────────────────────────────────────────────────
   .footer-grid {
     display: flex;
     justify-content: space-between;
     align-items: flex-start;
     gap: 40px;
     flex-wrap: wrap;
+    padding-bottom: 10px;
   }
 
   .footer-col {
@@ -53,7 +52,7 @@
       font-size: 18px;
       font-weight: bold;
       margin-bottom: 12px;
-      color: #D2B48C; // Accent (nâu gỗ nhạt)
+      color: #D2B48C;
     }
 
     ul {
@@ -68,26 +67,21 @@
         a {
           color: #fff;
           text-decoration: none;
+          transition: color 0.2s;
 
-          &:hover {
-            color: #D2B48C; // Accent
-          }
+          &:hover { color: #D2B48C; }
         }
       }
     }
 
-    /* Phần mới cho 2 cửa hàng */
     .store-info {
       h4 {
         font-size: 16px;
         font-weight: bold;
         margin: 15px 0 8px;
-        color: #D2B48C; // Accent
+        color: #D2B48C;
       }
-
-      ul {
-        margin-bottom: 15px;
-      }
+      ul { margin-bottom: 15px; }
     }
 
     .working-hours {
@@ -97,7 +91,7 @@
     }
   }
 
-  /* Logo & mô tả */
+  // ── Logo ────────────────────────────────────────────────────────
   .footer-logo img {
     width: 200px;
     margin-bottom: 10px;
@@ -107,22 +101,34 @@
     font-size: 14px;
     line-height: 1.5;
     margin-bottom: 15px;
-    color: #F5F5F5; // Secondary cho text phụ
+    color: #F5F5F5;
   }
 
+  // ── Hotline ─────────────────────────────────────────────────────
   .footer-hotline {
     display: flex;
     align-items: center;
+    gap: 4px;
     font-size: 16px;
-    color: #D2B48C; // Accent
+    color: #D2B48C;
     margin-bottom: 20px;
+    flex-wrap: wrap;
 
-    .phone-icon {
-      margin-right: 6px;
+    .phone-icon { margin-right: 4px; }
+
+    .phone-number {
+      color: #D2B48C;
+      text-decoration: none;
+      font-weight: 600;
+      transition: color 0.2s;
+
+      &:hover { color: #fff; text-decoration: underline; }
     }
+
+    .phone-sep { color: #D2B48C; }
   }
 
-  /* Social Media Section */
+  // ── Social ──────────────────────────────────────────────────────
   .footer-social {
     margin-top: 20px;
 
@@ -130,7 +136,7 @@
       font-size: 16px;
       font-weight: bold;
       margin-bottom: 12px;
-      color: #D2B48C; // Accent
+      color: #D2B48C;
     }
 
     .social-icons {
@@ -148,98 +154,104 @@
         background: rgba(255, 255, 255, 0.1);
         color: #fff;
         font-size: 20px;
-        transition: all 0.3s ease;
         text-decoration: none;
+        transition: background 0.25s ease, transform 0.25s ease, box-shadow 0.25s ease;
 
         &:hover {
           transform: translateY(-3px);
-          box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+          box-shadow: 0 6px 14px rgba(0, 0, 0, 0.35);
         }
 
-        &.facebook:hover {
-          background: #1877F2;
-        }
-
-        &.youtube:hover {
-          background: #FF0000;
-        }
-
-        &.tiktok:hover {
-          background: #000000;
-        }
-
-        &.instagram:hover {
-          background: #8b03cb;
-        }
+        &.facebook:hover  { background: #1877F2; }
+        &.youtube:hover   { background: #FF0000; }
+        &.tiktok:hover    { background: #111; }
+        &.instagram:hover { background: #C13584; }
       }
     }
   }
 
-  /* Footer bottom */
+  // ── Map link (địa chỉ, email) ───────────────────────────────────
+  .map-link {
+    color: #ccc;
+    text-decoration: none;
+    border-bottom: 1px dotted rgba(255, 255, 255, 0.3);
+    transition: color 0.2s, border-color 0.2s;
+
+    &:hover {
+      color: #D2B48C;
+      border-bottom-color: #D2B48C;
+    }
+  }
+
+  // ── Category skeleton ───────────────────────────────────────────
+  .category-skeleton {
+    li { margin-bottom: 10px; }
+
+    .skeleton-line {
+      background: linear-gradient(90deg, rgba(255,255,255,0.08) 25%, rgba(255,255,255,0.15) 50%, rgba(255,255,255,0.08) 75%);
+      background-size: 200% 100%;
+      animation: mapShimmer 1.4s ease-in-out infinite;
+      border-radius: 4px;
+      height: 14px;
+      display: block;
+    }
+  }
+
+  // ── Footer bottom ───────────────────────────────────────────────
   .footer-bottom {
     text-align: center;
-    background: #003366; // Biến thể tối hơn của Primary
+    background: #003366;
     padding: 14px 0;
     font-size: 14px;
     margin-top: 30px;
-    border-top: 1px solid #444;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
   }
 
-  .map-link {
-    color: inherit;
-    text-decoration: none;
-    border-bottom: 1px dotted currentColor;
-    transition: color 0.3s ease;
-
-    &:hover {
-      color: #4285f4; // Màu xanh của Google
-      text-decoration: underline;
-    }
+  // ── Keyframes ──────────────────────────────────────────────────
+  @keyframes mapShimmer {
+    0%   { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
   }
 }
 
-/* Responsive */
+// ── Responsive ─────────────────────────────────────────────────────
 @media (max-width: 768px) {
   .ddp-footer {
     .footer-map-section {
       padding: 30px 0;
+      margin-bottom: 30px;
 
-      .map-title {
-        font-size: 20px;
-        margin-bottom: 15px;
-      }
+      .map-container {
+        iframe { height: 300px; }
 
-      .map-container iframe {
-        height: 300px; // Giảm chiều cao trên mobile
+        .map-placeholder { height: 300px; }
       }
     }
 
     .footer-grid {
       flex-direction: column;
+      gap: 28px;
       text-align: center;
     }
 
     .footer-col {
       min-width: 100%;
 
-      .working-hours {
-        text-align: center;
-      }
+      .working-hours { text-align: center; }
+
+      ul { display: inline-block; text-align: left; }
     }
 
-    .footer-hotline {
-      justify-content: center;
-    }
+    .footer-hotline { justify-content: center; }
 
-    .footer-social {
-      .social-icons {
-        justify-content: center;
-      }
-    }
+    .footer-social .social-icons { justify-content: center; }
 
-    .footer-logo {
-      display: flex;
-      justify-content: center;
-    }
+    .footer-logo { display: flex; justify-content: center; }
+  }
+}
+
+@media (max-width: 480px) {
+  .ddp-footer {
+    .footer-grid { gap: 20px; }
   }
 }

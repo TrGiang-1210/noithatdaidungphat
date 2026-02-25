@@ -1,23 +1,46 @@
-import React, { useEffect, useState } from "react";
-import { useSearchParams, useNavigate } from "react-router-dom";
+import React, { useEffect, useState, useCallback } from "react";
+import { useSearchParams, useNavigate, Link } from "react-router-dom";
 import { searchProducts } from "@/api/user/productAPI";
 import type { Product } from "@/api/user/productAPI";
-import { FaShoppingCart } from "react-icons/fa";
+import { FaShoppingCart, FaSearch, FaArrowRight } from "react-icons/fa";
 import "@/styles/pages/user/searchResults.scss";
 import { getFirstImageUrl } from "@/utils/imageUrl";
 import { useCart } from "@/context/CartContext";
-import { useLanguage } from "@/context/LanguageContext"; // ✅ IMPORT
+import { useLanguage } from "@/context/LanguageContext";
+
+const FALLBACK_IMG =
+  'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="300" height="300"%3E%3Crect fill="%23f0f0f0" width="300" height="300"/%3E%3Ctext x="50%25" y="50%25" text-anchor="middle" fill="%23bbb" font-size="14" font-family="sans-serif"%3ENo Image%3C/text%3E%3C/svg%3E';
+
+const formatVND = (n: number) =>
+  new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(n);
+
+// ── Skeleton Card ─────────────────────────────────────────────────
+const SkeletonCard: React.FC = () => (
+  <div className="product-card skeleton-card">
+    <div className="card-image skeleton-box" />
+    <div className="card-body">
+      <div className="skeleton-line" style={{ width: "40%", height: 12 }} />
+      <div className="skeleton-line" style={{ width: "90%", height: 16 }} />
+      <div className="skeleton-line" style={{ width: "70%", height: 16 }} />
+      <div className="skeleton-line" style={{ width: "55%", height: 22, marginTop: 8 }} />
+    </div>
+  </div>
+);
 
 const SearchResult: React.FC = () => {
-  const [searchParams] = useSearchParams();
-  const query = searchParams.get("query") || "";
-  const [products, setProducts] = useState<Product[]>([]);
-  const [loading, setLoading] = useState<boolean>(true);
-  const { addToCart } = useCart();
-  const navigate = useNavigate();
-  const { t, language } = useLanguage(); // ✅ SỬ DỤNG HOOK
+  const [searchParams]                      = useSearchParams();
+  const query                               = searchParams.get("query") || "";
+  const [products, setProducts]             = useState<Product[]>([]);
+  const [loading, setLoading]               = useState(true);
+  const [addedId, setAddedId]               = useState<string | null>(null);
+  const { addToCart }                       = useCart();
+  const navigate                            = useNavigate();
+  const { t, language }                     = useLanguage();
 
+  // ── Scroll to top + fetch khi query thay đổi ─────────────────
   useEffect(() => {
+    window.scrollTo({ top: 0, behavior: "instant" });
+
     if (!query.trim()) {
       setProducts([]);
       setLoading(false);
@@ -25,170 +48,141 @@ const SearchResult: React.FC = () => {
     }
 
     setLoading(true);
-
-    // ✅ Gọi API với language parameter
     searchProducts(query, language)
-      .then((data) => {
-        setProducts(Array.isArray(data) ? data : []);
-      })
-      .catch((err) => {
-        console.error("Lỗi tìm kiếm:", err);
-        setProducts([]);
-      })
-      .finally(() => {
-        setLoading(false);
-      });
-  }, [query, language]); // ✅ THÊM language vào dependencies
+      .then((data) => setProducts(Array.isArray(data) ? data : []))
+      .catch(() => setProducts([]))
+      .finally(() => setLoading(false));
+  }, [query, language]);
 
-  const formatCurrency = (amount: number): string =>
-    new Intl.NumberFormat("vi-VN", {
-      style: "currency",
-      currency: "VND",
-    }).format(amount);
-
-  const handleAddToCart = async (product: Product) => {
+  // ── Add to cart với feedback ──────────────────────────────────
+  const handleAddToCart = useCallback(async (product: Product) => {
     const success = await addToCart(product, 1);
-
     if (success) {
-      setTimeout(() => {
-        navigate("/thanh-toan");
-      }, 300);
+      setAddedId(product._id);
+      setTimeout(() => setAddedId(null), 1800);
     }
-  };
+  }, [addToCart]);
 
-  if (loading) {
-    return (
-      <div
-        style={{ textAlign: "center", padding: "60px 20px", fontSize: "18px" }}
-      >
-        {t("search.loading")} {/* ✅ DỊCH */}
-      </div>
-    );
-  }
+  const discount = (orig: number, sale: number) =>
+    Math.round(((orig - sale) / orig) * 100);
 
   return (
-    <div className="product-page-container">
-      <div className="product-layout">
-        <main className="product-content">
-          <div className="product-header">
-            <h2 style={{ textAlign: "center" }}>
-              {t("search.pageTitle")} {/* ✅ DỊCH */}
-              <em style={{ color: "#d6a041" }}>{query}</em>
-            </h2>
-            <p
-              style={{
-                textAlign: "center",
-                marginTop: "8px",
-                fontSize: "15px",
-                color: "#666",
-              }}
-            >
-              {t("search.resultsFound")} {/* ✅ DỊCH */}
-              <strong style={{ color: "#d6a041" }}>
-                {products.length}
-              </strong>{" "}
-              {t("search.products")} {/* ✅ DỊCH */}
-            </p>
+    <div className="search-results-page">
+      {/* ── Header ── */}
+      <div className="search-header">
+        <div className="search-header-inner">
+          <span className="search-icon-decor"><FaSearch /></span>
+          <div>
+            <h1 className="search-title">
+              {t("search.pageTitle") || "Kết quả tìm kiếm cho"}{" "}
+              <em>"{query}"</em>
+            </h1>
+            {!loading && (
+              <p className="search-count">
+                {t("search.resultsFound") || "Tìm thấy"}{" "}
+                <strong>{products.length}</strong>{" "}
+                {t("search.products") || "sản phẩm"}
+              </p>
+            )}
           </div>
+        </div>
+      </div>
 
-          <div className="product-grid">
-            {products.length > 0 ? (
-              products.map((product) => {
-                const isOutOfStock = product.quantity <= 0;
+      {/* ── Grid ── */}
+      <div className="search-results-container">
+        <div className="product-grid">
+          {loading ? (
+            // Skeleton
+            Array.from({ length: 8 }).map((_, i) => <SkeletonCard key={i} />)
+          ) : products.length > 0 ? (
+            products.map((product) => {
+              const outOfStock   = product.quantity <= 0;
+              const hasDiscount  = product.priceSale < product.priceOriginal;
+              const pct          = hasDiscount ? discount(product.priceOriginal, product.priceSale) : 0;
+              const isAdded      = addedId === product._id;
 
-                return (
-                  <div
-                    className={`product-card ${
-                      isOutOfStock ? "out-of-stock" : ""
-                    }`}
-                    key={product._id}
-                  >
-                    <div style={{ position: "relative" }}>
-                      {isOutOfStock && (
-                        <span className="badge out-of-stock-badge">
-                          {t("search.outOfStock")} {/* ✅ DỊCH */}
-                        </span>
-                      )}
+              return (
+                <div
+                  key={product._id}
+                  className={`product-card${outOfStock ? " out-of-stock" : ""}${isAdded ? " just-added" : ""}`}
+                >
+                  {/* Image */}
+                  <Link to={`/san-pham/${product.slug || product._id}`} className="card-image-link">
+                    <div className="card-image">
                       <img
                         src={getFirstImageUrl(product.images)}
                         alt={product.name}
-                        style={{
-                          cursor: "pointer",
-                          objectFit: "cover",
-                          height: "220px",
-                        }}
-                        onClick={() =>
-                          navigate(`/san-pham/${product.slug || product._id}`)
-                        }
-                        onError={(e) => {
-                          e.currentTarget.src =
-                            'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="300" height="300"%3E%3Crect fill="%23f0f0f0" width="300" height="300"/%3E%3Ctext x="50%25" y="50%25" text-anchor="middle" fill="%23999" font-size="18"%3ENo Image%3C/text%3E%3C/svg%3E';
-                        }}
+                        loading="lazy"
+                        onError={(e) => { e.currentTarget.src = FALLBACK_IMG; }}
                       />
-                    </div>
-                    <p className="product-brand">{t("search.brand")}</p>{" "}
-                    {/* ✅ DỊCH */}
-                    <h4 className="product-name">{product.name}</h4>
-                    <div className="price-block">
-                      <div className="price-left">
-                        {product.priceSale < product.priceOriginal ? (
-                          <>
-                            <div className="discount-price">
-                              {formatCurrency(product.priceSale)}
-                            </div>
-                            <div className="original-price">
-                              {formatCurrency(product.priceOriginal)}
-                            </div>
-                          </>
-                        ) : (
-                          <div className="discount-price">
-                            {formatCurrency(product.priceOriginal)}
-                          </div>
-                        )}
-                      </div>
-                      {product.priceSale < product.priceOriginal && (
-                        <div className="discount-percent">
-                          -
-                          {Math.round(
-                            ((product.priceOriginal - product.priceSale) /
-                              product.priceOriginal) *
-                              100,
-                          )}
-                          %
-                        </div>
+                      {hasDiscount && !outOfStock && (
+                        <span className="badge discount-badge">-{pct}%</span>
+                      )}
+                      {outOfStock && (
+                        <span className="badge out-of-stock-badge">
+                          {t("search.outOfStock") || "Hết hàng"}
+                        </span>
                       )}
                     </div>
-                    <button
-                      className="add-to-cart"
-                      onClick={() => handleAddToCart(product)}
-                      disabled={isOutOfStock}
-                    >
-                      <FaShoppingCart />
-                      {isOutOfStock
-                        ? t("search.outOfStock")
-                        : t("search.addToCart")}{" "}
-                      {/* ✅ DỊCH */}
-                    </button>
+                  </Link>
+
+                  {/* Info */}
+                  <div className="card-body">
+                    <Link to={`/san-pham/${product.slug || product._id}`} className="product-name">
+                      {product.name}
+                    </Link>
+
+                    {product.sku && (
+                      <p className="product-sku">Mã: {product.sku}</p>
+                    )}
+
+                    <div className="price-block">
+                      <div className="price-left">
+                        <span className="price-sale">
+                          {formatVND(hasDiscount ? product.priceSale : product.priceOriginal)}
+                        </span>
+                        {hasDiscount && (
+                          <span className="price-original">{formatVND(product.priceOriginal)}</span>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="card-actions">
+                      <button
+                        className={`btn-view`}
+                        onClick={() => navigate(`/san-pham/${product.slug || product._id}`)}
+                      >
+                        Xem chi tiết <FaArrowRight />
+                      </button>
+                      <button
+                        className={`btn-cart${isAdded ? " added" : ""}`}
+                        onClick={() => !outOfStock && handleAddToCart(product)}
+                        disabled={outOfStock}
+                        title={outOfStock ? t("search.outOfStock") || "Hết hàng" : t("search.addToCart") || "Thêm vào giỏ"}
+                      >
+                        <FaShoppingCart />
+                        {isAdded ? "✓" : ""}
+                      </button>
+                    </div>
                   </div>
-                );
-              })
-            ) : (
-              <div
-                style={{
-                  textAlign: "center",
-                  padding: "60px 20px",
-                  color: "#888",
-                }}
-              >
-                <p style={{ fontSize: "18px" }}>
-                  {t("search.noResults")} " {/* ✅ DỊCH */}
-                  <strong>{query}</strong>"
-                </p>
-                <p>{t("search.suggestions")}</p> {/* ✅ DỊCH */}
-              </div>
-            )}
-          </div>
-        </main>
+                </div>
+              );
+            })
+          ) : (
+            /* Empty state */
+            <div className="empty-state">
+              <div className="empty-icon">🔍</div>
+              <h3>
+                {t("search.noResults") || "Không tìm thấy kết quả cho"}{" "}
+                "<strong>{query}</strong>"
+              </h3>
+              <p>{t("search.suggestions") || "Hãy thử từ khóa khác hoặc kiểm tra chính tả"}</p>
+              <button className="btn-back-home" onClick={() => navigate("/")}>
+                Quay về trang chủ
+              </button>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
