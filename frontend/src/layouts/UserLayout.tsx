@@ -4,7 +4,8 @@ import { Outlet } from "react-router-dom";
 import Footer from "@/components/user/Footer";
 import Header from "@/components/user/Header";
 import ChatWidget from "@/components/user/ChatWidget";
-import LanguageSwitcher from "@/components/user/LanguageSwitcher"; // ← THÊM
+import LanguageSwitcher from "@/components/user/LanguageSwitcher";
+import ContactButtons from "@/components/user/ContactButtons"; // ← THÊM
 
 const UserLayout = () => {
   const [userInfo, setUserInfo] = useState<{
@@ -56,7 +57,6 @@ const UserLayout = () => {
 
   return (
     <div className="user-layout">
-      {/* ✅ THÊM LanguageSwitcher VÀO ĐÂY */}
       <LanguageSwitcher />
       
       <Header />
@@ -67,6 +67,10 @@ const UserLayout = () => {
 
       <Footer />
 
+      {/* Nút liên hệ góc dưới bên trái */}
+      <ContactButtons />
+
+      {/* Chat AI góc dưới bên phải */}
       <ChatWidget 
         userId={userInfo.userId}
         userName={userInfo.userName}
