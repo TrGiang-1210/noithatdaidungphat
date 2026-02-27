@@ -1296,41 +1296,35 @@ const handleSubmit = async (e: React.FormEvent) => {
                             </td>
                             <td>
                               <input
-                                type="number"
+                                type="text"
                                 style={{ color: "#6b7280" }}
-                                value={v.priceOriginal}
+                                value={Number(v.priceOriginal) > 0 ? Number(v.priceOriginal).toLocaleString("vi-VN") : v.priceOriginal === 0 ? "" : v.priceOriginal}
                                 placeholder="Giá gốc"
                                 onChange={(e) => {
-                                  const newVariants = [
-                                    ...(formData.variants || []),
-                                  ];
-                                  newVariants[idx].priceOriginal = Number(
-                                    e.target.value,
-                                  );
-                                  setFormData({
-                                    ...formData,
-                                    variants: newVariants,
-                                  });
+                                  const raw = e.target.value.replace(/\./g, "").replace(/,/g, "");
+                                  const num = Number(raw);
+                                  if (raw === "" || (!isNaN(num) && num >= 0)) {
+                                    const newVariants = [...(formData.variants || [])];
+                                    newVariants[idx].priceOriginal = raw === "" ? 0 : num;
+                                    setFormData({ ...formData, variants: newVariants });
+                                  }
                                 }}
                               />
                             </td>
                             <td>
                               <input
-                                type="number"
+                                type="text"
                                 className="price-input"
-                                value={v.priceSale}
+                                value={Number(v.priceSale) > 0 ? Number(v.priceSale).toLocaleString("vi-VN") : v.priceSale === 0 ? "" : v.priceSale}
                                 placeholder="Giá bán"
                                 onChange={(e) => {
-                                  const newVariants = [
-                                    ...(formData.variants || []),
-                                  ];
-                                  newVariants[idx].priceSale = Number(
-                                    e.target.value,
-                                  );
-                                  setFormData({
-                                    ...formData,
-                                    variants: newVariants,
-                                  });
+                                  const raw = e.target.value.replace(/\./g, "").replace(/,/g, "");
+                                  const num = Number(raw);
+                                  if (raw === "" || (!isNaN(num) && num >= 0)) {
+                                    const newVariants = [...(formData.variants || [])];
+                                    newVariants[idx].priceSale = raw === "" ? 0 : num;
+                                    setFormData({ ...formData, variants: newVariants });
+                                  }
                                 }}
                               />
                             </td>
