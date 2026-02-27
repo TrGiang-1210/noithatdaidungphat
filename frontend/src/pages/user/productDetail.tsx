@@ -535,11 +535,11 @@ const ProductDetail: React.FC = () => {
           <div className="product-price">
             <div className="price-left">
               <span className="price-sale">
-                {displayPriceSale.toLocaleString()}₫
+                {priceSale.toLocaleString()}₫
               </span>
               {discount > 0 && (
                 <span className="price-original">
-                  {displayPriceOriginal.toLocaleString()}₫
+                  {priceOriginal.toLocaleString()}₫
                 </span>
               )}
             </div>
