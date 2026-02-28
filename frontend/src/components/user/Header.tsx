@@ -56,6 +56,11 @@ const Header: React.FC = () => {
   const [mobileCatGridOpen, setMobileCatGridOpen] = useState(false);
   const [megaActiveParent, setMegaActiveParent] = useState<Category | null>(null);
 
+  // Mobile scroll hide/show
+  const [mobileHeaderHidden, setMobileHeaderHidden] = useState(false);
+  const lastScrollY = useRef(0);
+  const scrollTicking = useRef(false);
+
   const navigate = useNavigate();
   const location = useLocation();
   const isHomePage = location.pathname === "/" || location.pathname === "/home";
@@ -74,7 +79,39 @@ const Header: React.FC = () => {
     setMobileSearchOpen(false);
   }, [location.pathname]);
 
-  // Fetch categories + scroll handler
+  // Mobile scroll hide/show behavior
+  useEffect(() => {
+    if (!isMobile) return;
+
+    const handleMobileScroll = () => {
+      if (scrollTicking.current) return;
+      scrollTicking.current = true;
+
+      window.requestAnimationFrame(() => {
+        const currentScrollY = window.scrollY;
+        const diff = currentScrollY - lastScrollY.current;
+
+        if (currentScrollY < 60) {
+          // Gần đầu trang — luôn hiện header
+          setMobileHeaderHidden(false);
+        } else if (diff > 6) {
+          // Scroll xuống — ẩn header
+          setMobileHeaderHidden(true);
+        } else if (diff < -6) {
+          // Scroll lên — hiện lại header
+          setMobileHeaderHidden(false);
+        }
+
+        lastScrollY.current = currentScrollY;
+        scrollTicking.current = false;
+      });
+    };
+
+    window.addEventListener("scroll", handleMobileScroll, { passive: true });
+    return () => window.removeEventListener("scroll", handleMobileScroll);
+  }, [isMobile]);
+
+  // Fetch categories + desktop scroll handler
   useEffect(() => {
     const fetchCategories = async () => {
       try {
@@ -246,7 +283,7 @@ const Header: React.FC = () => {
     return (
       <>
         {/* MOBILE TOP HEADER */}
-        <header className="mobile-header">
+        <header className={`mobile-header${mobileHeaderHidden ? " mobile-header--hidden" : ""}`}>
           <div className="mobile-header-top">
             <button
               className="mobile-menu-btn"
@@ -261,7 +298,6 @@ const Header: React.FC = () => {
             </Link>
 
             <div className="mobile-header-actions">
-              {/* Inline language switcher — thay thế fixed version trên mobile */}
               <div className="mobile-lang-switch">
                 <button
                   className={`mobile-lang-btn ${language === 'vi' ? 'active' : ''}`}
@@ -292,7 +328,7 @@ const Header: React.FC = () => {
             </div>
           </div>
 
-          {/* SEARCH BAR — luôn hiển thị */}
+          {/* SEARCH BAR */}
           <div className="mobile-search-always">
             <form onSubmit={handleSearch} className="mobile-search-form">
               <input
@@ -308,7 +344,6 @@ const Header: React.FC = () => {
               </button>
             </form>
 
-            {/* Mobile Search Suggestions */}
             {showSuggestions && suggestions.length > 0 && (
               <div className="mobile-suggestions" ref={suggestionsRef}>
                 {suggestions.map((product) => (
@@ -356,7 +391,7 @@ const Header: React.FC = () => {
             )}
           </div>
 
-          {/* MOBILE CATEGORY TRIGGER BAR */}
+          {/* MOBILE CATEGORY TRIGGER BAR + CHIP GRID */}
           <div className="mobile-category-section">
             <div
               className="mobile-category-header"
@@ -366,6 +401,21 @@ const Header: React.FC = () => {
               <span className="cat-header-text">Nhấn vào đây để xem toàn bộ danh mục</span>
               <span className="cat-header-arrow"><FaChevronRight /></span>
             </div>
+
+            {/* CATEGORY CHIP GRID */}
+            {categories.length > 0 && (
+              <div className="mobile-cat-chips">
+                {categories.map((cat) => (
+                  <Link
+                    key={cat._id}
+                    to={`/danh-muc/${cat.slug}`}
+                    className="mobile-cat-chip"
+                  >
+                    {cat.name}
+                  </Link>
+                ))}
+              </div>
+            )}
           </div>
         </header>
 
@@ -373,7 +423,6 @@ const Header: React.FC = () => {
         {mobileCatGridOpen && (
           <div className="mega-menu-overlay" onClick={() => { setMobileCatGridOpen(false); setMegaActiveParent(null); }}>
             <div className="mega-menu-panel" onClick={(e) => e.stopPropagation()}>
-              {/* Mega header */}
               <div className="mega-menu-header">
                 <button className="mega-close-btn" onClick={() => { setMobileCatGridOpen(false); setMegaActiveParent(null); }}>
                   ✕ Đóng
@@ -381,9 +430,7 @@ const Header: React.FC = () => {
                 <span className="mega-menu-title">Nhấn vào đây để xem tất cả danh mục</span>
               </div>
 
-              {/* Body: left sidebar + right content */}
               <div className="mega-menu-body">
-                {/* LEFT: danh mục cấp 1 */}
                 <div className="mega-left">
                   {categories.map((cat) => (
                     <div
@@ -396,7 +443,6 @@ const Header: React.FC = () => {
                   ))}
                 </div>
 
-                {/* RIGHT: danh mục con + cháu */}
                 <div className="mega-right">
                   {megaActiveParent ? (
                     <>
@@ -468,7 +514,6 @@ const Header: React.FC = () => {
         {mobileMenuOpen && (
           <div className="mobile-drawer-overlay" onClick={() => setMobileMenuOpen(false)}>
             <div className="mobile-drawer" onClick={(e) => e.stopPropagation()}>
-              {/* Drawer Header */}
               <div className="drawer-header">
                 <img src={logoImage} alt="Logo" className="drawer-logo" />
                 <button className="drawer-close-btn" onClick={() => setMobileMenuOpen(false)}>
@@ -476,7 +521,6 @@ const Header: React.FC = () => {
                 </button>
               </div>
 
-              {/* User Info in Drawer */}
               <div className="drawer-user">
                 {user ? (
                   <Link
@@ -503,7 +547,6 @@ const Header: React.FC = () => {
 
               <div className="drawer-divider" />
 
-              {/* Main Nav Links */}
               <div className="drawer-nav-links">
                 <Link to="/theo-doi-don-hang" className="drawer-nav-item" onClick={() => setMobileMenuOpen(false)}>
                   <FaBoxOpen className="drawer-nav-icon" /> Theo dõi đơn hàng
@@ -524,7 +567,6 @@ const Header: React.FC = () => {
 
               <div className="drawer-divider" />
 
-              {/* Categories Section */}
               <div className="drawer-section-title">Danh mục sản phẩm</div>
               <div className="drawer-categories">
                 {categories.map((cat) => (
@@ -613,7 +655,6 @@ const Header: React.FC = () => {
 
               <div className="drawer-divider" />
 
-              {/* Hotline */}
               <div className="drawer-hotline">
                 <FaPhone className="hotline-icon" />
                 <a href="tel:0965708839">0965 708 839</a>

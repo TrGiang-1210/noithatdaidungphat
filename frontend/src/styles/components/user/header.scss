@@ -619,6 +619,18 @@
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
   font-family: "Roboto", sans-serif;
 
+  // ==================== SCROLL HIDE/SHOW ====================
+  // Mặc định: transition mượt khi ẩn/hiện
+  transform: translateY(0);
+  transition: transform 0.32s cubic-bezier(0.4, 0, 0.2, 1),
+              box-shadow 0.3s ease;
+
+  // Khi scroll xuống — header trượt lên ẩn hoàn toàn
+  &.mobile-header--hidden {
+    transform: translateY(-100%);
+    box-shadow: none;
+  }
+
   // ==================== MOBILE TOP BAR ====================
   .mobile-header-top {
     display: flex;
@@ -657,11 +669,9 @@
     }
   }
 
-  // Language switcher inline trong header mobile
   .mobile-lang-wrap {
     flex-shrink: 0;
 
-    // Override LanguageSwitcher để phù hợp không gian nhỏ
     .language-switcher {
       position: static !important;
       box-shadow: none !important;
@@ -687,7 +697,7 @@
     flex-shrink: 0;
   }
 
-  // ==================== INLINE LANGUAGE SWITCHER (mobile only) ====================
+  // ==================== INLINE LANGUAGE SWITCHER ====================
   .mobile-lang-switch {
     display: flex;
     align-items: center;
@@ -754,7 +764,7 @@
     }
   }
 
-  // ==================== SEARCH BAR (always visible) ====================
+  // ==================== SEARCH BAR ====================
   .mobile-search-always {
     padding: 6px 12px 8px;
     background: #fff;
@@ -764,8 +774,6 @@
   .mobile-search-form {
     display: flex;
     width: 100%;
-    border-radius: 8px;
-    overflow: visible;
     border: 1.5px solid #001f3f;
     border-radius: 8px;
     overflow: hidden;
@@ -888,7 +896,7 @@
     strong { color: #001f3f; }
   }
 
-  // ==================== CATEGORY GRID ====================
+  // ==================== CATEGORY SECTION ====================
   .mobile-category-section {
     background: #fff;
     border-top: 1px solid #eee;
@@ -928,6 +936,37 @@
       flex-shrink: 0;
     }
   }
+
+  // ==================== CATEGORY CHIP GRID ====================
+  .mobile-cat-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 7px;
+    padding: 10px 12px 12px;
+    background: #fff;
+    border-top: 1px solid #f0f0f0;
+  }
+
+  .mobile-cat-chip {
+    display: inline-flex;
+    align-items: center;
+    padding: 6px 13px;
+    border: 1.5px solid #d0d8e4;
+    border-radius: 20px;
+    font-size: 13px;
+    font-weight: 500;
+    color: #222;
+    text-decoration: none;
+    background: #fff;
+    white-space: nowrap;
+    transition: all 0.18s;
+
+    &:active {
+      background: #001f3f;
+      color: #fff;
+      border-color: #001f3f;
+    }
+  }
 }
 
 // ==================== MEGA MENU FULLSCREEN ====================
@@ -958,7 +997,6 @@
   to   { transform: translateY(0);    opacity: 1; }
 }
 
-// Header của mega menu
 .mega-menu-header {
   display: flex;
   align-items: center;
@@ -998,14 +1036,12 @@
   }
 }
 
-// Body: 2 cột
 .mega-menu-body {
   display: flex;
   flex: 1;
   overflow: hidden;
 }
 
-// LEFT sidebar danh mục cấp 1
 .mega-left {
   width: 130px;
   flex-shrink: 0;
@@ -1038,7 +1074,6 @@
   }
 }
 
-// RIGHT nội dung danh mục con
 .mega-right {
   flex: 1;
   overflow-y: auto;
@@ -1527,12 +1562,10 @@
     display: none !important;
   }
 
-  // LanguageSwitcher ở UserLayout chỉ dùng trên desktop — mobile có inline trong Header
   .desktop-lang-switcher {
     display: none !important;
   }
 
-  // Ẩn contact buttons desktop trên mobile (đã có bottom nav thay thế)
   .contact-buttons,
   [class*="contact-btn"],
   [class*="contact-button"],
@@ -1542,7 +1575,6 @@
     display: none !important;
   }
 
-  // Đẩy chat widget / chatbot lên trên bottom nav
   .chat-widget,
   [class*="chat-widget"],
   [class*="chatbot"],
@@ -1567,7 +1599,6 @@
     display: none !important;
   }
 
-  // mobile-lang-wrap chỉ hiển thị trong mobile header — ẩn trên desktop
   .mobile-lang-wrap {
     display: none !important;
   }
