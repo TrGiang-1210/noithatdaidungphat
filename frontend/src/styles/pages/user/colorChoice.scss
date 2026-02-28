@@ -1,116 +1,427 @@
-// ColorChoice.scss
-.color-choice {
-  background: #f5f5f5;
+// ===================================================================
+// colorChoice.scss — Luxury Material Palette · Nội thất Đại Dũng Phát
+// ===================================================================
+
+// ── Tokens ──
+$cream:      #FAF6F0;
+$warm-white: #FFF8F0;
+$gold:       #B8965A;
+$gold-deep:  #8B6F47;
+$wood-dark:  #2C1810;
+$line:       #E8DDD0;
+$soft:       #9A8878;
+$radius:     14px;
+
+// ===================================================================
+// PAGE WRAPPER
+// ===================================================================
+.cc-page {
+  background: $cream;
   min-height: 100vh;
-  padding-bottom: 3rem;
+  font-family: 'Georgia', 'Times New Roman', serif;
+}
 
-  // Page Header
-  .page-header {
-    background: linear-gradient(135deg, #2c3e50 0%, #3498db 100%);
-    color: white;
-    text-align: center;
-    padding: 3rem 1rem;
+// ===================================================================
+// HERO HEADER
+// ===================================================================
+.cc-hero {
+  position: relative;
+  background: $wood-dark;
+  overflow: hidden;
+  padding: clamp(40px, 7vw, 72px) 24px clamp(36px, 6vw, 60px);
 
-    h1 {
-      font-size: 2.5rem;
-      font-weight: 700;
-      margin-bottom: 0.5rem;
-
-      @media (max-width: 768px) {
-        font-size: 2rem;
-      }
-    }
-
-    p {
-      font-size: 1.1rem;
-      opacity: 0.9;
-    }
+  // Faux wood-grain texture via CSS gradients
+  .cc-hero-wood {
+    position: absolute;
+    inset: 0;
+    background:
+      repeating-linear-gradient(
+        92deg,
+        transparent,
+        transparent 60px,
+        rgba(255,255,255,0.012) 60px,
+        rgba(255,255,255,0.012) 61px
+      ),
+      repeating-linear-gradient(
+        88deg,
+        transparent,
+        transparent 120px,
+        rgba(255,255,255,0.018) 120px,
+        rgba(255,255,255,0.018) 121px
+      ),
+      linear-gradient(
+        160deg,
+        #1a0c06 0%,
+        #2c1810 30%,
+        #3d2314 55%,
+        #2a160c 75%,
+        #1a0c06 100%
+      );
+    opacity: 0.95;
   }
 
-  // Container
-  .container {
-    max-width: 1200px;
+  .cc-hero-inner {
+    position: relative;
+    z-index: 2;
+    max-width: 900px;
     margin: 0 auto;
-    padding: 2rem 1rem;
+    text-align: center;
   }
 
-  // Category Tabs
-  .category-tabs {
+  .cc-hero-eyebrow {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 11.5px;
+    font-weight: 700;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: $gold;
+    margin-bottom: 20px;
+    padding: 6px 16px;
+    border: 1px solid rgba($gold, 0.35);
+    border-radius: 100px;
+    font-family: system-ui, sans-serif;
+  }
+
+  .cc-hero-title {
+    font-size: clamp(2rem, 6vw, 3.4rem);
+    font-weight: 700;
+    color: #fff;
+    line-height: 1.1;
+    margin: 0 0 16px;
+    letter-spacing: -0.01em;
+  }
+
+  .cc-hero-sub {
+    font-size: clamp(0.9rem, 2vw, 1.05rem);
+    color: rgba(#E8D5B7, 0.8);
+    margin: 0 0 32px;
+    font-family: system-ui, sans-serif;
+    letter-spacing: 0.04em;
+  }
+
+  // Decorative color strip
+  .cc-hero-swatches {
     display: flex;
-    gap: 1rem;
     justify-content: center;
-    margin-bottom: 2rem;
-    flex-wrap: wrap;
+    gap: 0;
+    border-radius: 100px;
+    overflow: hidden;
+    width: fit-content;
+    margin: 0 auto;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+    border: 2px solid rgba(255,255,255,0.08);
 
-    @media (max-width: 768px) {
-      gap: 0.75rem;
-    }
-
-    .category-tab {
-      padding: 0.75rem 2rem;
-      background: white;
-      border: 2px solid #ddd;
-      border-radius: 8px;
-      font-size: 1rem;
-      font-weight: 600;
-      color: #333;
-      cursor: pointer;
-      transition: all 0.3s ease;
-
-      @media (max-width: 768px) {
-        padding: 0.6rem 1.5rem;
-        font-size: 0.9rem;
-      }
-
-      &:hover {
-        border-color: #3498db;
-        background: #f0f8ff;
-        transform: translateY(-2px);
-        box-shadow: 0 4px 8px rgba(52, 152, 219, 0.2);
-      }
-
-      &.active {
-        background: linear-gradient(135deg, #2c3e50 0%, #3498db 100%);
-        color: white;
-        border-color: transparent;
-        box-shadow: 0 4px 12px rgba(52, 152, 219, 0.3);
-
-        &:hover {
-          transform: translateY(-2px);
-        }
-      }
-    }
-  }
-
-  // Color Chart
-  .color-chart {
-    background: white;
-    padding: 2rem;
-    border-radius: 8px;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-
-    @media (max-width: 768px) {
-      padding: 1rem;
-    }
-
-    img {
-      width: 100%;
-      height: auto;
+    .cc-hero-swatch {
       display: block;
-      border-radius: 4px;
-      animation: fadeIn 0.3s ease-in-out;
+      width: clamp(28px, 5vw, 48px);
+      height: 12px;
+      flex-shrink: 0;
     }
   }
 }
 
-// Animation khi đổi ảnh
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-    transform: scale(0.98);
+// ===================================================================
+// MAIN LAYOUT (sidebar + content)
+// ===================================================================
+.cc-main {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 40px 20px 60px;
+  display: grid;
+  grid-template-columns: 280px 1fr;
+  gap: 32px;
+  align-items: start;
+
+  @media (max-width: 860px) {
+    grid-template-columns: 1fr;
+    padding: 24px 16px 50px;
+    gap: 0;
   }
-  to {
-    opacity: 1;
-    transform: scale(1);
+}
+
+// ===================================================================
+// SIDEBAR (desktop only)
+// ===================================================================
+.cc-sidebar {
+  position: sticky;
+  top: 20px;
+  background: #fff;
+  border: 1px solid $line;
+  border-radius: $radius;
+  overflow: hidden;
+  box-shadow: 0 4px 20px rgba($wood-dark, 0.07);
+
+  @media (max-width: 860px) {
+    display: none;
+  }
+
+  .cc-sidebar-label {
+    padding: 14px 20px 10px;
+    font-size: 10.5px;
+    font-weight: 800;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: $soft;
+    font-family: system-ui, sans-serif;
+    border-bottom: 1px solid $line;
+  }
+}
+
+.cc-tab {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 16px 18px;
+  border: none;
+  border-bottom: 1px solid $line;
+  background: #fff;
+  cursor: pointer;
+  text-align: left;
+  transition: background 0.2s;
+
+  &:last-child { border-bottom: none; }
+  &:hover { background: $cream; }
+
+  &.active {
+    background: $cream;
+
+    .cc-tab-name { color: $gold-deep; }
+    .cc-tab-arrow { opacity: 1; color: $gold; transform: translateX(0); }
+  }
+
+  .cc-tab-swatches {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 2px;
+    width: 32px;
+    height: 32px;
+    border-radius: 7px;
+    overflow: hidden;
+    flex-shrink: 0;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.18);
+
+    span {
+      display: block;
+    }
+  }
+
+  .cc-tab-info {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .cc-tab-name {
+    font-size: 14px;
+    font-weight: 700;
+    color: #333;
+    line-height: 1.3;
+    font-family: system-ui, sans-serif;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .cc-tab-desc {
+    font-size: 12px;
+    color: $soft;
+    font-family: system-ui, sans-serif;
+    margin-top: 2px;
+  }
+
+  .cc-tab-arrow {
+    font-size: 12px;
+    color: $gold;
+    opacity: 0;
+    transform: translateX(-4px);
+    transition: opacity 0.2s, transform 0.2s;
+    flex-shrink: 0;
+  }
+}
+
+// ===================================================================
+// MOBILE PILL TABS
+// ===================================================================
+.cc-mobile-tabs {
+  display: none;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 20px;
+
+  @media (max-width: 860px) {
+    display: flex;
+  }
+}
+
+.cc-pill {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 18px;
+  border: 2px solid $line;
+  border-radius: 100px;
+  background: #fff;
+  font-size: 13.5px;
+  font-weight: 700;
+  color: #555;
+  cursor: pointer;
+  font-family: system-ui, sans-serif;
+  transition: all 0.2s;
+
+  &:hover { background: $cream; }
+
+  &.active {
+    background: $cream;
+    font-weight: 800;
+  }
+
+  .cc-pill-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+}
+
+// ===================================================================
+// CONTENT AREA
+// ===================================================================
+.cc-content {
+  min-width: 0;
+}
+
+.cc-content-header {
+  background: #fff;
+  border: 1px solid $line;
+  border-radius: $radius $radius 0 0;
+  border-bottom: none;
+  padding: 24px 28px 20px;
+
+  @media (max-width: 600px) {
+    padding: 18px 16px 16px;
+  }
+}
+
+// Swatch chips row
+.cc-content-swatch-row {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 18px;
+}
+
+.cc-swatch-chip {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  cursor: default;
+  transition: transform 0.2s;
+
+  &:hover { transform: translateY(-3px); }
+
+  .cc-swatch-color {
+    width: 38px;
+    height: 38px;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.18);
+
+    @media (max-width: 480px) {
+      width: 30px;
+      height: 30px;
+    }
+  }
+
+  .cc-swatch-hex {
+    font-size: 9.5px;
+    font-family: 'Courier New', monospace;
+    color: $soft;
+    letter-spacing: 0.02em;
+
+    @media (max-width: 480px) {
+      display: none;
+    }
+  }
+}
+
+.cc-content-meta {
+  border-top: 1px solid $line;
+  padding-top: 16px;
+}
+
+.cc-content-title {
+  font-size: clamp(1.2rem, 3vw, 1.7rem);
+  font-weight: 700;
+  color: $wood-dark;
+  margin: 0 0 6px;
+  line-height: 1.2;
+}
+
+.cc-content-desc {
+  font-size: 14px;
+  color: $soft;
+  margin: 0;
+  font-family: system-ui, sans-serif;
+  line-height: 1.6;
+}
+
+// ===================================================================
+// CHART PANEL
+// ===================================================================
+.cc-chart-panel {
+  background: #fff;
+  border: 1px solid $line;
+  border-radius: 0 0 $radius $radius;
+
+  &.fade-out {
+    animation: ccFadeOut 0.22s ease forwards;
+  }
+  &.fade-in {
+    animation: ccFadeIn 0.35s ease forwards;
+  }
+}
+
+@keyframes ccFadeOut {
+  from { opacity: 1; transform: scale(1); }
+  to   { opacity: 0; transform: scale(0.985); }
+}
+
+@keyframes ccFadeIn {
+  from { opacity: 0; transform: scale(0.985) translateY(6px); }
+  to   { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+.cc-chart-inner {
+  padding: 24px 28px;
+
+  @media (max-width: 600px) {
+    padding: 14px;
+  }
+
+  img {
+    width: 100%;
+    height: auto;
+    display: block;
+    border-radius: 8px;
+    box-shadow: 0 4px 24px rgba($wood-dark, 0.12);
+  }
+}
+
+.cc-chart-footer {
+  padding: 12px 28px 16px;
+  border-top: 1px solid $line;
+
+  @media (max-width: 600px) {
+    padding: 10px 14px 14px;
+  }
+
+  span {
+    font-size: 12px;
+    color: $soft;
+    font-family: system-ui, sans-serif;
+    font-style: italic;
+    line-height: 1.5;
   }
 }

@@ -1,11 +1,11 @@
-// src/pages/productDetail.tsx - FIXED VERSION WITH PROPER MULTILINGUAL SUPPORT
+// src/pages/productDetail.tsx - IMPROVED VERSION
 import React, { useEffect, useState, useContext, useRef, useMemo } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { useCart } from "@/context/CartContext";
 import "@/styles/pages/user/productDetail.scss";
 import { AuthContext } from "@/context/AuthContext";
 import { getFirstImageUrl, getImageUrl } from "../../utils/imageUrl";
-import { ChevronRight } from "lucide-react";
+import { ChevronRight, ShoppingCart, Zap, Shield, Truck, RotateCcw, ChevronLeft, ChevronRight as ChevronRightIcon, X, ZoomIn } from "lucide-react";
 import { useLanguage } from "@/context/LanguageContext";
 
 const API_URL =
@@ -38,6 +38,7 @@ type Product = {
     }>;
   }>;
   variants?: Array<{
+    sku?: string;
     combination: Array<{
       name: { vi: string; zh: string };
       option: { vi: string; zh: string };
@@ -56,6 +57,13 @@ const endpointCandidates = (param: string, lang: string) => {
   ];
 };
 
+// ── Policy badges ────────────────────────────────────────────────
+const POLICIES = [
+  { icon: <Shield size={18} />, text: "Bảo hành 5–10 năm" },
+  { icon: <Truck size={18} />, text: "Miễn phí giao lắp" },
+  { icon: <RotateCcw size={18} />, text: "Đổi trả 30 ngày" },
+];
+
 const ProductDetail: React.FC = () => {
   const { t, language } = useLanguage();
   const { slug, id } = useParams();
@@ -73,479 +81,251 @@ const ProductDetail: React.FC = () => {
   const viewIncrementedRef = useRef(false);
   const [showLightbox, setShowLightbox] = useState(false);
   const [lightboxIndex, setLightboxIndex] = useState(0);
-  const [selectedAttributes, setSelectedAttributes] = useState<
-    Record<string, string>
-  >({});
+  const [selectedAttributes, setSelectedAttributes] = useState<Record<string, string>>({});
+  // ✅ FIX: isAdding state đã được định nghĩa
+  const [isAdding, setIsAdding] = useState(false);
+  const [addedFeedback, setAddedFeedback] = useState<"cart" | "buy" | null>(null);
+  const thumbnailRowRef = useRef<HTMLDivElement>(null);
 
-  // ✅ FIXED: Helper function to safely extract text from multilingual fields
+  // ✅ Helper function
   const safeGetText = (field: any, lang: string = "vi"): string => {
     if (!field) return "";
-
-    // If already a string, return it
     if (typeof field === "string") return field;
-
-    // If object, extract by language priority
     if (typeof field === "object" && field !== null) {
-      // Try requested language
-      if (field[lang] && field[lang].trim()) {
-        return field[lang];
-      }
-
-      // Fallback to Vietnamese
-      if (field.vi && field.vi.trim()) {
-        return field.vi;
-      }
-
-      // Fallback to English
-      if (field.en && field.en.trim()) {
-        return field.en;
-      }
-
-      // Fallback to first non-empty value
-      const values = Object.values(field).filter(
-        (v) => typeof v === "string" && v.trim(),
-      );
-      if (values.length > 0) {
-        return values[0] as string;
-      }
-
-      // No valid translation found
-      console.warn(`⚠️ No translation found for lang="${lang}":`, field);
+      if (field[lang] && field[lang].trim()) return field[lang];
+      if (field.vi && field.vi.trim()) return field.vi;
+      if (field.en && field.en.trim()) return field.en;
+      const values = Object.values(field).filter((v) => typeof v === "string" && (v as string).trim());
+      if (values.length > 0) return values[0] as string;
       return "";
     }
-
-    // Unknown type → stringify
     return String(field);
   };
 
-  const incrementProductView = async (
-    productId: string,
-    productSlug: string,
-  ) => {
+  const incrementProductView = async (productId: string, productSlug: string) => {
     if (viewIncrementedRef.current) return;
     viewIncrementedRef.current = true;
     try {
       const cleanUrl = API_URL.replace(/\/$/, "");
-      // Ưu tiên tăng view theo slug
       const viewUrl = productSlug
         ? `${cleanUrl}/products/slug/${productSlug}/increment-view`
         : `${cleanUrl}/products/${productId}/increment-view`;
-
       await fetch(viewUrl, { method: "POST" });
-    } catch (error) {
-      console.warn("Không thể tăng lượt xem:", error);
-    }
+    } catch {}
   };
 
   useEffect(() => {
     if (!param) {
-      setError(
-        t("product.noProductId") || "Không có product id/slug trong URL",
-      );
+      setError(t("product.noProductId") || "Không có product id/slug trong URL");
       setLoading(false);
       return;
     }
-
     const fetchProduct = async () => {
       setLoading(true);
       setError(null);
       const candidates = endpointCandidates(param, language);
-
       for (const url of candidates) {
         try {
           const res = await fetch(url);
           if (!res.ok) continue;
-
           const ct = res.headers.get("content-type") || "";
           if (!ct.includes("application/json")) continue;
-
           const data = await res.json();
           setProduct(data);
           setLoading(false);
           incrementProductView(data._id, data.slug);
           return;
-        } catch (e) {
-          console.warn(`[ProductDetail] fetch failed ${url}`, e);
-        }
+        } catch (e) {}
       }
-
       setError(t("product.notFound") || "Không tìm thấy sản phẩm");
       setLoading(false);
     };
-
     fetchProduct();
     setSelectedImageIndex(0);
     window.scrollTo({ top: 0, behavior: "instant" });
-
-    return () => {
-      viewIncrementedRef.current = false;
-    };
+    return () => { viewIncrementedRef.current = false; };
   }, [param, language]);
 
   useEffect(() => {
     if (!product) return;
-
     const fetchRelatedProducts = async () => {
       try {
         let productCategoryIds: string[] = [];
-
-        if (
-          !product.categories ||
-          !Array.isArray(product.categories) ||
-          product.categories.length === 0
-        ) {
-          const res = await fetch(
-            `https://tongkhonoithattayninh.vn/api/products?lang=${language}`,
-          );
+        if (!product.categories || !Array.isArray(product.categories) || product.categories.length === 0) {
+          const res = await fetch(`https://tongkhonoithattayninh.vn/api/products?lang=${language}`);
           const allProducts = await res.json();
-          const filtered = allProducts
-            .filter((p: Product) => p._id !== product._id)
-            .slice(0, 8);
-          setRelatedProducts(filtered);
+          setRelatedProducts(allProducts.filter((p: Product) => p._id !== product._id).slice(0, 8));
           return;
         }
-
         productCategoryIds = product.categories
-          .map((cat: any) => {
-            if (typeof cat === "string") return cat;
-            if (cat && cat._id) return cat._id.toString();
-            return null;
-          })
+          .map((cat: any) => { if (typeof cat === "string") return cat; if (cat?._id) return cat._id.toString(); return null; })
           .filter(Boolean);
-
         const firstCategory = product.categories[0];
-        if (
-          firstCategory &&
-          typeof firstCategory === "object" &&
-          firstCategory.slug
-        ) {
+        if (firstCategory && typeof firstCategory === "object" && firstCategory.slug) {
           setCategorySlug(firstCategory.slug);
         }
-
-        const res = await fetch(
-          `https://tongkhonoithattayninh.vn/api/products?lang=${language}`,
-        );
+        const res = await fetch(`https://tongkhonoithattayninh.vn/api/products?lang=${language}`);
         const allProducts = await res.json();
-
         const sameCategory = allProducts.filter((p: Product) => {
           if (p._id === product._id) return false;
-          if (
-            !p.categories ||
-            !Array.isArray(p.categories) ||
-            p.categories.length === 0
-          )
-            return false;
-
-          const pCategoryIds = p.categories
-            .map((cat: any) => {
-              if (typeof cat === "string") return cat;
-              if (cat && cat._id) return cat._id.toString();
-              return null;
-            })
-            .filter(Boolean);
-
-          return pCategoryIds.some((catId: string) =>
-            productCategoryIds.includes(catId),
-          );
+          if (!p.categories || !Array.isArray(p.categories) || p.categories.length === 0) return false;
+          const pCategoryIds = p.categories.map((cat: any) => { if (typeof cat === "string") return cat; if (cat?._id) return cat._id.toString(); return null; }).filter(Boolean);
+          return pCategoryIds.some((catId: string) => productCategoryIds.includes(catId));
         });
-
-        const filtered = sameCategory.slice(0, 8);
-        setRelatedProducts(filtered);
-      } catch (error) {
-        console.error("Error loading related products:", error);
-        setRelatedProducts([]);
-      }
+        setRelatedProducts(sameCategory.slice(0, 8));
+      } catch { setRelatedProducts([]); }
     };
-
     fetchRelatedProducts();
   }, [product, language]);
 
   useEffect(() => {
     if (!showLightbox || !product) return;
-
-    const productImages =
-      product.images && product.images.length > 0
-        ? product.images.map((img) => getImageUrl(img))
-        : [getImageUrl(null)];
-
+    const productImages = product.images?.length > 0 ? product.images.map((img) => getImageUrl(img)) : [getImageUrl(null)];
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape") {
-        setShowLightbox(false);
-        document.body.style.overflow = "auto";
-      } else if (e.key === "ArrowRight") {
-        setLightboxIndex((prev) => (prev + 1) % productImages.length);
-      } else if (e.key === "ArrowLeft") {
-        setLightboxIndex(
-          (prev) => (prev - 1 + productImages.length) % productImages.length,
-        );
-      }
+      if (e.key === "Escape") { setShowLightbox(false); document.body.style.overflow = "auto"; }
+      else if (e.key === "ArrowRight") setLightboxIndex((prev) => (prev + 1) % productImages.length);
+      else if (e.key === "ArrowLeft") setLightboxIndex((prev) => (prev - 1 + productImages.length) % productImages.length);
     };
-
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [showLightbox, product]);
 
   useEffect(() => {
     if (!product?.attributes) return;
-
     const defaults: Record<string, string> = {};
     product.attributes.forEach((attr) => {
-      // ✅ FIXED: Use safeGetText to get attribute name
       const attrName = safeGetText(attr.name, language);
       const defaultOption = attr.options.find((opt) => opt.isDefault);
-
-      if (defaultOption) {
-        defaults[attrName] = defaultOption.value;
-      } else if (attr.options.length > 0) {
-        defaults[attrName] = attr.options[0].value;
-      }
+      if (defaultOption) defaults[attrName] = defaultOption.value;
+      else if (attr.options.length > 0) defaults[attrName] = attr.options[0].value;
     });
-
     setSelectedAttributes(defaults);
   }, [product, language]);
 
   const handleAttributeSelect = (attrName: string, optionValue: string) => {
-    setSelectedAttributes((prev) => ({
-      ...prev,
-      [attrName]: optionValue,
-    }));
+    setSelectedAttributes((prev) => ({ ...prev, [attrName]: optionValue }));
   };
 
-  // ================= TÌM BIẾN THỂ ĐANG ĐƯỢC CHỌN =================
-  // ⚠️ useMemo phải đặt TRƯỚC early return để tuân thủ Rules of Hooks
   const activeVariant = useMemo(() => {
     if (!product?.variants || product.variants.length === 0) return null;
-
-    return product.variants.find((variant) => {
-      return variant.combination.every((comb) => {
-        const targetAttr = product.attributes?.find(
-          (attr) => safeGetText(attr.name, "vi") === comb.name.vi,
-        );
+    return product.variants.find((variant) =>
+      variant.combination.every((comb) => {
+        const targetAttr = product.attributes?.find((attr) => safeGetText(attr.name, "vi") === comb.name.vi);
         if (!targetAttr) return false;
-
-        const currentSelectedValue =
-          selectedAttributes[safeGetText(targetAttr.name, language)];
-
-        const matchingOption = targetAttr.options.find(
-          (opt) =>
-            (opt.value || safeGetText(opt.label, language)) ===
-            currentSelectedValue,
-        );
-
+        const currentSelectedValue = selectedAttributes[safeGetText(targetAttr.name, language)];
+        const matchingOption = targetAttr.options.find((opt) => (opt.value || safeGetText(opt.label, language)) === currentSelectedValue);
         return safeGetText(matchingOption?.label, "vi") === comb.option.vi;
-      });
-    });
+      })
+    );
   }, [product, selectedAttributes, language]);
 
-  // ================= TÍNH OPTIONS HỢP LỆ ĐỘNG THEO SELECTION HIỆN TẠI =================
-  // Với mỗi attribute, chỉ hiện options mà khi kết hợp với các attribute KHÁC đang chọn
-  // thì vẫn còn tồn tại ít nhất 1 biến thể hợp lệ.
   const getValidOptionsForAttr = useMemo(() => {
     if (!product?.variants || product.variants.length === 0) return null;
-
     return (targetAttrNameLang: string, targetAttrNameVi: string) => {
       const validOptionLabelsVi = new Set<string>();
-
-      product.variants.forEach((variant: any) => {
-        // Lấy option của attribute đang xét trong variant này
-        const combForTarget = variant.combination.find(
-          (c: any) => (c.name?.vi || c.name) === targetAttrNameVi
-        );
+      product.variants!.forEach((variant: any) => {
+        const combForTarget = variant.combination.find((c: any) => (c.name?.vi || c.name) === targetAttrNameVi);
         if (!combForTarget) return;
-
-        // Kiểm tra các attribute KHÁC (không phải target) có khớp với selection hiện tại không
         const otherCombsMatch = variant.combination.every((c: any) => {
           const cAttrNameVi = c.name?.vi || c.name;
-          // Bỏ qua chính attribute đang xét
           if (cAttrNameVi === targetAttrNameVi) return true;
-
-          // Tìm attribute tương ứng trong product.attributes
-          const matchedAttr = product.attributes?.find(
-            (a: any) => safeGetText(a.name, "vi") === cAttrNameVi
-          );
+          const matchedAttr = product.attributes?.find((a: any) => safeGetText(a.name, "vi") === cAttrNameVi);
           if (!matchedAttr) return true;
-
           const attrNameInLang = safeGetText(matchedAttr.name, language);
           const currentVal = selectedAttributes[attrNameInLang];
-          if (!currentVal) return true; // Chưa chọn thì bỏ qua
-
-          // Tìm option tương ứng
-          const matchedOpt = matchedAttr.options.find(
-            (opt: any) => (opt.value || safeGetText(opt.label, language)) === currentVal
-          );
-          const selectedLabelVi = safeGetText(matchedOpt?.label, "vi");
-          const combOptionVi = c.option?.vi || c.option;
-
-          return selectedLabelVi === combOptionVi;
+          if (!currentVal) return true;
+          const matchedOpt = matchedAttr.options.find((opt: any) => (opt.value || safeGetText(opt.label, language)) === currentVal);
+          return safeGetText(matchedOpt?.label, "vi") === (c.option?.vi || c.option);
         });
-
-        if (otherCombsMatch) {
-          validOptionLabelsVi.add(combForTarget.option?.vi || combForTarget.option);
-        }
+        if (otherCombsMatch) validOptionLabelsVi.add(combForTarget.option?.vi || combForTarget.option);
       });
-
       return validOptionLabelsVi;
     };
   }, [product, selectedAttributes, language]);
-  // ================================================================
 
-  if (loading)
-    return <div>{t("common.loading") || "Đang tải sản phẩm..."}</div>;
-  if (error)
-    return (
-      <div style={{ color: "red" }}>
-        {t("common.error") || "Lỗi"}: {error}
+  if (loading) return (
+    <div className="pd-skeleton">
+      <div className="container">
+        <div className="pd-skeleton__layout">
+          <div className="pd-skeleton__img" />
+          <div className="pd-skeleton__info">
+            <div className="pd-skeleton__line pd-skeleton__line--title" />
+            <div className="pd-skeleton__line pd-skeleton__line--price" />
+            <div className="pd-skeleton__line" />
+            <div className="pd-skeleton__line pd-skeleton__line--short" />
+            <div className="pd-skeleton__btns">
+              <div className="pd-skeleton__btn" />
+              <div className="pd-skeleton__btn" />
+            </div>
+          </div>
+        </div>
       </div>
-    );
-  if (!product)
-    return <div>{t("product.noData") || "Không có dữ liệu sản phẩm"}</div>;
+    </div>
+  );
 
-  const productImages =
-    product.images && product.images.length > 0
-      ? product.images.map((img) => getImageUrl(img))
-      : [getImageUrl(null)];
+  if (error) return <div className="pd-error"><p>😕 {error}</p><Link to="/" className="pd-error__back">← Về trang chủ</Link></div>;
+  if (!product) return <div className="pd-error"><p>{t("product.noData") || "Không có dữ liệu"}</p></div>;
+
+  const productImages = product.images?.length > 0 ? product.images.map((img) => getImageUrl(img)) : [getImageUrl(null)];
   const currentImage = productImages[selectedImageIndex];
-  const priceOriginal = Number(product.priceOriginal) || 0;
-  const priceSale = Number(product.priceSale) || 0;
-  const discount =
-    priceOriginal > priceSale && priceOriginal > 0
-      ? Math.round(((priceOriginal - priceSale) / priceOriginal) * 100)
-      : 0;
-
-  // ✅ FIXED: Extract description as plain text
   const productDescription = safeGetText(product.description, language);
+  const displayPriceSale = activeVariant ? activeVariant.priceSale : product.priceSale || 0;
+  const displayPriceOriginal = activeVariant ? activeVariant.priceOriginal : product.priceOriginal || 0;
+  const displayQuantity = activeVariant ? activeVariant.quantity : product.quantity || 0;
+  const displaySku = activeVariant ? (activeVariant as any).sku : product.sku;
+  const displayDiscount = displayPriceOriginal > displayPriceSale && displayPriceOriginal > 0
+    ? Math.round(((displayPriceOriginal - displayPriceSale) / displayPriceOriginal) * 100) : 0;
 
   const openLightbox = (index: number) => {
     setLightboxIndex(index);
     setShowLightbox(true);
     document.body.style.overflow = "hidden";
   };
-
   const closeLightbox = () => {
     setShowLightbox(false);
     document.body.style.overflow = "auto";
   };
+  const nextImage = () => setLightboxIndex((prev) => (prev + 1) % productImages.length);
+  const prevImage = () => setLightboxIndex((prev) => (prev - 1 + productImages.length) % productImages.length);
 
-  const nextImage = () => {
-    setLightboxIndex((prev) => (prev + 1) % productImages.length);
-  };
-
-  const prevImage = () => {
-    setLightboxIndex(
-      (prev) => (prev - 1 + productImages.length) % productImages.length,
-    );
-  };
-
-  // Lấy các thông số hiển thị (Nếu có biến thể thì lấy của biến thể, không thì lấy mặc định)
-  const displayPriceSale = activeVariant
-    ? activeVariant.priceSale
-    : product?.priceSale || 0;
-  const displayPriceOriginal = activeVariant
-    ? activeVariant.priceOriginal
-    : product?.priceOriginal || 0;
-  const displayQuantity = activeVariant
-    ? activeVariant.quantity
-    : product?.quantity || 0;
-  const displaySku = activeVariant ? activeVariant.sku : product?.sku;
-  const displayDiscount =
-    displayPriceOriginal > displayPriceSale && displayPriceOriginal > 0
-      ? Math.round(((displayPriceOriginal - displayPriceSale) / displayPriceOriginal) * 100)
-      : 0;
-  // ================================================================
-
-  const handleAdd = () => {
+  // ✅ FIX: handleAdd nhận buyNow boolean, dùng setIsAdding đúng cách
+  const handleAdd = (qty: number, buyNow: boolean = false) => {
     if (!product) return;
-
-    // Ghi đè giá và sku theo biến thể đang chọn
     const productToCart = {
       ...product,
       priceSale: displayPriceSale,
       priceOriginal: displayPriceOriginal,
       sku: displaySku || product.sku,
     };
-
-    addToCart(productToCart, quantity, selectedAttributes);
+    addToCart(productToCart, qty, selectedAttributes);
     setIsAdding(true);
-    setTimeout(() => setIsAdding(false), 500);
+    setAddedFeedback(buyNow ? "buy" : "cart");
+    setTimeout(() => {
+      setIsAdding(false);
+      setAddedFeedback(null);
+      if (buyNow) navigate("/thanh-toan");
+    }, 600);
   };
 
-  const actionArea = (
-    <div className="action-area">
-      <button
-        className="btn-buy-now"
-        onClick={() => handleAdd(quantity, true)}
-        disabled={product.quantity <= 0}
-        style={{
-          opacity: product.quantity <= 0 ? 0.5 : 1,
-          cursor: product.quantity <= 0 ? "not-allowed" : "pointer",
-        }}
-      >
-        {product.quantity <= 0 ? t("product.outOfStock") : t("product.buyNow")}
-      </button>
-
-      <button
-        className="btn-add-cart"
-        onClick={() => handleAdd(quantity, false)}
-        disabled={product.quantity <= 0}
-        style={{
-          opacity: product.quantity <= 0 ? 0.5 : 1,
-          cursor: product.quantity <= 0 ? "not-allowed" : "pointer",
-        }}
-      >
-        {product.quantity <= 0
-          ? t("product.outOfStock")
-          : t("product.addToCart")}
-      </button>
-    </div>
-  );
-
-  const ProductCard: React.FC<{ product: Product }> = ({ product }) => {
-    const isOutOfStock = product.quantity <= 0;
-    const priceOriginal = Number(product.priceOriginal) || 0;
-    const priceSale = Number(product.priceSale) || 0;
-    const discount =
-      priceOriginal > priceSale && priceOriginal > 0
-        ? Math.round(((priceOriginal - priceSale) / priceOriginal) * 100)
-        : 0;
-
+  // ── ProductCard component ────────────────────────────────────
+  const ProductCard: React.FC<{ product: Product }> = ({ product: prod }) => {
+    const isOutOfStock = prod.quantity <= 0;
+    const pOri = Number(prod.priceOriginal) || 0;
+    const pSale = Number(prod.priceSale) || 0;
+    const disc = pOri > pSale && pOri > 0 ? Math.round(((pOri - pSale) / pOri) * 100) : 0;
     return (
-      <Link
-        to={`/san-pham/${product.slug}`}
-        className={`product-card ${isOutOfStock ? "out-of-stock" : ""}`}
-      >
-        <div className="product-image">
-          {isOutOfStock && (
-            <span className="badge out-of-stock-badge">
-              {t("product.outOfStock")}
-            </span>
-          )}
-          <img
-            src={getFirstImageUrl(product.images)}
-            alt={safeGetText(product.name, language)}
-            onError={(e) => {
-              e.currentTarget.src =
-                'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="300" height="300"%3E%3Crect fill="%23f0f0f0" width="300" height="300"/%3E%3Ctext x="50%25" y="50%25" text-anchor="middle" fill="%23999" font-size="18"%3ENo Image%3C/text%3E%3C/svg%3E';
-            }}
-          />
+      <Link to={`/san-pham/${prod.slug}`} className={`pd-related-card ${isOutOfStock ? "is-oos" : ""}`}>
+        <div className="pd-related-card__img">
+          {isOutOfStock && <span className="pd-related-card__oos">{t("product.outOfStock")}</span>}
+          {disc > 0 && <span className="pd-related-card__disc">-{disc}%</span>}
+          <img src={getFirstImageUrl(prod.images)} alt={safeGetText(prod.name, language)}
+            onError={(e) => { e.currentTarget.src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="300" height="300"%3E%3Crect fill="%23f0f0f0" width="300" height="300"/%3E%3C/svg%3E'; }} />
         </div>
-        <div className="product-info">
-          <h3 className="product-name">
-            {safeGetText(product.name, language)}
-          </h3>
-          <div className="product-price">
-            <div className="price-left">
-              <span className="price-sale">
-                {priceSale.toLocaleString()}₫
-              </span>
-              {discount > 0 && (
-                <span className="price-original">
-                  {priceOriginal.toLocaleString()}₫
-                </span>
-              )}
-            </div>
-            {discount > 0 && (
-              <span className="discount-percent">-{discount}%</span>
-            )}
+        <div className="pd-related-card__info">
+          <h3 className="pd-related-card__name">{safeGetText(prod.name, language)}</h3>
+          <div className="pd-related-card__price">
+            <span className="pd-related-card__sale">{pSale.toLocaleString()}₫</span>
+            {disc > 0 && <span className="pd-related-card__ori">{pOri.toLocaleString()}₫</span>}
           </div>
         </div>
       </Link>
@@ -553,143 +333,113 @@ const ProductDetail: React.FC = () => {
   };
 
   return (
-    <div className="product-detail-page">
+    <div className="pd-page">
+      {/* ── Breadcrumb ── */}
+      <div className="pd-breadcrumb">
+        <div className="container">
+          <Link to="/">Trang chủ</Link>
+          <ChevronRight size={14} />
+          {product.categories?.[0] && typeof product.categories[0] === "object" && (
+            <><Link to={`/danh-muc/${product.categories[0].slug}`}>{safeGetText(product.categories[0].name, language)}</Link><ChevronRight size={14} /></>
+          )}
+          <span>{safeGetText(product.name, language)}</span>
+        </div>
+      </div>
+
       <div className="container">
-        <div className="new-layout">
-          <div className="left-column">
-            <div className="image-area">
+        <div className="pd-layout">
 
-              <div className="main-image">
-                {displayQuantity <= 0 && (
-                  <div className="out-of-stock-overlay">
-                    <span className="out-of-stock-text">
-                      {t("product.outOfStock")}
-                    </span>
-                  </div>
-                )}
-
-                <img
-                  src={currentImage}
-                  alt={safeGetText(product.name, language)}
-                  onClick={() => openLightbox(selectedImageIndex)}
-                  style={{ cursor: "pointer" }}
-                  onError={(e) => {
-                    e.currentTarget.src =
-                      'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="600" height="600"%3E%3Crect fill="%23f0f0f0" width="600" height="600"/%3E%3Ctext x="50%25" y="50%25" text-anchor="middle" fill="%23999" font-size="20"%3ENo Image%3C/text%3E%3C/svg%3E';
-                  }}
-                />
-              </div>
-
-              {productImages.length > 1 && (
-                <div className="thumbnail-row">
-                  {productImages.map((img: string, i: number) => (
-                    <div
-                      key={i}
-                      className={`thumb ${
-                        selectedImageIndex === i ? "active" : ""
-                      }`}
-                      onClick={() => setSelectedImageIndex(i)}
-                      style={{ cursor: "pointer" }}
-                    >
-                      <img
-                        src={img}
-                        alt={`${safeGetText(product.name, language)} ${i + 1}`}
-                        onError={(e) => {
-                          e.currentTarget.src =
-                            'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="100" height="100"%3E%3Crect fill="%23f0f0f0" width="100" height="100"/%3E%3Ctext x="50%25" y="50%25" text-anchor="middle" fill="%23999" font-size="12"%3EError%3C/text%3E%3C/svg%3E';
-                        }}
-                      />
-                    </div>
-                  ))}
+          {/* ══ LEFT: Image gallery ══ */}
+          <div className="pd-gallery">
+            <div className="pd-gallery__main" onClick={() => openLightbox(selectedImageIndex)}>
+              {displayQuantity <= 0 && (
+                <div className="pd-gallery__oos-overlay">
+                  <span>{t("product.outOfStock")}</span>
                 </div>
               )}
+              {displayDiscount > 0 && <span className="pd-gallery__disc-badge">-{displayDiscount}%</span>}
+              <span className="pd-gallery__zoom-hint"><ZoomIn size={18} /> Phóng to</span>
+              <img src={currentImage} alt={safeGetText(product.name, language)}
+                onError={(e) => { e.currentTarget.src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="600" height="600"%3E%3Crect fill="%23f0f0f0" width="600" height="600"/%3E%3C/svg%3E'; }} />
             </div>
 
-            {/* ✅ FIXED: Use extracted description text */}
+            {productImages.length > 1 && (
+              <div className="pd-gallery__thumbs" ref={thumbnailRowRef}>
+                {productImages.map((img, i) => (
+                  <button key={i} className={`pd-gallery__thumb ${selectedImageIndex === i ? "is-active" : ""}`}
+                    onClick={() => setSelectedImageIndex(i)} aria-label={`Ảnh ${i + 1}`}>
+                    <img src={img} alt={`${safeGetText(product.name, language)} ${i + 1}`} />
+                  </button>
+                ))}
+              </div>
+            )}
+
+            {/* Description dưới gallery — desktop */}
             {productDescription && (
-              <div className="description-under-image">
+              <div className="pd-description">
                 <h3>{t("product.description")}</h3>
-                <div dangerouslySetInnerHTML={{ __html: productDescription }} />
+                <div className="pd-description__body" dangerouslySetInnerHTML={{ __html: productDescription }} />
               </div>
             )}
           </div>
 
-          <div className="right-column">
-            <h1 className="product-title">
-              {safeGetText(product.name, language)}
-            </h1>
+          {/* ══ RIGHT: Product info ══ */}
+          <div className="pd-info">
 
-            <div className="meta-info">
-              {t("product.sku")}:{" "}
-              <strong>
-                {displaySku || product._id?.slice(-8).toUpperCase()}
-              </strong>
+            {/* Badges */}
+            <div className="pd-info__badges">
+              {product.hot && <span className="pd-badge pd-badge--hot">🔥 Hot</span>}
+              {product.onSale && <span className="pd-badge pd-badge--sale">Sale</span>}
+              {displayQuantity > 0
+                ? <span className="pd-badge pd-badge--stock">✓ Còn hàng</span>
+                : <span className="pd-badge pd-badge--oos">Hết hàng</span>}
             </div>
 
-            <div className="price-area">
-              <span className="current-price">
-                {displayPriceSale.toLocaleString()}₫
-              </span>
+            <h1 className="pd-info__title">{safeGetText(product.name, language)}</h1>
+
+            <p className="pd-info__sku">SKU: <strong>{displaySku || product._id?.slice(-8).toUpperCase()}</strong></p>
+
+            {/* Price */}
+            <div className="pd-info__price">
+              <span className="pd-info__price-sale">{displayPriceSale.toLocaleString()}₫</span>
               {displayDiscount > 0 && (
-                <>
-                  <span className="old-price">
-                    {displayPriceOriginal.toLocaleString()}₫
-                  </span>
-                  <span className="discount-tag">-{displayDiscount}%</span>
-                </>
+                <div className="pd-info__price-meta">
+                  <span className="pd-info__price-ori">{displayPriceOriginal.toLocaleString()}₫</span>
+                  <span className="pd-info__price-disc">Tiết kiệm {(displayPriceOriginal - displayPriceSale).toLocaleString()}₫</span>
+                </div>
               )}
             </div>
 
-            {/* ✅ FIXED: Properly extract attribute names and labels */}
+            {/* Attributes / Variants */}
             {product.attributes && product.attributes.length > 0 ? (
-              <div className="options-group">
+              <div className="pd-attrs">
                 {product.attributes.map((attr, attrIdx) => {
                   const attrName = safeGetText(attr.name, language);
                   const attrNameVi = safeGetText(attr.name, "vi");
-
-                  // Lấy set options hợp lệ dựa vào các attribute khác đang chọn
-                  const validSet = getValidOptionsForAttr
-                    ? getValidOptionsForAttr(attrName, attrNameVi)
-                    : null;
-
+                  const validSet = getValidOptionsForAttr ? getValidOptionsForAttr(attrName, attrNameVi) : null;
                   return (
-                    <div key={attrIdx} className="option-item">
-                      <label>{attrName}:</label>
-
-                      <div className="option-buttons">
+                    <div key={attrIdx} className="pd-attrs__group">
+                      <label className="pd-attrs__label">{attrName}:
+                        <strong className="pd-attrs__selected">
+                          {safeGetText(attr.options.find(o => o.value === selectedAttributes[attrName])?.label, language)}
+                        </strong>
+                      </label>
+                      <div className="pd-attrs__options">
                         {attr.options.filter((opt) => {
                           if (!validSet) return true;
-                          const optLabelVi = safeGetText(opt.label, "vi");
-                          return validSet.has(optLabelVi);
+                          return validSet.has(safeGetText(opt.label, "vi"));
                         }).map((opt, optIdx) => {
-                          const isSelected =
-                            selectedAttributes[attrName] === opt.value;
-                          const optionLabel = safeGetText(opt.label, language);
-
+                          const isSelected = selectedAttributes[attrName] === opt.value;
                           return (
-                            <button
-                              key={optIdx}
-                              className={`option-btn ${
-                                isSelected ? "active" : ""
-                              }`}
-                              onClick={() =>
-                                handleAttributeSelect(attrName, opt.value)
-                              }
-                              type="button"
-                            >
+                            <button key={optIdx}
+                              className={`pd-attrs__opt ${isSelected ? "is-active" : ""}`}
+                              onClick={() => handleAttributeSelect(attrName, opt.value)} type="button">
                               {opt.image && (
-                                <img
-                                  src={getImageUrl(opt.image)}
-                                  alt={optionLabel}
-                                  className="option-image"
-                                  onError={(e) => {
-                                    e.currentTarget.style.display = "none";
-                                  }}
-                                />
+                                <img src={getImageUrl(opt.image)} alt={safeGetText(opt.label, language)}
+                                  className="pd-attrs__opt-img"
+                                  onError={(e) => { e.currentTarget.style.display = "none"; }} />
                               )}
-                              <span className="option-label">
-                                {optionLabel}
-                              </span>
+                              <span>{safeGetText(opt.label, language)}</span>
                             </button>
                           );
                         })}
@@ -699,184 +449,133 @@ const ProductDetail: React.FC = () => {
                 })}
               </div>
             ) : (
-              <div className="options-group">
-                {product.material && (
-                  <div className="option-item">
-                    <label>{t("product.material")}:</label>
-                    <button className="active">{product.material}</button>
-                  </div>
-                )}
-                {product.color && (
-                  <div className="option-item">
-                    <label>{t("product.color")}:</label>
-                    <button className="active">{product.color}</button>
-                  </div>
-                )}
-                {product.size && (
-                  <div className="option-item">
-                    <label>{t("product.size")}:</label>
-                    <button className="active">{product.size}</button>
-                  </div>
-                )}
+              <div className="pd-attrs">
+                {product.material && <div className="pd-attrs__group"><label className="pd-attrs__label">{t("product.material")}:</label><div className="pd-attrs__options"><button className="pd-attrs__opt is-active"><span>{product.material}</span></button></div></div>}
+                {product.color && <div className="pd-attrs__group"><label className="pd-attrs__label">{t("product.color")}:</label><div className="pd-attrs__options"><button className="pd-attrs__opt is-active"><span>{product.color}</span></button></div></div>}
+                {product.size && <div className="pd-attrs__group"><label className="pd-attrs__label">{t("product.size")}:</label><div className="pd-attrs__options"><button className="pd-attrs__opt is-active"><span>{product.size}</span></button></div></div>}
               </div>
             )}
 
-            <div className="quantity-area">
-              <button
-                className="qty-btn"
-                onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                disabled={quantity <= 1}
-              >
-                −
+            {/* Quantity */}
+            <div className="pd-qty">
+              <span className="pd-qty__label">Số lượng:</span>
+              <div className="pd-qty__ctrl">
+                <button className="pd-qty__btn" onClick={() => setQuantity(Math.max(1, quantity - 1))} disabled={quantity <= 1} aria-label="Giảm">−</button>
+                <span className="pd-qty__val">{quantity}</span>
+                <button className="pd-qty__btn" onClick={() => setQuantity(quantity + 1)} disabled={quantity >= displayQuantity} aria-label="Tăng">+</button>
+              </div>
+              {displayQuantity > 0 && displayQuantity <= 10 && (
+                <span className="pd-qty__warn">Chỉ còn {displayQuantity} sản phẩm</span>
+              )}
+            </div>
+
+            {/* Action buttons */}
+            <div className="pd-actions">
+              <button className={`pd-actions__buy ${isAdding && addedFeedback === "buy" ? "is-loading" : ""}`}
+                onClick={() => handleAdd(quantity, true)} disabled={displayQuantity <= 0 || isAdding}>
+                <Zap size={18} />
+                {displayQuantity <= 0 ? t("product.outOfStock") : addedFeedback === "buy" ? "Đang xử lý..." : t("product.buyNow")}
               </button>
-              <input
-                type="text"
-                value={quantity}
-                readOnly
-                className="qty-input"
-              />
-              <button
-                className="qty-btn"
-                onClick={() => setQuantity(quantity + 1)}
-                disabled={quantity >= (product.quantity || 0)}
-              >
-                +
+              <button className={`pd-actions__cart ${isAdding && addedFeedback === "cart" ? "is-loading" : ""}`}
+                onClick={() => handleAdd(quantity, false)} disabled={displayQuantity <= 0 || isAdding}>
+                <ShoppingCart size={18} />
+                {displayQuantity <= 0 ? t("product.outOfStock") : addedFeedback === "cart" ? "✓ Đã thêm!" : t("product.addToCart")}
               </button>
             </div>
 
-            {actionArea}
-
-            <div className="installment-area">
-              <button className="installment-btn primary">
-                {t("product.installment0Percent")}
-              </button>
-              <button className="installment-btn secondary">
-                {t("product.installmentCard")}
-              </button>
+            {/* Installment */}
+            <div className="pd-installment">
+              <button className="pd-installment__btn pd-installment__btn--blue">{t("product.installment0Percent")}</button>
+              <button className="pd-installment__btn pd-installment__btn--green">{t("product.installmentCard")}</button>
             </div>
 
-            <div className="policy-area">
-              <div className="status-section">
-                <p>
-                  <strong>{t("product.condition")}:</strong>{" "}
-                  {t("product.brandNew")}
-                </p>
-                <p>
-                  <strong>{t("product.status")}:</strong>{" "}
-                  <span
-                    className={`stock-status ${
-                      product.quantity > 0 ? "in-stock" : "out-of-stock"
-                    }`}
-                  >
-                    {product.quantity > 0
-                      ? t("product.inStock")
-                      : t("product.outOfStock")}
-                  </span>
-                </p>
-              </div>
-
-              <div className="delivery-section">
-                <h4>{t("product.deliveryCost")}:</h4>
-                <ul>
-                  <li>{t("product.freeDeliveryHCMC")}</li>
-                  <li>{t("product.deliverySuburbs")}</li>
-                  <li>{t("product.deliveryOtherProvinces")}</li>
-                </ul>
-              </div>
-
-              <div className="time-section">
-                <p>
-                  <strong>{t("product.deliveryTime")}:</strong>{" "}
-                  {t("product.deliveryTimeRange")}
-                </p>
-              </div>
+            {/* Policy strip */}
+            <div className="pd-policies">
+              {POLICIES.map((p, i) => (
+                <div key={i} className="pd-policies__item">
+                  <span className="pd-policies__icon">{p.icon}</span>
+                  <span>{p.text}</span>
+                </div>
+              ))}
             </div>
+
+            {/* Delivery info */}
+            <div className="pd-delivery">
+              <h4>🚚 Thông tin giao hàng</h4>
+              <ul>
+                <li>{t("product.freeDeliveryHCMC")}</li>
+                <li>{t("product.deliverySuburbs")}</li>
+                <li>{t("product.deliveryOtherProvinces")}</li>
+              </ul>
+              <p className="pd-delivery__time">⏱ {t("product.deliveryTime")}: <strong>{t("product.deliveryTimeRange")}</strong></p>
+            </div>
+
+          </div>{/* end pd-info */}
+        </div>{/* end pd-layout */}
+
+        {/* Description on mobile (below layout) */}
+        {productDescription && (
+          <div className="pd-description pd-description--mobile">
+            <h3>{t("product.description")}</h3>
+            <div className="pd-description__body" dangerouslySetInnerHTML={{ __html: productDescription }} />
           </div>
-        </div>
+        )}
       </div>
 
+      {/* ── Related products ── */}
       {relatedProducts.length > 0 && (
-        <section className="related-products-section">
+        <section className="pd-related">
           <div className="container">
-            <div className="section-header">
-              <h2 className="section-title">{t("product.relatedProducts")}</h2>
-              <Link
-                to={`/danh-muc/${categorySlug || "tat-ca"}`}
-                className="view-all"
-              >
-                {t("common.viewAll")} <ChevronRight size={16} />
+            <div className="pd-related__header">
+              <h2>{t("product.relatedProducts")}</h2>
+              <Link to={`/danh-muc/${categorySlug || "tat-ca"}`} className="pd-related__view-all">
+                {t("common.viewAll")} <ChevronRightIcon size={16} />
               </Link>
             </div>
-            <div className="product-grid">
-              {relatedProducts.map((prod) => (
-                <ProductCard key={prod._id} product={prod} />
-              ))}
+            <div className="pd-related__grid">
+              {relatedProducts.map((prod) => <ProductCard key={prod._id} product={prod} />)}
             </div>
           </div>
         </section>
       )}
 
-      {showLightbox && (
-        <div className="lightbox-overlay" onClick={closeLightbox}>
-          <button className="lightbox-close" onClick={closeLightbox}>
-            ✕
+      {/* ── Mobile sticky bar ── */}
+      <div className={`pd-sticky-bar ${displayQuantity <= 0 ? "is-oos" : ""}`}>
+        <div className="pd-sticky-bar__price">{displayPriceSale.toLocaleString()}₫</div>
+        <div className="pd-sticky-bar__actions">
+          <button className="pd-sticky-bar__cart" onClick={() => handleAdd(quantity, false)} disabled={displayQuantity <= 0 || isAdding}>
+            <ShoppingCart size={16} /> Giỏ hàng
           </button>
+          <button className="pd-sticky-bar__buy" onClick={() => handleAdd(quantity, true)} disabled={displayQuantity <= 0 || isAdding}>
+            <Zap size={16} /> Mua ngay
+          </button>
+        </div>
+      </div>
 
+      {/* ── Lightbox ── */}
+      {showLightbox && (
+        <div className="pd-lightbox" onClick={closeLightbox}>
+          <button className="pd-lightbox__close" onClick={closeLightbox}><X size={24} /></button>
           {productImages.length > 1 && (
-            <button
-              className="lightbox-nav lightbox-prev"
-              onClick={(e) => {
-                e.stopPropagation();
-                prevImage();
-              }}
-            >
-              ‹
+            <button className="pd-lightbox__nav pd-lightbox__nav--prev" onClick={(e) => { e.stopPropagation(); prevImage(); }}>
+              <ChevronLeft size={32} />
             </button>
           )}
-
-          <div
-            className="lightbox-content"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <img
-              src={productImages[lightboxIndex]}
-              alt={`${safeGetText(product.name, language)} - ${
-                lightboxIndex + 1
-              }`}
-              className="lightbox-main-image"
-            />
-            <div className="lightbox-counter">
-              {lightboxIndex + 1} / {productImages.length}
-            </div>
+          <div className="pd-lightbox__content" onClick={(e) => e.stopPropagation()}>
+            <img src={productImages[lightboxIndex]} alt={`${safeGetText(product.name, language)} - ${lightboxIndex + 1}`} />
+            <div className="pd-lightbox__counter">{lightboxIndex + 1} / {productImages.length}</div>
           </div>
-
           {productImages.length > 1 && (
-            <button
-              className="lightbox-nav lightbox-next"
-              onClick={(e) => {
-                e.stopPropagation();
-                nextImage();
-              }}
-            >
-              ›
+            <button className="pd-lightbox__nav pd-lightbox__nav--next" onClick={(e) => { e.stopPropagation(); nextImage(); }}>
+              <ChevronRightIcon size={32} />
             </button>
           )}
-
           {productImages.length > 1 && (
-            <div
-              className="lightbox-thumbnails"
-              onClick={(e) => e.stopPropagation()}
-            >
-              {productImages.map((img: string, i: number) => (
-                <div
-                  key={i}
-                  className={`lightbox-thumb ${
-                    lightboxIndex === i ? "active" : ""
-                  }`}
-                  onClick={() => setLightboxIndex(i)}
-                >
+            <div className="pd-lightbox__thumbs" onClick={(e) => e.stopPropagation()}>
+              {productImages.map((img, i) => (
+                <button key={i} className={`pd-lightbox__thumb ${lightboxIndex === i ? "is-active" : ""}`} onClick={() => setLightboxIndex(i)}>
                   <img src={img} alt={`Thumbnail ${i + 1}`} />
-                </div>
+                </button>
               ))}
             </div>
           )}

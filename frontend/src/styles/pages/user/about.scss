@@ -1,81 +1,576 @@
-// src/styles/pages/about.scss
+// ===================================================================
+// about.scss — Luxury Editorial · Nội thất Đại Dũng Phát
+// ===================================================================
 
-.about-page {
-  // Không padding 2 bên nữa, để full như header
-  width: 100%;
-  max-width: 1200px;     // giống hệt header
-  margin: 0 auto;        // căn giữa
-  padding: 40px 16px;    // chỉ giữ trên/dưới + chút lề nhỏ 2 bên cho mobile đẹp
-  font-family: system-ui, -apple-system, sans-serif;
-  line-height: 1.8;
-  color: #333;
+// ── Design tokens ──
+$gold:        #b8965a;
+$gold-light:  #d4b27a;
+$gold-pale:   #f9f3e9;
+$navy:        #001f3f;
+$dark:        #1a1a1a;
+$mid:         #555;
+$soft:        #888;
+$line:        #e8ddd0;
+$white:       #fff;
+$radius:      14px;
 
-  // Nếu màn hình lớn hơn 1200px thì vẫn giữ max-width và căn giữa
-  @media (min-width: 1240px) {
-    padding: 40px 0;     // màn to thì bỏ hẳn lề 2 bên luôn, bành tràn viền như header
+// ── Scroll-reveal base ──
+.about-section,
+.about-hero,
+.about-stats {
+  opacity: 0;
+  transform: translateY(28px);
+  transition: opacity 0.65s ease, transform 0.65s ease;
+
+  &.revealed {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+// ── Shared container ──
+.about-container {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+
+// ── Shared label ──
+.section-label {
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: $gold;
+  margin-bottom: 14px;
+
+  &.light { color: rgba(255,255,255,0.75); }
+}
+
+// ── Shared heading ──
+.section-heading {
+  font-size: clamp(1.6rem, 4vw, 2.5rem);
+  font-weight: 800;
+  color: $dark;
+  line-height: 1.2;
+  margin: 0 0 30px;
+  letter-spacing: -0.01em;
+
+  em {
+    font-style: normal;
+    color: $gold;
+  }
+}
+
+// ===================================================================
+// HERO
+// ===================================================================
+.about-hero {
+  position: relative;
+  height: clamp(360px, 55vw, 580px);
+  overflow: hidden;
+  border-radius: 0 0 $radius $radius;
+
+  .hero-bg {
+    position: absolute;
+    inset: 0;
+
+    .hero-img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+
+    .hero-overlay {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(
+        135deg,
+        rgba(0, 15, 30, 0.78) 0%,
+        rgba(0, 15, 30, 0.45) 55%,
+        rgba(184, 150, 90, 0.22) 100%
+      );
+    }
   }
 
-  h1 {
-    text-align: center;
-    font-size: 2.6rem;
-    margin: 20px 0 50px;
-    color: #b8965a;
+  .hero-content {
+    position: relative;
+    z-index: 2;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding: 0 clamp(20px, 6vw, 80px);
+    max-width: 700px;
+  }
+
+  .hero-eyebrow {
+    display: inline-block;
+    font-size: 12px;
     font-weight: 700;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: $gold-light;
+    margin-bottom: 18px;
+    padding: 5px 14px;
+    border: 1px solid rgba($gold-light, 0.4);
+    border-radius: 100px;
+    width: fit-content;
   }
 
-  .banner-img {
-    width:  100%;
-    height   : auto;
-    border-radius: 12px;
-    box-shadow: 0 10px 30px rgba(0,0,0,0.15);
-    margin-bottom: 60px;
+  .hero-title {
+    font-size: clamp(2.2rem, 6.5vw, 4rem);
+    font-weight: 900;
+    color: $white;
+    line-height: 1.1;
+    margin: 0 0 22px;
+    letter-spacing: -0.02em;
+
+    em {
+      font-style: italic;
+      color: $gold-light;
+    }
   }
 
-  .section {
-    margin-bottom: 60px;
+  .hero-subtitle {
+    font-size: clamp(0.95rem, 2vw, 1.1rem);
+    color: rgba($white, 0.82);
+    line-height: 1.7;
+    max-width: 520px;
+    margin: 0;
+  }
 
-    h2 {
-      font-size: 1.9rem;
-      color: #b8965a;
-      margin: 0 0 25px 0;
-      padding-bottom: 12px;
-      border-bottom: 3px solid #b8965a;
-      display: inline-block;
+  .br-desktop {
+    @media (max-width: 600px) { display: none; }
+  }
+}
+
+// ===================================================================
+// STATS
+// ===================================================================
+.about-stats {
+  background: $white;
+  border-bottom: 1px solid $line;
+
+  .stats-inner {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 0 20px;
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 0;
+
+    @media (max-width: 768px) {
+      grid-template-columns: repeat(2, 1fr);
     }
-    p {
-      margin: 18px 0;
-      font-size: 1.12rem;
+  }
+
+  .stat-card {
+    padding: 36px 24px;
+    text-align: center;
+    border-right: 1px solid $line;
+    transition: background 0.2s;
+
+    &:last-child { border-right: none; }
+
+    @media (max-width: 768px) {
+      border-bottom: 1px solid $line;
+
+      &:nth-child(2n) { border-right: none; }
+      &:nth-last-child(-n+2) { border-bottom: none; }
     }
 
-    ul {
-      padding-left: 28px;
-      li {
-        margin: 14px 0;
-        font-size: 1.1rem;
+    @media (max-width: 400px) {
+      padding: 24px 16px;
+    }
+
+    &:hover { background: $gold-pale; }
+
+    .stat-icon {
+      font-size: 20px;
+      color: $gold;
+      margin-bottom: 10px;
+    }
+
+    .stat-value {
+      font-size: clamp(1.6rem, 4vw, 2.2rem);
+      font-weight: 900;
+      color: $dark;
+      line-height: 1;
+      margin-bottom: 8px;
+      letter-spacing: -0.02em;
+    }
+
+    .stat-label {
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      color: $soft;
+    }
+  }
+}
+
+// ===================================================================
+// GENERIC SECTION WRAPPER
+// ===================================================================
+.about-section {
+  padding: clamp(50px, 8vw, 90px) 0;
+}
+
+// ===================================================================
+// INTRO
+// ===================================================================
+.about-intro {
+  background: $white;
+
+  .two-col {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 40px;
+
+    @media (max-width: 700px) {
+      grid-template-columns: 1fr;
+      gap: 18px;
+    }
+  }
+
+  p {
+    font-size: clamp(0.95rem, 2vw, 1.05rem);
+    color: $mid;
+    line-height: 1.85;
+    margin: 0;
+  }
+}
+
+// ===================================================================
+// CAPACITY
+// ===================================================================
+.about-capacity {
+  background: $gold-pale;
+
+  .capacity-grid {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 60px;
+    align-items: center;
+
+    @media (max-width: 860px) {
+      grid-template-columns: 1fr;
+      gap: 40px;
+    }
+  }
+
+  .capacity-text {
+    .section-heading { margin-bottom: 28px; }
+  }
+
+  .capacity-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+
+    li {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      font-size: 1rem;
+      color: $mid;
+      line-height: 1.6;
+    }
+
+    .check-icon {
+      color: $gold;
+      font-size: 15px;
+      flex-shrink: 0;
+      margin-top: 4px;
+    }
+  }
+
+  .capacity-visual {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    min-width: 200px;
+
+    @media (max-width: 860px) {
+      flex-direction: row;
+      min-width: 0;
+    }
+
+    @media (max-width: 480px) {
+      flex-direction: column;
+    }
+  }
+
+  .visual-card {
+    background: $white;
+    border-radius: $radius;
+    padding: 28px 32px;
+    text-align: center;
+    box-shadow: 0 4px 20px rgba($gold, 0.12);
+    flex: 1;
+
+    &.clickable {
+    cursor: pointer;
+    transition: transform 0.25s, box-shadow 0.25s;
+
+    &:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 10px 32px rgba($gold, 0.25);
+    }
+
+    &:active {
+      transform: translateY(-1px);
+    }
+
+    &:focus-visible {
+      outline: 2px solid $gold;
+      outline-offset: 3px;
+    }
+  }
+
+  .vc-cta {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: $gold;
+    margin-top: 10px;
+    opacity: 0;
+    transform: translateY(4px);
+    transition: opacity 0.2s, transform 0.2s;
+  }
+
+  &.clickable:hover .vc-cta {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  // Cho card accent (màu vàng): vc-cta màu trắng
+  &.accent.clickable .vc-cta {
+    color: rgba(255, 255, 255, 0.9);
+  }
+
+    &.accent {
+      background: $gold;
+      .vc-big { color: $white; }
+      .vc-sub { color: rgba($white, 0.82); }
+    }
+
+    .vc-big {
+      font-size: clamp(2rem, 5vw, 2.8rem);
+      font-weight: 900;
+      color: $dark;
+      line-height: 1;
+      letter-spacing: -0.03em;
+
+      span {
+        font-size: 60%;
+        vertical-align: super;
       }
     }
+
+    .vc-sub {
+      font-size: 12px;
+      color: $soft;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      font-weight: 600;
+      margin-top: 8px;
+    }
+  }
+}
+
+// ===================================================================
+// WHY US
+// ===================================================================
+.about-why {
+  background: $white;
+
+  .section-heading { text-align: center; }
+  .section-label { display: block; text-align: center; }
+
+  .why-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 20px;
+    margin-top: 10px;
+
+    @media (max-width: 900px) {
+      grid-template-columns: repeat(2, 1fr);
+    }
+
+    @media (max-width: 520px) {
+      grid-template-columns: 1fr;
+    }
   }
 
-  .highlight {
-    background: linear-gradient(135deg, #b8965a, #d4b27a);
-    color: white;
-    padding: 25px;
-    border-radius: 12px;
-    font-weight: bold;
-    text-align: center;
-    margin: 35px 0;
-    font-size: 1.2rem;
-    box-shadow: 0 8px 25px rgba(184, 150, 90, 0.3);
+  .why-card {
+    display: flex;
+    align-items: flex-start;
+    gap: 16px;
+    padding: 24px 20px;
+    border: 1px solid $line;
+    border-radius: $radius;
+    transition: box-shadow 0.25s, border-color 0.25s, transform 0.25s;
+    background: $white;
+
+    &:hover {
+      box-shadow: 0 8px 28px rgba($gold, 0.14);
+      border-color: $gold-light;
+      transform: translateY(-3px);
+    }
   }
 
-  .contact-info {
-    background: #f9f5f0;
-    padding: 40px;
-    border-radius: 16px;
-    text-align: center;
+  .why-icon {
+    width: 42px;
+    height: 42px;
+    border-radius: 10px;
+    background: $gold-pale;
+    color: $gold;
+    font-size: 17px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  .why-title {
+    font-size: 14.5px;
+    font-weight: 700;
+    color: $dark;
+    margin-bottom: 6px;
+  }
+
+  .why-desc {
+    font-size: 13.5px;
+    color: $soft;
+    line-height: 1.6;
+  }
+}
+
+// ===================================================================
+// COMMITMENT
+// ===================================================================
+.about-commit {
+  background: $navy;
+  padding: clamp(50px, 8vw, 80px) 0;
+
+  .commit-banner {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 0 20px;
+    display: flex;
+    align-items: flex-start;
+    gap: 32px;
+
+    @media (max-width: 600px) {
+      flex-direction: column;
+      gap: 16px;
+    }
+  }
+
+  .commit-quote {
+    font-size: clamp(4rem, 12vw, 8rem);
+    line-height: 0.7;
+    color: $gold;
+    font-style: italic;
+    font-weight: 900;
+    flex-shrink: 0;
+    user-select: none;
+  }
+
+  .commit-text {
     p {
-      margin: 15px 0;
-      font-size: 1.15rem;
+      font-size: clamp(1rem, 2.5vw, 1.15rem);
+      color: rgba($white, 0.85);
+      line-height: 1.85;
+      margin: 0;
+    }
+  }
+}
+
+// ===================================================================
+// CONTACT
+// ===================================================================
+.about-contact {
+  background: $gold-pale;
+
+  .contact-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 16px;
+
+    @media (max-width: 640px) {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  .contact-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 16px;
+    padding: 20px 22px;
+    background: $white;
+    border-radius: $radius;
+    border: 1px solid $line;
+    transition: box-shadow 0.2s, transform 0.2s;
+
+    &:hover {
+      box-shadow: 0 6px 20px rgba($gold, 0.13);
+      transform: translateY(-2px);
+    }
+  }
+
+  .contact-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+    background: $gold;
+    color: $white;
+    font-size: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  .contact-label {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: $gold;
+    margin-bottom: 4px;
+  }
+
+  .contact-value {
+    font-size: 14px;
+    color: $dark;
+    font-weight: 500;
+    line-height: 1.5;
+  }
+}
+
+// ===================================================================
+// RESPONSIVE — Page wrapper
+// ===================================================================
+.about-page {
+  width: 100%;
+  background: #fafafa;
+  overflow-x: hidden;
+
+  @media (max-width: 992px) {
+    // Đảm bảo không bị cắt xén trên mobile
+    .about-hero {
+      border-radius: 0;
+      height: clamp(280px, 60vw, 400px);
     }
   }
 }
