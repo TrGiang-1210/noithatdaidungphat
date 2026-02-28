@@ -1,5 +1,5 @@
 // ===================================================================
-// home.scss - OPTIMIZED & CLEANED UP
+// home.scss - OPTIMIZED & FIXED MOBILE BANNER
 // ===================================================================
 
 .home-page {
@@ -19,7 +19,7 @@
     max-width: 1200px;
     margin: 0 auto;
     padding: 0 15px;
-    padding-left: 335px !important;
+    padding-left: 335px; // Desktop: nhường chỗ cho mega menu bên trái
   }
 
   .slider-wrapper {
@@ -36,13 +36,12 @@
   .slider {
     position: relative;
     height: 420px;
-    overflow: hidden;
+    overflow: hidden;     // ← clip ảnh trong khung
 
     .slider-inner {
       display: flex;
       height: 100%;
       transition: transform 0.6s ease;
-      // ✅ GPU acceleration đúng chỗ - chỉ trên element thực sự animate
       will-change: transform;
     }
 
@@ -50,6 +49,7 @@
       min-width: 100%;
       height: 100%;
       flex-shrink: 0;
+      overflow: hidden;   // ← mỗi slide cũng clip, tránh ảnh tràn
     }
 
     .slide-img {
@@ -57,7 +57,6 @@
       height: 100%;
       object-fit: cover;
       display: block;
-      // ✅ Xóa lazy skeleton fake - browser tự handle, không cần override
     }
 
     .slider-nav {
@@ -74,6 +73,9 @@
       border-radius: 50%;
       z-index: 10;
       transition: background 0.3s, transform 0.3s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
 
       &:hover {
         background: #c19a6b;
@@ -109,17 +111,55 @@
     }
   }
 
+  // ── MOBILE: Reset hoàn toàn, full-width ──
   @media (max-width: 992px) {
+    padding: 0;
+
     .banner-container {
-      padding-left: 15px !important;
+      padding: 0 !important;   // Xóa padding-left: 335px và mọi padding khác
+      max-width: 100%;
     }
+
+    .slider-wrapper {
+      border-radius: 0;
+      box-shadow: none;
+      border: none;
+      max-width: 100%;
+      margin: 0;
+    }
+
     .slider {
-      height: 280px;
-    }
-    .slider-nav {
-      width: 40px;
-      height: 40px;
-      font-size: 24px;
+      height: 210px;
+
+      .slide {
+        min-width: 100%;
+        height: 100%;
+      }
+
+      .slide-img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+      }
+
+      .slider-nav {
+        width: 32px;
+        height: 32px;
+        font-size: 18px;
+
+        &.prev { left: 8px; }
+        &.next { right: 8px; }
+      }
+
+      .slider-pagination {
+        bottom: 10px;
+        gap: 6px;
+
+        .dot {
+          width: 7px;
+          height: 7px;
+        }
+      }
     }
   }
 }
@@ -217,7 +257,6 @@
     display: flex;
     flex-direction: column;
     position: relative;
-    // ✅ transition chỉ trên property cụ thể, không dùng "all" (tốn CPU hơn)
     transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease;
 
     &:hover {
@@ -226,12 +265,10 @@
       border-color: #d6a041;
     }
 
-    // ── Product Image ──
     .product-image {
       position: relative;
       width: 100%;
-      // ✅ Chỉ định nghĩa 1 lần duy nhất (fix bug trùng lặp)
-      padding-top: 100%; // Tỷ lệ 1:1 chuẩn
+      padding-top: 100%;
       overflow: hidden;
       background: #f8f8f8;
 
@@ -250,7 +287,6 @@
       transform: scale(1.06);
     }
 
-    // ── Product Info ──
     .product-info {
       padding: 15px;
       flex: 1;
@@ -277,7 +313,6 @@
       color: #d6a041;
     }
 
-    // ── Product Price ──
     .product-price {
       display: flex;
       justify-content: space-between;
@@ -316,7 +351,6 @@
       }
     }
 
-    // ── Out of stock ──
     &.out-of-stock {
       opacity: 0.75;
 
@@ -339,7 +373,6 @@
     }
 
     .product-card {
-      // ✅ Tắt hover animation trên mobile (tiết kiệm GPU)
       &:hover {
         transform: none;
         box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
@@ -463,7 +496,6 @@ button.disabled {
 .product-carousel {
   flex: 1;
   overflow: hidden;
-  // ✅ GPU acceleration chỉ trên wrapper carousel, không phải mọi card
   will-change: contents;
 
   .product-carousel-inner {
@@ -472,7 +504,7 @@ button.disabled {
     gap: 20px;
 
     .carousel-item {
-      min-width: 0; // Fix overflow
+      min-width: 0;
     }
   }
 
@@ -508,7 +540,7 @@ button.disabled {
 }
 
 // ===================================================================
-// LOADING & SPINNER (giữ lại cho các trang khác dùng)
+// LOADING & SPINNER
 // ===================================================================
 .loading-container {
   text-align: center;
@@ -532,14 +564,13 @@ button.disabled {
 }
 
 // ===================================================================
-// SKELETON LOADING (cho progressive render của home.tsx mới)
+// SKELETON LOADING
 // ===================================================================
 @keyframes shimmer {
   0%   { background-position: 200% 0; }
   100% { background-position: -200% 0; }
 }
 
-// Mixin tái sử dụng
 %shimmer-base {
   background: linear-gradient(90deg, #f0f0f0 25%, #e4e4e4 50%, #f0f0f0 75%);
   background-size: 200% 100%;
@@ -579,7 +610,7 @@ button.disabled {
 }
 
 // ===================================================================
-// KEYFRAMES (1 chỗ duy nhất)
+// KEYFRAMES
 // ===================================================================
 @keyframes spin {
   to { transform: rotate(360deg); }

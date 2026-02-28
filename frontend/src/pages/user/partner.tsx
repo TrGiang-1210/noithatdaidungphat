@@ -1,6 +1,6 @@
 import React from 'react';
 import "@/styles/pages/user/partner.scss";
-
+import homeCreditLogo from "@/assets/home_credit_logo.png";
 const Partner: React.FC = () => {
   return (
     <div className="partner-page">
@@ -25,7 +25,7 @@ const Partner: React.FC = () => {
             <h2 className="section-title">Đối Tác Tài Chính Uy Tín</h2>
             <div className="partner-intro__grid">
               <div className="partner-intro__logo">
-                <img src="/images/home-credit-logo.png" alt="Home Credit Logo" />
+                <img src={homeCreditLogo} alt="Home Credit Logo" />
               </div>
               <div className="partner-intro__text">
                 <p>
