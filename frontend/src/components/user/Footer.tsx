@@ -104,10 +104,14 @@ const Footer: React.FC = () => {
           <div className="footer-social">
             <h4 className="social-title">{t("footer.followUs")}</h4>
             <div className="social-icons">
-              <a href="https://www.facebook.com/noithatredepla" target="_blank" rel="noopener noreferrer" className="social-icon facebook" aria-label="Facebook"><FaFacebook /></a>
-              <a href="https://www.youtube.com/@noithatredeplongan" target="_blank" rel="noopener noreferrer" className="social-icon youtube" aria-label="YouTube"><FaYoutube /></a>
-              <a href="https://www.tiktok.com/@noithatdaidungphat" target="_blank" rel="noopener noreferrer" className="social-icon tiktok" aria-label="TikTok"><FaTiktok /></a>
-              <a href="https://www.instagram.com/noithatdaidungphat" target="_blank" rel="noopener noreferrer" className="social-icon instagram" aria-label="Instagram"><FaInstagram /></a>
+              <a href="https://www.facebook.com/noithatredepla" target="_blank" rel="noopener noreferrer" 
+              className="social-icon facebook" aria-label="Facebook"><FaFacebook /></a>
+              <a href="https://www.youtube.com/@noithatredeplongan" target="_blank" rel="noopener noreferrer" 
+              className="social-icon youtube" aria-label="YouTube"><FaYoutube /></a>
+              <a href="https://www.tiktok.com/@noithatredeplongan" target="_blank" rel="noopener noreferrer" 
+              className="social-icon tiktok" aria-label="TikTok"><FaTiktok /></a>
+              <a href="https://www.instagram.com/noithatredep.vn" target="_blank" rel="noopener noreferrer" 
+              className="social-icon instagram" aria-label="Instagram"><FaInstagram /></a>
             </div>
           </div>
         </div>

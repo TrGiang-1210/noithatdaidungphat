@@ -1,5 +1,11 @@
 import React, { useState, useEffect, useRef, useContext } from "react";
-import { FaSearch } from "react-icons/fa";
+import {
+  FaSearch, FaBars, FaTimes, FaChevronRight, FaChevronDown, FaChevronUp,
+  FaShoppingCart, FaUser, FaPhone, FaStore, FaFacebookMessenger, FaNewspaper,
+  FaInfoCircle, FaPalette, FaHandshake, FaBoxOpen, FaSignOutAlt, FaEdit,
+  FaCommentDots, FaMapMarkerAlt 
+} from "react-icons/fa";
+import { SiZalo } from "react-icons/si";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useCart } from "@/context/CartContext";
 import { AuthContext } from "@/context/AuthContext";
@@ -7,7 +13,6 @@ import { useLanguage } from "@/context/LanguageContext";
 import { getImageUrl, getFirstImageUrl } from "@/utils/imageUrl";
 import { triggerUserLogout } from "@/utils/authEvents";
 import "@/styles/components/user/header.scss";
-// ✅ Import logo như một module
 import logoImage from "@/assets/new_logo_ntddp_removebg_edited-removebg-preview.png";
 
 interface Category {
@@ -26,7 +31,7 @@ interface CurrentUser {
 }
 
 const Header: React.FC = () => {
-  const { t, language } = useLanguage();
+  const { t, language, changeLanguage } = useLanguage();
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
   const [isAtTop, setIsAtTop] = useState(true);
@@ -38,15 +43,36 @@ const Header: React.FC = () => {
   const [suggestions, setSuggestions] = useState<any[]>([]);
   const [loadingSuggestions, setLoadingSuggestions] = useState(false);
   const suggestionsRef = useRef<HTMLDivElement>(null);
-  const searchTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);  // ← FIX
+  const searchTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [hoveredParent, setHoveredParent] = useState<string | null>(null);
   const [hoveredChild, setHoveredChild] = useState<string | null>(null);
+
+  // Mobile specific states
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
+  const [expandedMobileCategory, setExpandedMobileCategory] = useState<string | null>(null);
+  const [expandedMobileSubCategory, setExpandedMobileSubCategory] = useState<string | null>(null);
+  const [isMobile, setIsMobile] = useState(false);
+  const [mobileCatGridOpen, setMobileCatGridOpen] = useState(false);
+  const [megaActiveParent, setMegaActiveParent] = useState<Category | null>(null);
 
   const navigate = useNavigate();
   const location = useLocation();
   const isHomePage = location.pathname === "/" || location.pathname === "/home";
-
   const userBoxRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const checkMobile = () => setIsMobile(window.innerWidth <= 992);
+    checkMobile();
+    window.addEventListener("resize", checkMobile);
+    return () => window.removeEventListener("resize", checkMobile);
+  }, []);
+
+  // Close mobile menu on route change
+  useEffect(() => {
+    setMobileMenuOpen(false);
+    setMobileSearchOpen(false);
+  }, [location.pathname]);
 
   // Fetch categories + scroll handler
   useEffect(() => {
@@ -107,7 +133,7 @@ const Header: React.FC = () => {
   }, [user]);
 
   useEffect(() => {
-    if (searchQuery.trim().trim().length < 1) {
+    if (searchQuery.trim().length < 1) {
       setSuggestions([]);
       setShowSuggestions(false);
       return;
@@ -121,9 +147,7 @@ const Header: React.FC = () => {
 
       try {
         const res = await fetch(
-          `https://tongkhonoithattayninh.vn/api/products/search-suggestions?q=${encodeURIComponent(
-            searchQuery
-          )}&lang=${language}`
+          `https://tongkhonoithattayninh.vn/api/products/search-suggestions?q=${encodeURIComponent(searchQuery)}&lang=${language}`
         );
         const data = await res.json();
         setSuggestions(data.slice(0, 6));
@@ -149,7 +173,6 @@ const Header: React.FC = () => {
         setShowSuggestions(false);
       }
     };
-
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
@@ -160,11 +183,18 @@ const Header: React.FC = () => {
     } else {
       document.body.classList.remove("homepage");
     }
-
-    return () => {
-      document.body.classList.remove("homepage");
-    };
+    return () => document.body.classList.remove("homepage");
   }, [isHomePage]);
+
+  // Lock body scroll when mobile menu is open
+  useEffect(() => {
+    if (mobileMenuOpen) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "";
+    }
+    return () => { document.body.style.overflow = ""; };
+  }, [mobileMenuOpen]);
 
   const handleMouseEnter = () => {
     if (user) userBoxRef.current?.classList.add("show-dropdown");
@@ -183,21 +213,15 @@ const Header: React.FC = () => {
     }
     navigate(`/tim-kiem?query=${encodeURIComponent(query)}`);
     setSearchQuery("");
+    setMobileSearchOpen(false);
   };
 
   const handleLogout = () => {
-    console.log('🔒 User logging out...');
-    
     try {
       triggerUserLogout();
-      console.log('🔒 Chat: User logout event triggered');
       logout();
-      
-      setTimeout(() => {
-        window.location.href = '/';
-      }, 100);
+      setTimeout(() => { window.location.href = '/'; }, 100);
     } catch (e) {
-      console.error('Logout error:', e);
       window.location.href = '/';
     }
   };
@@ -208,6 +232,435 @@ const Header: React.FC = () => {
     return parts[parts.length - 1];
   };
 
+  const toggleMobileCategory = (id: string) => {
+    setExpandedMobileCategory(prev => prev === id ? null : id);
+    setExpandedMobileSubCategory(null);
+  };
+
+  const toggleMobileSubCategory = (id: string) => {
+    setExpandedMobileSubCategory(prev => prev === id ? null : id);
+  };
+
+  // ======================== MOBILE HEADER ========================
+  if (isMobile) {
+    return (
+      <>
+        {/* MOBILE TOP HEADER */}
+        <header className="mobile-header">
+          <div className="mobile-header-top">
+            <button
+              className="mobile-menu-btn"
+              onClick={() => setMobileMenuOpen(true)}
+              aria-label="Mở menu"
+            >
+              <FaBars />
+            </button>
+
+            <Link to="/" className="mobile-logo">
+              <img src={logoImage} alt="Nội Thất Đại Dũng Phát" />
+            </Link>
+
+            <div className="mobile-header-actions">
+              {/* Inline language switcher — thay thế fixed version trên mobile */}
+              <div className="mobile-lang-switch">
+                <button
+                  className={`mobile-lang-btn ${language === 'vi' ? 'active' : ''}`}
+                  onClick={() => { changeLanguage('vi'); document.documentElement.lang = 'vi'; }}
+                >VI</button>
+                <button
+                  className={`mobile-lang-btn ${language === 'zh' ? 'active' : ''}`}
+                  onClick={() => { changeLanguage('zh'); document.documentElement.lang = 'zh'; }}
+                >ZH</button>
+              </div>
+              <Link
+                to="/tai-khoan-ca-nhan"
+                className="mobile-action-btn"
+                aria-label="Tài khoản"
+              >
+                <FaUser />
+              </Link>
+              <button
+                className="mobile-action-btn cart-btn"
+                onClick={() => navigate("/thanh-toan")}
+                aria-label="Giỏ hàng"
+              >
+                <FaShoppingCart />
+                {totalQuantity > 0 && (
+                  <span className="cart-badge">{totalQuantity}</span>
+                )}
+              </button>
+            </div>
+          </div>
+
+          {/* SEARCH BAR — luôn hiển thị */}
+          <div className="mobile-search-always">
+            <form onSubmit={handleSearch} className="mobile-search-form">
+              <input
+                type="text"
+                placeholder={t('header.searchPlaceholder') || "Bạn cần tìm gì?"}
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                onFocus={() => searchQuery.trim().length >= 2 && setShowSuggestions(true)}
+                autoComplete="off"
+              />
+              <button type="submit" className="mobile-search-submit">
+                <FaSearch />
+              </button>
+            </form>
+
+            {/* Mobile Search Suggestions */}
+            {showSuggestions && suggestions.length > 0 && (
+              <div className="mobile-suggestions" ref={suggestionsRef}>
+                {suggestions.map((product) => (
+                  <Link
+                    key={product._id}
+                    to={`/san-pham/${product.slug}`}
+                    className="mobile-suggestion-item"
+                    onClick={() => {
+                      setSearchQuery("");
+                      setShowSuggestions(false);
+                    }}
+                  >
+                    <img
+                      src={getFirstImageUrl(product.images)}
+                      alt={product.name}
+                      className="mobile-suggestion-img"
+                      onError={(e) => { e.currentTarget.src = "https://via.placeholder.com/50?text=Err"; }}
+                    />
+                    <div className="mobile-suggestion-info">
+                      <div className="mobile-suggestion-name">{product.name}</div>
+                      <div className="mobile-suggestion-price">
+                        {new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(product.priceSale)}
+                      </div>
+                    </div>
+                  </Link>
+                ))}
+                <div className="mobile-suggestion-footer">
+                  Nhấn Enter để tìm "<strong>{searchQuery}</strong>"
+                </div>
+              </div>
+            )}
+
+            {showSuggestions && loadingSuggestions && (
+              <div className="mobile-suggestions">
+                {[1, 2, 3].map((i) => (
+                  <div key={i} className="mobile-suggestion-item skeleton">
+                    <div className="skeleton-img"></div>
+                    <div className="skeleton-lines">
+                      <div className="skeleton-line"></div>
+                      <div className="skeleton-line short"></div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* MOBILE CATEGORY TRIGGER BAR */}
+          <div className="mobile-category-section">
+            <div
+              className="mobile-category-header"
+              onClick={() => { setMobileCatGridOpen(true); setMegaActiveParent(categories[0] || null); }}
+            >
+              <span className="cat-header-icon"><FaBars /></span>
+              <span className="cat-header-text">Nhấn vào đây để xem toàn bộ danh mục</span>
+              <span className="cat-header-arrow"><FaChevronRight /></span>
+            </div>
+          </div>
+        </header>
+
+        {/* MOBILE MEGA MENU FULLSCREEN */}
+        {mobileCatGridOpen && (
+          <div className="mega-menu-overlay" onClick={() => { setMobileCatGridOpen(false); setMegaActiveParent(null); }}>
+            <div className="mega-menu-panel" onClick={(e) => e.stopPropagation()}>
+              {/* Mega header */}
+              <div className="mega-menu-header">
+                <button className="mega-close-btn" onClick={() => { setMobileCatGridOpen(false); setMegaActiveParent(null); }}>
+                  ✕ Đóng
+                </button>
+                <span className="mega-menu-title">Nhấn vào đây để xem tất cả danh mục</span>
+              </div>
+
+              {/* Body: left sidebar + right content */}
+              <div className="mega-menu-body">
+                {/* LEFT: danh mục cấp 1 */}
+                <div className="mega-left">
+                  {categories.map((cat) => (
+                    <div
+                      key={cat._id}
+                      className={`mega-left-item ${megaActiveParent?._id === cat._id ? "active" : ""}`}
+                      onClick={() => setMegaActiveParent(cat)}
+                    >
+                      {cat.name}
+                    </div>
+                  ))}
+                </div>
+
+                {/* RIGHT: danh mục con + cháu */}
+                <div className="mega-right">
+                  {megaActiveParent ? (
+                    <>
+                      {megaActiveParent.children && megaActiveParent.children.length > 0 ? (
+                        megaActiveParent.children.map((child) => (
+                          <div key={child._id} className="mega-right-group">
+                            <div className="mega-right-parent">
+                              <Link
+                                to={`/danh-muc/${child.slug}`}
+                                className="mega-right-parent-link"
+                                onClick={() => setMobileCatGridOpen(false)}
+                              >
+                                {child.name.toUpperCase()}
+                              </Link>
+                              <Link
+                                to={`/danh-muc/${child.slug}`}
+                                className="mega-right-see-all"
+                                onClick={() => setMobileCatGridOpen(false)}
+                              >
+                                Xem tất cả &gt;
+                              </Link>
+                            </div>
+                            {child.children && child.children.length > 0 && (
+                              <div className="mega-right-children">
+                                {child.children.map((grand) => (
+                                  <Link
+                                    key={grand._id}
+                                    to={`/danh-muc/${grand.slug}`}
+                                    className="mega-right-child-link"
+                                    onClick={() => setMobileCatGridOpen(false)}
+                                  >
+                                    {grand.name}
+                                  </Link>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        ))
+                      ) : (
+                        <div className="mega-right-empty">
+                          <Link
+                            to={`/danh-muc/${megaActiveParent.slug}`}
+                            className="mega-right-parent-link"
+                            onClick={() => setMobileCatGridOpen(false)}
+                          >
+                            {megaActiveParent.name.toUpperCase()}
+                          </Link>
+                          <Link
+                            to={`/danh-muc/${megaActiveParent.slug}`}
+                            className="mega-right-see-all"
+                            onClick={() => setMobileCatGridOpen(false)}
+                          >
+                            Xem tất cả &gt;
+                          </Link>
+                        </div>
+                      )}
+                    </>
+                  ) : (
+                    <div className="mega-right-hint">
+                      ← Chọn danh mục bên trái để xem sản phẩm
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {mobileMenuOpen && (
+          <div className="mobile-drawer-overlay" onClick={() => setMobileMenuOpen(false)}>
+            <div className="mobile-drawer" onClick={(e) => e.stopPropagation()}>
+              {/* Drawer Header */}
+              <div className="drawer-header">
+                <img src={logoImage} alt="Logo" className="drawer-logo" />
+                <button className="drawer-close-btn" onClick={() => setMobileMenuOpen(false)}>
+                  <FaTimes />
+                </button>
+              </div>
+
+              {/* User Info in Drawer */}
+              <div className="drawer-user">
+                {user ? (
+                  <Link
+                    to="/cap-nhat-thong-tin"
+                    className="drawer-user-logged"
+                    onClick={() => setMobileMenuOpen(false)}
+                  >
+                    <div className="drawer-user-avatar">
+                      {getLastName(user.name)[0]?.toUpperCase() || "U"}
+                    </div>
+                    <div className="drawer-user-info">
+                      <div className="drawer-user-name">{user.name}</div>
+                      <div className="drawer-user-phone">{user.phone || user.email}</div>
+                    </div>
+                    <FaEdit className="drawer-user-edit-icon" />
+                  </Link>
+                ) : (
+                  <Link to="/tai-khoan-ca-nhan" className="drawer-login-btn" onClick={() => setMobileMenuOpen(false)}>
+                    <FaUser />
+                    <span>Đăng nhập / Đăng ký</span>
+                  </Link>
+                )}
+              </div>
+
+              <div className="drawer-divider" />
+
+              {/* Main Nav Links */}
+              <div className="drawer-nav-links">
+                <Link to="/theo-doi-don-hang" className="drawer-nav-item" onClick={() => setMobileMenuOpen(false)}>
+                  <FaBoxOpen className="drawer-nav-icon" /> Theo dõi đơn hàng
+                </Link>
+                <Link to="/posts" className="drawer-nav-item" onClick={() => setMobileMenuOpen(false)}>
+                  <FaNewspaper className="drawer-nav-icon" /> Tin tức
+                </Link>
+                <Link to="/gioi-thieu" className="drawer-nav-item" onClick={() => setMobileMenuOpen(false)}>
+                  <FaInfoCircle className="drawer-nav-icon" /> Giới thiệu
+                </Link>
+                <Link to="/mau-mau" className="drawer-nav-item" onClick={() => setMobileMenuOpen(false)}>
+                  <FaPalette className="drawer-nav-icon" /> Màu sắc
+                </Link>
+                <Link to="/doi-tac" className="drawer-nav-item" onClick={() => setMobileMenuOpen(false)}>
+                  <FaHandshake className="drawer-nav-icon" /> Đối tác
+                </Link>
+              </div>
+
+              <div className="drawer-divider" />
+
+              {/* Categories Section */}
+              <div className="drawer-section-title">Danh mục sản phẩm</div>
+              <div className="drawer-categories">
+                {categories.map((cat) => (
+                  <div key={cat._id} className="drawer-cat-item">
+                    <div
+                      className="drawer-cat-header"
+                      onClick={() => {
+                        if (cat.children && cat.children.length > 0) {
+                          toggleMobileCategory(cat._id);
+                        } else {
+                          navigate(`/danh-muc/${cat.slug}`);
+                          setMobileMenuOpen(false);
+                        }
+                      }}
+                    >
+                      <Link
+                        to={`/danh-muc/${cat.slug}`}
+                        className="drawer-cat-name"
+                        onClick={(e) => {
+                          if (cat.children && cat.children.length > 0) e.preventDefault();
+                          else setMobileMenuOpen(false);
+                        }}
+                      >
+                        {cat.name}
+                      </Link>
+                      {cat.children && cat.children.length > 0 && (
+                        <span className="drawer-cat-arrow">
+                          {expandedMobileCategory === cat._id ? <FaChevronUp /> : <FaChevronDown />}
+                        </span>
+                      )}
+                    </div>
+
+                    {expandedMobileCategory === cat._id && cat.children && (
+                      <div className="drawer-sub-cats">
+                        {cat.children.map((child) => (
+                          <div key={child._id} className="drawer-sub-item">
+                            <div
+                              className="drawer-sub-header"
+                              onClick={() => {
+                                if (child.children && child.children.length > 0) {
+                                  toggleMobileSubCategory(child._id);
+                                } else {
+                                  navigate(`/danh-muc/${child.slug}`);
+                                  setMobileMenuOpen(false);
+                                }
+                              }}
+                            >
+                              <Link
+                                to={`/danh-muc/${child.slug}`}
+                                className="drawer-sub-name"
+                                onClick={(e) => {
+                                  if (child.children && child.children.length > 0) e.preventDefault();
+                                  else setMobileMenuOpen(false);
+                                }}
+                              >
+                                {child.name}
+                              </Link>
+                              {child.children && child.children.length > 0 && (
+                                <span className="drawer-cat-arrow small">
+                                  {expandedMobileSubCategory === child._id ? <FaChevronUp /> : <FaChevronRight />}
+                                </span>
+                              )}
+                            </div>
+
+                            {expandedMobileSubCategory === child._id && child.children && (
+                              <div className="drawer-grand-cats">
+                                {child.children.map((grand) => (
+                                  <Link
+                                    key={grand._id}
+                                    to={`/danh-muc/${grand.slug}`}
+                                    className="drawer-grand-item"
+                                    onClick={() => setMobileMenuOpen(false)}
+                                  >
+                                    {grand.name}
+                                  </Link>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+
+              <div className="drawer-divider" />
+
+              {/* Hotline */}
+              <div className="drawer-hotline">
+                <FaPhone className="hotline-icon" />
+                <a href="tel:0965708839">0965 708 839</a>
+              </div>
+
+              {user && (
+                <button className="drawer-logout-btn" onClick={() => { handleLogout(); setMobileMenuOpen(false); }}>
+                  <FaSignOutAlt /> Đăng xuất
+                </button>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* MOBILE BOTTOM NAV BAR */}
+        <nav className="mobile-bottom-nav">
+          <button className="bottom-nav-item" onClick={() => navigate("/thanh-toan")}>
+            <span className="bottom-nav-icon-wrap">
+              <FaShoppingCart />
+              {totalQuantity > 0 && <span className="bottom-badge">{totalQuantity}</span>}
+            </span>
+            <span className="bottom-nav-label">Giỏ hàng</span>
+          </button>
+          <a className="bottom-nav-item" href="https://maps.app.goo.gl/sFewZmWxpSrRRNsw5" target="_blank" rel="noreferrer">
+            <span className="bottom-nav-icon-wrap"><FaMapMarkerAlt /></span>
+            <span className="bottom-nav-label">Cửa hàng</span>
+          </a>
+          <a href="tel:0965708839" className="bottom-nav-item bottom-call-btn">
+            <div className="call-circle">
+              <FaPhone />
+            </div>
+            <span className="bottom-nav-label">Gọi điện</span>
+          </a>
+          <a href="https://m.me/noithatredepla" className="bottom-nav-item" target="_blank" rel="noreferrer">
+            <span className="bottom-nav-icon-wrap"><FaFacebookMessenger /></span>
+            <span className="bottom-nav-label">Messenger</span>
+          </a>
+          <a href="https://zalo.me/noithatdaidungphat" className="bottom-nav-item" target="_blank" rel="noreferrer">
+            <span className="bottom-nav-icon-wrap zalo-icon"><SiZalo /></span>
+            <span className="bottom-nav-label">Chat Zalo</span>
+          </a>
+        </nav>
+      </>
+    );
+  }
+
+  // ======================== DESKTOP HEADER ========================
   return (
     <header className={`ddp-header ${isAtTop ? "at-top" : "scrolled"}`}>
       <div className="topbar">
@@ -217,11 +670,7 @@ const Header: React.FC = () => {
       <div className="header-main container">
         <div className="logo">
           <Link to="/">
-            {/* ✅ FIXED: Dùng import thay vì đường dẫn tương đối */}
-            <img
-              src={logoImage}
-              alt="Nội Thất Đại Dũng Phát"
-            />
+            <img src={logoImage} alt="Nội Thất Đại Dũng Phát" />
           </Link>
         </div>
 
@@ -232,9 +681,7 @@ const Header: React.FC = () => {
               placeholder={t('header.searchPlaceholder')}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              onFocus={() =>
-                searchQuery.trim().length >= 2 && setShowSuggestions(true)
-              }
+              onFocus={() => searchQuery.trim().length >= 2 && setShowSuggestions(true)}
               autoComplete="off"
             />
             <button type="submit">
@@ -257,38 +704,22 @@ const Header: React.FC = () => {
                       src={getFirstImageUrl(product.images)}
                       alt={product.name}
                       className="suggestion-img"
-                      onError={(e) => {
-                        e.currentTarget.src =
-                          "https://via.placeholder.com/150?text=Error";
-                      }}
+                      onError={(e) => { e.currentTarget.src = "https://via.placeholder.com/150?text=Error"; }}
                     />
                     <div className="suggestion-info">
                       <div className="suggestion-name">{product.name}</div>
                       <div className="suggestion-sku">{t('header.productCode')}: {product.sku}</div>
                       <div className="suggestion-price-info">
                         <span className="price-sale">
-                          {new Intl.NumberFormat("vi-VN", {
-                            style: "currency",
-                            currency: "VND",
-                          }).format(product.priceSale)}
+                          {new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(product.priceSale)}
                         </span>
-
                         {product.priceOriginal > product.priceSale && (
                           <div className="price-original-wrapper">
                             <span className="price-original">
-                              {new Intl.NumberFormat("vi-VN", {
-                                style: "currency",
-                                currency: "VND",
-                              }).format(product.priceOriginal)}
+                              {new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(product.priceOriginal)}
                             </span>
                             <span className="discount-percent">
-                              -
-                              {Math.round(
-                                ((product.priceOriginal - product.priceSale) /
-                                  product.priceOriginal) *
-                                  100
-                              )}
-                              %
+                              -{Math.round(((product.priceOriginal - product.priceSale) / product.priceOriginal) * 100)}%
                             </span>
                           </div>
                         )}
@@ -296,7 +727,6 @@ const Header: React.FC = () => {
                     </div>
                   </Link>
                 ))}
-
                 <div className="suggestion-footer">
                   {t('header.pressEnter')} "<strong>{searchQuery}</strong>"
                 </div>
@@ -331,7 +761,6 @@ const Header: React.FC = () => {
                 <span className="user-icon">👤</span>
                 <span className="user-name">{getLastName(user.name)}</span>
                 <span className="arrow-down">▼</span>
-
                 <div className="user-dropdown" ref={dropdownRef}>
                   <div className="dropdown-item phone">
                     <span>{user?.phone || t('header.noPhone')}</span>
@@ -340,26 +769,13 @@ const Header: React.FC = () => {
                     <span>{user?.email}</span>
                   </div>
                   <hr />
-
-                  <Link
-                    to="/cap-nhat-thong-tin"
-                    className="dropdown-item edit-profile"
-                    onClick={(e) => e.stopPropagation()}
-                  >
-                    <svg
-                      width="16"
-                      height="16"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                    >
-                      <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-20h-7z" />
+                  <Link to="/cap-nhat-thong-tin" className="dropdown-item edit-profile" onClick={(e) => e.stopPropagation()}>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7z" />
                       <path d="M18.5 2.5l3 3L12 15l-4 1 1-4 9.5-9.5z" />
                     </svg>
                     <span>{t('header.editProfile')}</span>
                   </Link>
-
                   <div className="dropdown-item logout" onClick={handleLogout}>
                     <span>{t('header.logout')}</span>
                   </div>
@@ -397,19 +813,13 @@ const Header: React.FC = () => {
               <span className="menu-icon">☰</span>
               {t('header.categoryMenu')}
             </div>
-            <div
-              className={`tree-dropdown ${
-                isHomePage && isAtTop ? "show-at-top" : ""
-              }`}
-            >
+            <div className={`tree-dropdown ${isHomePage && isAtTop ? "show-at-top" : ""}`}>
               <div className="tree-level">
                 {Array.isArray(categories) && categories.length > 0 ? (
                   categories.map((cat) => (
                     <div
                       key={cat._id}
-                      className={`tree-item ${
-                        hoveredParent === cat._id ? "active" : ""
-                      }`}
+                      className={`tree-item ${hoveredParent === cat._id ? "active" : ""}`}
                       onMouseEnter={() => setHoveredParent(cat._id)}
                       onMouseLeave={() => setHoveredParent(null)}
                     >
@@ -420,72 +830,46 @@ const Header: React.FC = () => {
                         )}
                       </Link>
 
-                      {hoveredParent === cat._id &&
-                        cat.children &&
-                        cat.children.length > 0 && (
-                          <div className="mega-submenu">
-                            <div className="mega-submenu-inner">
-                              {cat.children.map((child) => (
-                                <div key={child._id} className="submenu-item">
-                                  <Link
-                                    to={`/danh-muc/${child.slug}`}
-                                    className="submenu-title"
-                                  >
-                                    {child.name}
-                                    {child.children &&
-                                      child.children.length > 0 && (
-                                        <span className="submenu-arrow">›</span>
-                                      )}
-                                  </Link>
+                      {hoveredParent === cat._id && cat.children && cat.children.length > 0 && (
+                        <div className="mega-submenu">
+                          <div className="mega-submenu-inner">
+                            {cat.children.map((child) => (
+                              <div key={child._id} className="submenu-item">
+                                <Link to={`/danh-muc/${child.slug}`} className="submenu-title">
+                                  {child.name}
+                                  {child.children && child.children.length > 0 && (
+                                    <span className="submenu-arrow">›</span>
+                                  )}
+                                </Link>
 
-                                  {child.children &&
-                                    child.children.length > 0 && (
-                                      <div className="submenu-dropdown">
-                                        {child.children.map((grandchild) => (
-                                          <div
-                                            key={grandchild._id}
-                                            className="submenu-item"
-                                          >
-                                            <Link
-                                              to={`/danh-muc/${grandchild.slug}`}
-                                              className="submenu-title"
-                                            >
-                                              {grandchild.name}
-                                              {grandchild.children &&
-                                                grandchild.children.length >
-                                                  0 && (
-                                                  <span className="submenu-arrow">
-                                                    ›
-                                                  </span>
-                                                )}
-                                            </Link>
-
-                                            {grandchild.children &&
-                                              grandchild.children.length >
-                                                0 && (
-                                                <div className="submenu-dropdown">
-                                                  {grandchild.children.map(
-                                                    (great) => (
-                                                      <Link
-                                                        key={great._id}
-                                                        to={`/danh-muc/${great.slug}`}
-                                                        className="submenu-leaf"
-                                                      >
-                                                        {great.name}
-                                                      </Link>
-                                                    )
-                                                  )}
-                                                </div>
-                                              )}
+                                {child.children && child.children.length > 0 && (
+                                  <div className="submenu-dropdown">
+                                    {child.children.map((grandchild) => (
+                                      <div key={grandchild._id} className="submenu-item">
+                                        <Link to={`/danh-muc/${grandchild.slug}`} className="submenu-title">
+                                          {grandchild.name}
+                                          {grandchild.children && grandchild.children.length > 0 && (
+                                            <span className="submenu-arrow">›</span>
+                                          )}
+                                        </Link>
+                                        {grandchild.children && grandchild.children.length > 0 && (
+                                          <div className="submenu-dropdown">
+                                            {grandchild.children.map((great) => (
+                                              <Link key={great._id} to={`/danh-muc/${great.slug}`} className="submenu-leaf">
+                                                {great.name}
+                                              </Link>
+                                            ))}
                                           </div>
-                                        ))}
+                                        )}
                                       </div>
-                                    )}
-                                </div>
-                              ))}
-                            </div>
+                                    ))}
+                                  </div>
+                                )}
+                              </div>
+                            ))}
                           </div>
-                        )}
+                        </div>
+                      )}
                     </div>
                   ))
                 ) : (
@@ -496,21 +880,11 @@ const Header: React.FC = () => {
           </div>
 
           <div className="main-menu-items">
-            <Link to="/theo-doi-don-hang" className="menu-item">
-              {t('header.trackOrder')}
-            </Link>
-            <Link to="/posts" className="menu-item">
-              {t('header.news')}
-            </Link>
-            <Link to="/gioi-thieu" className="menu-item">
-              {t('header.about')}
-            </Link>
-            <Link to="/mau-mau" className="menu-item">
-              {t('header.color')}
-            </Link>
-            <Link to="/doi-tac" className="menu-item">
-              {t('header.partners')}
-            </Link>
+            <Link to="/theo-doi-don-hang" className="menu-item">{t('header.trackOrder')}</Link>
+            <Link to="/posts" className="menu-item">{t('header.news')}</Link>
+            <Link to="/gioi-thieu" className="menu-item">{t('header.about')}</Link>
+            <Link to="/mau-mau" className="menu-item">{t('header.color')}</Link>
+            <Link to="/doi-tac" className="menu-item">{t('header.partners')}</Link>
           </div>
         </div>
       </nav>
