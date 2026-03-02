@@ -611,27 +611,65 @@
 // ==================== MOBILE HEADER ========================
 // ============================================================
 
+$ease: cubic-bezier(0.4, 0, 0.2, 1);
+$dur: 0.28s;
+
 .mobile-header {
   position: sticky;
   top: 0;
   z-index: 1000;
   background: #fff;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
   font-family: "Roboto", sans-serif;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.12);
+  transform: none; // luôn hiển thị, không ẩn
 
-  // ==================== SCROLL HIDE/SHOW ====================
-  // Mặc định: transition mượt khi ẩn/hiện
-  transform: translateY(0);
-  transition: transform 0.32s cubic-bezier(0.4, 0, 0.2, 1),
-              box-shadow 0.3s ease;
-
-  // Khi scroll xuống — header trượt lên ẩn hoàn toàn
-  &.mobile-header--hidden {
-    transform: translateY(-100%);
-    box-shadow: none;
+  // Các vùng có thể collapse
+  .mobile-search-always,
+  .mobile-category-section {
+    overflow: hidden;
+    transition:
+      max-height $dur $ease,
+      opacity    $dur $ease,
+      padding    $dur $ease,
+      border-color $dur $ease;
   }
 
-  // ==================== MOBILE TOP BAR ====================
+  .mobile-search-always  { max-height: 70px;  opacity: 1; }
+  .mobile-category-section { max-height: 120px; opacity: 1; }
+
+  // ══════════════════════════════════════
+  // COMPACT MODE — scroll xuống
+  // ══════════════════════════════════════
+  &.mobile-header--compact {
+    box-shadow: 0 1px 5px rgba(0,0,0,0.14);
+
+    .mobile-header-top {
+      padding-top: 5px;
+      padding-bottom: 5px;
+    }
+
+    .mobile-logo img {
+      height: 26px; // logo nhỏ lại nhẹ
+    }
+
+    // Ẩn search
+    .mobile-search-always {
+      max-height: 0;
+      opacity: 0;
+      padding-top: 0 !important;
+      padding-bottom: 0 !important;
+    }
+
+    // Ẩn category bar + chips
+    .mobile-category-section {
+      max-height: 0;
+      opacity: 0;
+    }
+  }
+
+  // ══════════════════════════════════════
+  // TOP BAR
+  // ══════════════════════════════════════
   .mobile-header-top {
     display: flex;
     align-items: center;
@@ -639,6 +677,7 @@
     padding: 7px 10px;
     background: #fff;
     gap: 6px;
+    transition: padding $dur $ease;
   }
 
   .mobile-menu-btn {
@@ -649,44 +688,22 @@
     cursor: pointer;
     padding: 6px 7px;
     border-radius: 6px;
-    transition: background 0.2s;
     flex-shrink: 0;
     display: flex;
     align-items: center;
-
-    &:active { background: rgba(0, 31, 63, 0.1); }
+    transition: background 0.2s;
+    &:active { background: rgba(0,31,63,0.1); }
   }
 
   .mobile-logo {
     flex: 1;
     display: flex;
     justify-content: center;
-
     img {
       height: 32px;
       width: auto;
       object-fit: contain;
-    }
-  }
-
-  .mobile-lang-wrap {
-    flex-shrink: 0;
-
-    .language-switcher {
-      position: static !important;
-      box-shadow: none !important;
-      padding: 0 !important;
-      gap: 3px;
-
-      button {
-        padding: 4px 7px !important;
-        font-size: 10.5px !important;
-        font-weight: 700 !important;
-        border-radius: 5px !important;
-        border-width: 1.5px !important;
-        gap: 2px !important;
-        line-height: 1.2 !important;
-      }
+      transition: height $dur $ease;
     }
   }
 
@@ -697,7 +714,6 @@
     flex-shrink: 0;
   }
 
-  // ==================== INLINE LANGUAGE SWITCHER ====================
   .mobile-lang-switch {
     display: flex;
     align-items: center;
@@ -718,15 +734,8 @@
     letter-spacing: 0.04em;
     line-height: 1;
 
-    &.active {
-      background: #001f3f;
-      color: #fff;
-      border-color: #001f3f;
-    }
-
-    &:active:not(.active) {
-      background: rgba(0, 31, 63, 0.08);
-    }
+    &.active { background: #001f3f; color: #fff; border-color: #001f3f; }
+    &:active:not(.active) { background: rgba(0,31,63,0.08); }
   }
 
   .mobile-action-btn {
@@ -743,13 +752,11 @@
     display: flex;
     align-items: center;
     justify-content: center;
-
-    &:active { background: rgba(0, 31, 63, 0.1); }
+    &:active { background: rgba(0,31,63,0.1); }
 
     .cart-badge {
       position: absolute;
-      top: 1px;
-      right: 1px;
+      top: 1px; right: 1px;
       background: #e74c3c;
       color: white;
       font-size: 9px;
@@ -764,7 +771,9 @@
     }
   }
 
-  // ==================== SEARCH BAR ====================
+  // ══════════════════════════════════════
+  // SEARCH BAR
+  // ══════════════════════════════════════
   .mobile-search-always {
     padding: 6px 12px 8px;
     background: #fff;
@@ -787,7 +796,6 @@
       outline: none;
       background: #fff;
       min-width: 0;
-
       &::placeholder { color: #aaa; font-size: 13.5px; }
     }
   }
@@ -799,25 +807,22 @@
     padding: 0 16px;
     font-size: 14px;
     cursor: pointer;
-    transition: background 0.2s;
     display: flex;
     align-items: center;
     flex-shrink: 0;
-
+    transition: background 0.2s;
     &:active { background: #b8852e; }
   }
 
-  // Mobile suggestions
   .mobile-suggestions {
     position: absolute;
-    left: 12px;
-    right: 12px;
+    left: 12px; right: 12px;
     top: calc(100% - 2px);
     background: white;
     border-radius: 0 0 10px 10px;
     border: 1px solid #e0e0e0;
     border-top: none;
-    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12);
+    box-shadow: 0 8px 20px rgba(0,0,0,0.12);
     overflow: hidden;
     max-height: 340px;
     overflow-y: auto;
@@ -833,70 +838,43 @@
     color: #333;
     border-bottom: 1px solid #f0f0f0;
     transition: background 0.15s;
-
     &:last-child { border-bottom: none; }
     &:active { background: #f5f5f5; }
-    &.skeleton { pointer-events: none; }
 
     .skeleton-img {
-      width: 44px;
-      height: 44px;
+      width: 44px; height: 44px;
       border-radius: 6px;
-      background: linear-gradient(90deg, #eee 25%, #f5f5f5 50%, #eee 75%);
+      background: linear-gradient(90deg,#eee 25%,#f5f5f5 50%,#eee 75%);
       background-size: 200% 100%;
-      animation: loading 1.6s infinite;
+      animation: shimmerLoad 1.6s infinite;
       flex-shrink: 0;
     }
-
     .skeleton-lines { flex: 1; }
     .skeleton-line {
-      height: 13px;
-      background: #eee;
-      border-radius: 4px;
-      margin-bottom: 7px;
+      height: 13px; background: #eee; border-radius: 4px; margin-bottom: 7px;
       &.short { width: 60%; }
     }
   }
 
   .mobile-suggestion-img {
-    width: 44px;
-    height: 44px;
-    object-fit: cover;
-    border-radius: 6px;
-    flex-shrink: 0;
-    background: #f0f0f0;
+    width: 44px; height: 44px;
+    object-fit: cover; border-radius: 6px; flex-shrink: 0; background: #f0f0f0;
   }
-
   .mobile-suggestion-info { flex: 1; min-width: 0; }
-
   .mobile-suggestion-name {
-    font-size: 13px;
-    font-weight: 500;
-    color: #222;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    margin-bottom: 2px;
+    font-size: 13px; font-weight: 500; color: #222;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-bottom: 2px;
   }
-
-  .mobile-suggestion-price {
-    font-size: 13px;
-    font-weight: 700;
-    color: #d32f2f;
-  }
-
+  .mobile-suggestion-price { font-size: 13px; font-weight: 700; color: #d32f2f; }
   .mobile-suggestion-footer {
-    padding: 9px 12px;
-    background: #f8f9fa;
-    font-size: 12px;
-    color: #666;
-    text-align: center;
-    font-style: italic;
-
+    padding: 9px 12px; background: #f8f9fa;
+    font-size: 12px; color: #666; text-align: center; font-style: italic;
     strong { color: #001f3f; }
   }
 
-  // ==================== CATEGORY SECTION ====================
+  // ══════════════════════════════════════
+  // CATEGORY SECTION
+  // ══════════════════════════════════════
   .mobile-category-section {
     background: #fff;
     border-top: 1px solid #eee;
@@ -911,62 +889,74 @@
     cursor: pointer;
     user-select: none;
     transition: background 0.2s;
-
     &:active { background: #0a3460; }
 
-    .cat-header-icon {
-      font-size: 20px;
-      color: #fff;
-      flex-shrink: 0;
-    }
-
+    .cat-header-icon { font-size: 20px; color: #fff; flex-shrink: 0; }
     .cat-header-text {
-      font-size: 13.5px;
-      font-weight: 700;
-      color: #fff;
-      text-transform: uppercase;
-      letter-spacing: 0.03em;
-      flex: 1;
+      font-size: 13.5px; font-weight: 700; color: #fff;
+      text-transform: uppercase; letter-spacing: 0.03em; flex: 1;
     }
-
-    .cat-header-arrow {
-      font-size: 20px;
-      color: rgba(255,255,255,0.8);
-      font-weight: bold;
-      flex-shrink: 0;
-    }
+    .cat-header-arrow { font-size: 20px; color: rgba(255,255,255,0.8); font-weight: bold; flex-shrink: 0; }
   }
 
-  // ==================== CATEGORY CHIP GRID ====================
+  // ══════════════════════════════════════
+  // CHIPS — 6 cột × 2 hàng (12 items)
+  // Ẩn khi scrolled, hiện khi về đầu trang
+  // ══════════════════════════════════════
   .mobile-cat-chips {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 7px;
-    padding: 10px 12px 12px;
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    gap: 6px;
+    padding: 9px 10px 11px;
     background: #fff;
     border-top: 1px solid #f0f0f0;
+    max-height: 200px;
+    overflow: hidden;
+    opacity: 1;
+    transition:
+      max-height $dur $ease,
+      opacity 0.22s ease,
+      padding $dur $ease;
+
+    &.mobile-cat-chips--hidden {
+      max-height: 0;
+      opacity: 0;
+      padding-top: 0;
+      padding-bottom: 0;
+      pointer-events: none;
+      border-top-color: transparent;
+    }
   }
 
   .mobile-cat-chip {
-    display: inline-flex;
+    display: flex;
     align-items: center;
-    padding: 6px 13px;
+    justify-content: center;
+    text-align: center;
+    padding: 7px 3px;
     border: 1.5px solid #d0d8e4;
-    border-radius: 20px;
-    font-size: 13px;
-    font-weight: 500;
-    color: #222;
+    border-radius: 8px;
+    font-size: 11px;
+    font-weight: 600;
+    color: #1C2B3A;
     text-decoration: none;
     background: #fff;
-    white-space: nowrap;
-    transition: all 0.18s;
+    line-height: 1.25;
+    min-width: 0;
+    overflow: hidden;
+    transition: background 0.15s, border-color 0.15s, color 0.15s;
 
-    &:active {
-      background: #001f3f;
-      color: #fff;
-      border-color: #001f3f;
+    &:active { background: #001f3f; color: #fff; border-color: #001f3f; }
+
+    @media (hover: hover) {
+      &:hover { background: #001f3f; color: #fff; border-color: #001f3f; }
     }
   }
+}
+
+@keyframes shimmerLoad {
+  0%   { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
 }
 
 // ==================== MEGA MENU FULLSCREEN ====================
