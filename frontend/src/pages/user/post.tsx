@@ -5,6 +5,7 @@ import { getImageUrl } from "@/utils/imageUrl";
 import { useLanguage } from "@/context/LanguageContext";
 import { FaChevronLeft, FaChevronRight, FaClock, FaTag } from "react-icons/fa";
 import "@/styles/pages/user/post.scss";
+import SEO from "../../components/SEO";
 
 interface PostCategory {
   _id: string;
@@ -205,7 +206,7 @@ const Posts: React.FC = () => {
 
   return (
     <div className="posts-page">
-
+      <SEO title="Tin Tức" description="Tin tức nội thất mới nhất" url="/posts" />
       {/* ── HERO ── */}
       <div className="ps-hero">
         <div className="ps-hero-inner">

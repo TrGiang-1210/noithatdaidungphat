@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import "@/styles/pages/user/colorChoice.scss";
 import { FaPalette, FaChevronRight } from 'react-icons/fa';
+import SEO from '../../components/SEO';
 
 const colorCategories = [
   {
@@ -49,7 +50,7 @@ const ColorChoice: React.FC = () => {
 
   return (
     <div className="cc-page">
-
+      <SEO title="Bảng Màu Nội Thất" url="/mau-mau" />
       {/* ── HEADER ── */}
       <div className="cc-hero">
         <div className="cc-hero-wood" />
