@@ -18,6 +18,7 @@ import {
   FaPercent,
   FaShieldAlt,
 } from "react-icons/fa";
+import SEO from "../../components/SEO";
 
 const STATS = [
   { value: "2019", label: "Năm thành lập", icon: <FaWarehouse /> },
@@ -74,7 +75,7 @@ const AboutDaiDungPhat: React.FC = () => {
 
   return (
     <div className="about-page">
-
+      <SEO title="Giới Thiệu" description="Giới thiệu về Tổng Kho Nội Thất Tây Ninh" url="/gioi-thieu" />
       {/* ── HERO ── */}
       <section className="about-hero" ref={addReveal}>
         <div className="hero-bg">

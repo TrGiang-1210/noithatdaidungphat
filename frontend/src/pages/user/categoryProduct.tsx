@@ -4,6 +4,7 @@ import axiosInstance from "../../axios";
 import { formatPrice } from "../../utils";
 import { getFirstImageUrl } from "@/utils/imageUrl";
 import { useLanguage } from "../../context/LanguageContext";
+import SEO from "../../components/SEO";
 import "@/styles/pages/user/categoryProduct.scss";
 
 interface Product {
@@ -163,6 +164,9 @@ const CategoryProducts: React.FC = () => {
 
   return (
     <div className="category-product-page">
+      <SEO title={category?.name || t("category.allProducts") || "Sản phẩm"} 
+      description={`Sản phẩm danh mục ${category?.name || t("category.allProducts") || "Sản phẩm"}`} 
+      url={`/danh-muc/${slug}`} />
       <div className="container">
         {/* Category tabs */}
         {subCategories.length > 0 && (
