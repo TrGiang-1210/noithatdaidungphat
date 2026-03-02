@@ -56,8 +56,9 @@ const Header: React.FC = () => {
   const [mobileCatGridOpen, setMobileCatGridOpen] = useState(false);
   const [megaActiveParent, setMegaActiveParent] = useState<Category | null>(null);
 
-  // Mobile scroll hide/show
-  const [mobileHeaderHidden, setMobileHeaderHidden] = useState(false);
+  // Mobile scroll states — pattern: compact on scroll-down, full on scroll-up / at-top
+  const [mobileScrolled, setMobileScrolled] = useState(false);   // đã rời khỏi top
+  const [mobileCompact, setMobileCompact] = useState(false);     // thu gọn (scroll xuống)
   const lastScrollY = useRef(0);
   const scrollTicking = useRef(false);
 
@@ -79,7 +80,10 @@ const Header: React.FC = () => {
     setMobileSearchOpen(false);
   }, [location.pathname]);
 
-  // Mobile scroll hide/show behavior
+  // Mobile scroll — Shopee/Lazada pattern:
+  // • scroll xuống > 60px  → compact (ẩn search, category bar, chips; giữ lại logo+cart+lang)
+  // • scroll lên bất kỳ    → full header hiện lại
+  // • về đầu trang (< 10px) → full + chips
   useEffect(() => {
     if (!isMobile) return;
 
@@ -88,21 +92,25 @@ const Header: React.FC = () => {
       scrollTicking.current = true;
 
       window.requestAnimationFrame(() => {
-        const currentScrollY = window.scrollY;
-        const diff = currentScrollY - lastScrollY.current;
+        const currentY = window.scrollY;
+        const diff = currentY - lastScrollY.current;
+        const atTop = currentY < 10;
 
-        if (currentScrollY < 60) {
-          // Gần đầu trang — luôn hiện header
-          setMobileHeaderHidden(false);
-        } else if (diff > 6) {
-          // Scroll xuống — ẩn header
-          setMobileHeaderHidden(true);
-        } else if (diff < -6) {
-          // Scroll lên — hiện lại header
-          setMobileHeaderHidden(false);
+        if (atTop) {
+          // Đầu trang — full header + chips
+          setMobileScrolled(false);
+          setMobileCompact(false);
+        } else if (diff > 5) {
+          // Scroll xuống — compact
+          setMobileScrolled(true);
+          setMobileCompact(true);
+        } else if (diff < -5) {
+          // Scroll lên — hiện full (trừ chips vẫn ẩn cho đến khi về top)
+          setMobileScrolled(true);
+          setMobileCompact(false);
         }
 
-        lastScrollY.current = currentScrollY;
+        lastScrollY.current = currentY;
         scrollTicking.current = false;
       });
     };
@@ -282,8 +290,8 @@ const Header: React.FC = () => {
   if (isMobile) {
     return (
       <>
-        {/* MOBILE TOP HEADER */}
-        <header className={`mobile-header${mobileHeaderHidden ? " mobile-header--hidden" : ""}`}>
+        {/* MOBILE TOP HEADER - always sticky, never hides */}
+        <header className={`mobile-header${mobileCompact ? " mobile-header--compact" : ""}`}>
           <div className="mobile-header-top">
             <button
               className="mobile-menu-btn"
@@ -402,20 +410,31 @@ const Header: React.FC = () => {
               <span className="cat-header-arrow"><FaChevronRight /></span>
             </div>
 
-            {/* CATEGORY CHIP GRID */}
-            {categories.length > 0 && (
-              <div className="mobile-cat-chips">
-                {categories.map((cat) => (
-                  <Link
-                    key={cat._id}
-                    to={`/danh-muc/${cat.slug}`}
-                    className="mobile-cat-chip"
-                  >
-                    {cat.name}
-                  </Link>
-                ))}
-              </div>
-            )}
+          {/* CATEGORY CHIP GRID — 12 danh mục cố định, 6 cột × 2 hàng */}
+          <div className={`mobile-cat-chips${mobileScrolled ? " mobile-cat-chips--hidden" : ""}`}>
+            {[
+              { name: "Giường", slug: "giuong-ngu" },
+              { name: "Tủ Áo", slug: "tu-quan-ao" },
+              { name: "Bàn Phấn", slug: "ban-trang-diem" },
+              { name: "Nệm Ngủ", slug: "nem" },
+              { name: "Sofa Gỗ", slug: "ban-ghe-sofa-go" },
+              { name: "Salon Gỗ", slug: "ban-ghe-salon-go" },
+              { name: "Kệ Tivi", slug: "ke-tivi" },
+              { name: "Tủ Bếp", slug: "tu-bep" },
+              { name: "Tủ Rượu", slug: "tu-ruou" },
+              { name: "Tủ Giày", slug: "tu-giay-dep" },
+              { name: "Bàn Ăn", slug: "bo-ban-an" },
+              { name: "Bàn Thờ", slug: "ban-tho" },
+            ].map((cat) => (
+              <Link
+                key={cat.slug}
+                to={`/danh-muc/${cat.slug}`}
+                className="mobile-cat-chip"
+              >
+                {cat.name}
+              </Link>
+            ))}
+          </div>
           </div>
         </header>
 

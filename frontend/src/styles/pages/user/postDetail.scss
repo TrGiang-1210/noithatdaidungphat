@@ -1,665 +1,834 @@
-// postDetail.scss - UPDATED WITH WIDER CONTENT & BETTER IMAGE DISPLAY
+// =====================================================================
+// postDetail.scss — Editorial Luxury · Mobile-First
+// =====================================================================
 
-.post-detail-loading,
-.post-detail-error {
-  min-height: 60vh;
+// ── Tokens ──
+$cream:       #FAF6F0;
+$warm:        #FFF9F3;
+$navy:        #1C2B3A;
+$gold:        #B8965A;
+$gold-deep:   #8B6F47;
+$dark:        #181818;
+$mid:         #555;
+$soft:        #8A8A8A;
+$line:        #E8E0D5;
+$white:       #fff;
+$radius:      12px;
+$radius-lg:   18px;
+
+// ── Shim animation ──
+@keyframes shimmer {
+  0%   { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+%shimmer {
+  background: linear-gradient(90deg, #ece8e3 25%, #f5f1ed 50%, #ece8e3 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s ease-in-out infinite;
+  border-radius: 6px;
+}
+
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes cardIn {
+  from { opacity: 0; transform: translateY(14px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+// =====================================================================
+// READING PROGRESS BAR
+// =====================================================================
+.pd-progress {
+  position: fixed;
+  top: 0;
+  left: 0;
+  height: 3px;
+  background: linear-gradient(to right, $gold, $gold-deep);
+  z-index: 1000;
+  transition: width 0.1s linear;
+  pointer-events: none;
+  border-radius: 0 2px 2px 0;
+}
+
+// =====================================================================
+// PAGE WRAPPER
+// =====================================================================
+.pd-page {
+  background: $cream;
+  min-height: 100vh;
+  font-family: 'Georgia', 'Times New Roman', serif;
+}
+
+// =====================================================================
+// HERO IMAGE
+// =====================================================================
+.pd-hero {
+  position: relative;
+  width: 100%;
+  height: clamp(240px, 45vw, 540px);
+  overflow: hidden;
+  background: $navy;
+
+  img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+    opacity: 0;
+    transition: opacity 0.6s ease;
+
+    &.loaded { opacity: 1; }
+  }
+
+  &__overlay {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+      to bottom,
+      transparent 40%,
+      rgba($navy, 0.55) 100%
+    );
+    pointer-events: none;
+  }
+
+  &__cat {
+    position: absolute;
+    bottom: 20px;
+    left: 20px;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: rgba($white, 0.92);
+    color: $navy;
+    padding: 6px 14px;
+    border-radius: 100px;
+    font-size: 12px;
+    font-weight: 700;
+    font-family: system-ui, sans-serif;
+    letter-spacing: 0.04em;
+    text-decoration: none;
+    backdrop-filter: blur(6px);
+    transition: background 0.2s, color 0.2s;
+
+    &:hover {
+      background: $navy;
+      color: $white;
+    }
+
+    @media (min-width: 768px) {
+      bottom: 28px;
+      left: 28px;
+      font-size: 13px;
+    }
+  }
+}
+
+// =====================================================================
+// ARTICLE WRAPPER
+// =====================================================================
+.pd-article {
+  &__wrap {
+    max-width: 780px;
+    margin: 0 auto;
+    padding: 0 18px 80px;
+
+    @media (min-width: 1100px) {
+      max-width: 1120px;
+      padding: 0 32px 100px;
+    }
+  }
+}
+
+// =====================================================================
+// HEADER
+// =====================================================================
+.pd-back-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: $soft;
+  font-size: 13px;
+  font-weight: 600;
+  font-family: system-ui, sans-serif;
+  text-decoration: none;
+  margin: 28px 0 24px;
+  transition: color 0.2s, gap 0.2s;
+
+  &:hover { color: $navy; gap: 7px; }
+
+  @media (min-width: 768px) { margin: 40px 0 32px; }
+}
+
+.pd-header {
+  margin-bottom: 36px;
+  animation: fadeUp 0.5s ease both;
+}
+
+.pd-title {
+  font-size: clamp(1.6rem, 5vw, 2.6rem);
+  font-weight: 700;
+  color: $dark;
+  line-height: 1.28;
+  letter-spacing: -0.02em;
+  margin: 0 0 18px;
+}
+
+.pd-meta {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  font-family: system-ui, sans-serif;
+  font-size: 13.5px;
+  color: $soft;
+  margin-bottom: 20px;
+
+  &__date {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+
+    svg { color: $gold; }
+  }
+
+  &__sep {
+    width: 4px;
+    height: 4px;
+    border-radius: 50%;
+    background: $line;
+    flex-shrink: 0;
+  }
+
+  &__cat {
+    color: $gold-deep;
+    font-weight: 700;
+    text-decoration: none;
+    transition: color 0.2s;
+
+    &:hover { color: $navy; }
+  }
+}
+
+.pd-lead {
+  font-size: clamp(1rem, 2.5vw, 1.15rem);
+  color: $mid;
+  line-height: 1.8;
+  margin: 0;
+  padding: 18px 0 0;
+  border-top: 1px solid $line;
+  font-style: italic;
+}
+
+// =====================================================================
+// LAYOUT: CONTENT + SIDEBAR (desktop)
+// =====================================================================
+.pd-layout {
+  display: block;
+
+  @media (min-width: 1100px) {
+    display: grid;
+    grid-template-columns: 220px 1fr;
+    gap: 56px;
+    align-items: start;
+  }
+}
+
+// =====================================================================
+// TABLE OF CONTENTS (sticky sidebar)
+// =====================================================================
+.pd-sidebar {
+  display: none;
+
+  @media (min-width: 1100px) {
+    display: block;
+    position: sticky;
+    top: 32px;
+  }
+}
+
+.pd-toc {
+  background: $white;
+  border: 1px solid $line;
+  border-radius: $radius;
+  padding: 18px 20px;
+  font-family: system-ui, sans-serif;
+
+  &__label {
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: $gold;
+    margin-bottom: 12px;
+  }
+
+  &__list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  &__item {
+    a {
+      display: block;
+      padding: 5px 8px;
+      font-size: 13px;
+      color: $mid;
+      text-decoration: none;
+      border-radius: 6px;
+      line-height: 1.5;
+      transition: background 0.15s, color 0.15s;
+
+      &:hover { background: $warm; color: $navy; }
+    }
+
+    &.level-3 a { padding-left: 18px; font-size: 12.5px; }
+
+    &.active a {
+      background: $warm;
+      color: $gold-deep;
+      font-weight: 700;
+    }
+  }
+}
+
+// =====================================================================
+// ARTICLE CONTENT (rich text)
+// =====================================================================
+.pd-content {
+  font-size: clamp(1rem, 2.2vw, 1.08rem);
+  line-height: 1.95;
+  color: #2d2d2d;
+  animation: fadeUp 0.55s 0.1s ease both;
+  min-width: 0; // critical for grid overflow
+
+  h1, h2, h3, h4, h5, h6 {
+    font-weight: 700;
+    color: $dark;
+    line-height: 1.35;
+    margin: 2.2em 0 0.7em;
+    letter-spacing: -0.01em;
+    scroll-margin-top: 80px;
+  }
+
+  h1 { font-size: clamp(1.55rem, 4vw, 2rem); }
+  h2 {
+    font-size: clamp(1.25rem, 3vw, 1.6rem);
+    padding-bottom: 10px;
+    border-bottom: 2px solid $line;
+  }
+  h3 { font-size: clamp(1.1rem, 2.5vw, 1.3rem); }
+  h4 { font-size: 1.1rem; color: $gold-deep; }
+
+  p {
+    margin: 0 0 1.4em;
+    text-align: justify;
+    hyphens: auto;
+  }
+
+  a {
+    color: $gold-deep;
+    text-decoration: underline;
+    text-decoration-color: rgba($gold, 0.4);
+    text-underline-offset: 3px;
+    transition: color 0.2s, text-decoration-color 0.2s;
+
+    &:hover { color: $navy; text-decoration-color: $navy; }
+  }
+
+  // ── Images ──
+  // Raw <img> that still appear inline (e.g. inside text paragraphs)
+  img {
+    max-width: 100%;
+    width: 100% !important;       // override any editor-injected width
+    height: auto !important;
+    float: none !important;       // override any editor-injected float
+    display: block;
+    margin: 24px auto;
+    border-radius: $radius;
+    box-shadow: 0 4px 20px rgba($navy, 0.1);
+    transition: transform 0.35s ease, box-shadow 0.35s ease;
+
+    @media (max-width: 480px) {
+      border-radius: 8px;
+      margin: 16px auto;
+    }
+  }
+
+  // ── Figure wrapper (single image, lifted out of <p>) ──
+  figure.pd-img-wrap {
+    margin: 32px 0;
+    padding: 0;
+    width: 100%;
+
+    img {
+      width: 100% !important;
+      max-width: 100%;
+      height: auto !important;
+      margin: 0;
+      border-radius: $radius;
+      box-shadow: 0 4px 24px rgba($navy, 0.12);
+      display: block;
+      transition: transform 0.35s ease, box-shadow 0.35s ease;
+
+      @media (hover: hover) {
+        &:hover {
+          transform: scale(1.012);
+          box-shadow: 0 10px 36px rgba($navy, 0.18);
+        }
+      }
+    }
+
+    figcaption {
+      text-align: center;
+      font-size: 13px;
+      color: $soft;
+      font-family: system-ui, sans-serif;
+      margin-top: 10px;
+      font-style: italic;
+    }
+
+    @media (max-width: 480px) {
+      margin: 22px 0;
+      img { border-radius: 8px; }
+    }
+  }
+
+  // ── Multiple images side-by-side row ──
+  .pd-img-row {
+    display: grid;
+    gap: 14px;
+    margin: 32px 0;
+
+    // 2 images → 2 columns; 3+ → 3 columns (capped)
+    &:has(> figure:nth-child(2):last-child) {
+      grid-template-columns: 1fr 1fr;
+    }
+    &:has(> figure:nth-child(3)) {
+      grid-template-columns: repeat(3, 1fr);
+    }
+
+    // Fallback for browsers without :has() — use auto-fill
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+
+    figure.pd-img-wrap {
+      margin: 0;
+
+      img {
+        width: 100% !important;
+        aspect-ratio: 4/3;
+        object-fit: cover;
+        margin: 0;
+      }
+    }
+
+    @media (max-width: 600px) {
+      grid-template-columns: 1fr !important;
+      gap: 12px;
+    }
+  }
+
+  // ── Blockquote ──
+  blockquote {
+    margin: 32px 0;
+    padding: 20px 24px 20px 28px;
+    border-left: 4px solid $gold;
+    background: $warm;
+    border-radius: 0 $radius $radius 0;
+    font-style: italic;
+    color: $mid;
+    font-size: 1.05rem;
+
+    @media (max-width: 480px) {
+      padding: 16px 18px 16px 20px;
+      margin: 24px 0;
+    }
+  }
+
+  // ── Lists ──
+  ul, ol {
+    margin: 0 0 1.4em 1.4em;
+    padding: 0;
+
+    li {
+      margin-bottom: 0.6em;
+      padding-left: 4px;
+    }
+  }
+
+  // ── Code ──
+  code {
+    background: $line;
+    padding: 2px 7px;
+    border-radius: 4px;
+    font-family: 'Courier New', monospace;
+    font-size: 0.88em;
+    color: #c0392b;
+  }
+
+  pre {
+    background: #1a1a2e;
+    color: #e8e8f0;
+    padding: 20px;
+    border-radius: $radius;
+    overflow-x: auto;
+    margin: 32px 0;
+    font-size: 0.9rem;
+    -webkit-overflow-scrolling: touch;
+
+    code { background: none; color: inherit; padding: 0; }
+  }
+
+  // ── Table ──
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 28px 0;
+    font-family: system-ui, sans-serif;
+    font-size: 0.9rem;
+    display: block;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+
+    th, td {
+      padding: 11px 14px;
+      text-align: left;
+      border: 1px solid $line;
+    }
+
+    th { background: $warm; font-weight: 700; color: $navy; }
+    tr:nth-child(even) { background: #faf9f7; }
+  }
+
+  hr {
+    border: none;
+    border-top: 2px solid $line;
+    margin: 40px 0;
+  }
+}
+
+// =====================================================================
+// TAGS
+// =====================================================================
+.pd-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 48px;
+  padding-top: 32px;
+  border-top: 1px solid $line;
+}
+
+.pd-tag {
+  display: inline-block;
+  padding: 6px 14px;
+  background: $white;
+  border: 1.5px solid $line;
+  border-radius: 100px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: $mid;
+  font-family: system-ui, sans-serif;
+  transition: all 0.2s;
+  cursor: default;
+
+  &:hover { background: $navy; color: $white; border-color: $navy; }
+}
+
+// =====================================================================
+// FOOTER NAV
+// =====================================================================
+.pd-footer-nav {
+  margin-top: 52px;
+  text-align: center;
+}
+
+.pd-btn-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 13px 28px;
+  background: $navy;
+  color: $white;
+  border-radius: 10px;
+  font-size: 14.5px;
+  font-weight: 700;
+  font-family: system-ui, sans-serif;
+  text-decoration: none;
+  transition: background 0.2s, transform 0.2s, box-shadow 0.2s;
+
+  &:hover {
+    background: darken($navy, 5%);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba($navy, 0.3);
+  }
+
+  &:active { transform: translateY(0); }
+}
+
+// =====================================================================
+// ERROR STATE
+// =====================================================================
+.pd-error {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 60px 20px;
+  min-height: 70vh;
   text-align: center;
+  padding: 40px 24px;
+  font-family: system-ui, sans-serif;
 
-  .spinner {
-    width: 48px;
-    height: 48px;
-    border: 4px solid rgba(44, 62, 80, 0.1);
-    border-top-color: #2c3e50;
-    border-radius: 50%;
-    animation: spin 0.8s linear infinite;
-    margin-bottom: 20px;
-  }
-
-  @keyframes spin {
-    to { transform: rotate(360deg); }
-  }
-
-  p {
-    color: #666;
-    font-size: 1.1rem;
-  }
+  &__icon { font-size: 3rem; margin-bottom: 20px; opacity: 0.5; }
 
   h1 {
-    font-size: 2rem;
-    color: #2c3e50;
-    margin-bottom: 16px;
+    font-size: clamp(1.3rem, 4vw, 1.8rem);
+    color: $dark;
+    margin-bottom: 12px;
+    font-family: Georgia, serif;
   }
 
-  .btn-back {
-    margin-top: 24px;
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    padding: 12px 24px;
-    background: #2c3e50;
-    color: white;
-    text-decoration: none;
-    border-radius: 8px;
-    font-weight: 600;
-    transition: all 0.3s ease;
-
-    &:hover {
-      background: #1a252f;
-      transform: translateY(-2px);
-    }
-  }
+  p { color: $soft; font-size: 1rem; margin-bottom: 28px; }
 }
 
-// Breadcrumb
-.breadcrumb {
-  background: #f8f9fa;
-  padding: 16px 0;
-  border-bottom: 1px solid #e0e0e0;
-
-  .container {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    flex-wrap: wrap;
-    font-size: 0.9rem;
-
-    a {
-      color: #2c3e50;
-      text-decoration: none;
-      transition: color 0.2s;
-
-      &:hover {
-        color: #3b82f6;
-      }
-    }
-
-    span {
-      color: #999;
-
-      &.current {
-        color: #666;
-        font-weight: 500;
-      }
-    }
-  }
-}
-
-// Main Post Detail
-.post-detail-page {
-  background: white;
-  min-height: 100vh;
-}
-
-.post-detail {
-  padding: 40px 0 80px;
-
-  .container {
-    max-width: 1200px; // ✅ TĂNG TỪ 900px LÊN 1200px
-    margin: 0 auto;
-    padding: 0 20px;
-    
-    @media (min-width: 1400px) {
-      max-width: 1400px; // ✅ Màn hình lớn thì rộng hơn nữa
-    }
-  }
-
-  // Header
-  .post-header {
-    margin-bottom: 40px;
-
-    .post-category {
-      display: inline-block;
-      padding: 6px 16px;
-      background: #e0f2fe;
-      color: #0369a1;
-      text-decoration: none;
-      border-radius: 20px;
-      font-size: 0.85rem;
-      font-weight: 600;
-      margin-bottom: 20px;
-      transition: all 0.2s;
-
-      &:hover {
-        background: #0369a1;
-        color: white;
-      }
-    }
-
-    .post-title {
-      font-size: 2.5rem;
-      font-weight: 700;
-      color: #1a1a1a;
-      line-height: 1.3;
-      margin-bottom: 16px;
-
-      @media (max-width: 768px) {
-        font-size: 2rem;
-      }
-    }
-
-    .post-meta {
-      display: flex;
-      align-items: center;
-      gap: 20px;
-      color: #666;
-      font-size: 0.95rem;
-      padding-bottom: 20px;
-      border-bottom: 2px solid #f0f0f0;
-
-      .post-date {
-        display: flex;
-        align-items: center;
-        gap: 6px;
-
-        svg {
-          width: 16px;
-          height: 16px;
-        }
-      }
-    }
-
-    .post-description {
-      font-size: 1.2rem;
-      color: #555;
-      line-height: 1.8;
-      margin-top: 20px;
-      font-weight: 400;
-    }
-  }
-
-  // Featured Image
-  .post-featured-image {
+// =====================================================================
+// SKELETON
+// =====================================================================
+.pd-skeleton {
+  &__hero {
+    @extend %shimmer;
+    border-radius: 0;
+    height: clamp(200px, 40vw, 480px);
     width: 100%;
-    margin-bottom: 40px;
-    border-radius: 12px;
-    overflow: hidden;
-
-    img {
-      width: 100%;
-      max-height: 600px; // ✅ TĂNG CHIỀU CAO TỐI ĐA
-      object-fit: cover;
-      display: block;
-    }
   }
 
-  // Content
-  .post-content {
-    font-size: 1.1rem;
-    line-height: 1.9;
-    color: #333;
-
-    // Typography
-    h1, h2, h3, h4, h5, h6 {
-      color: #1a1a1a;
-      font-weight: 700;
-      margin-top: 40px;
-      margin-bottom: 20px;
-      line-height: 1.4;
-    }
-
-    h1 { font-size: 2.2rem; }
-    h2 { font-size: 1.9rem; }
-    h3 { font-size: 1.6rem; }
-    h4 { font-size: 1.4rem; }
-    h5 { font-size: 1.2rem; }
-    h6 { font-size: 1.1rem; }
-
-    p {
-      margin-bottom: 20px;
-      text-align: justify;
-      
-      // ✅ HỖ TRỢ NHIỀU ẢNH CẠNH NHAU
-      &:has(img + img) {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 20px;
-        text-align: left;
-        
-        img {
-          flex: 1 1 calc(50% - 10px); // 2 ảnh/hàng
-          min-width: 280px;
-          margin: 0 !important;
-          
-          @media (max-width: 768px) {
-            flex: 1 1 100%; // Mobile: 1 ảnh/hàng
-          }
-        }
-      }
-    }
-
-    // Lists
-    ul, ol {
-      margin: 20px 0;
-      padding-left: 30px;
-
-      li {
-        margin-bottom: 12px;
-      }
-    }
-
-    ul {
-      list-style: disc;
-    }
-
-    ol {
-      list-style: decimal;
-    }
-
-    // Links
-    a {
-      color: #3b82f6;
-      text-decoration: underline;
-      transition: color 0.2s;
-
-      &:hover {
-        color: #1d4ed8;
-      }
-    }
-
-    // Images - ✅ CẢI TIẾN ĐỂ ẢNH ĐẸP HƠN
-    img {
-      max-width: 100%;
-      height: auto !important;
-      border-radius: 12px;
-      margin: 30px auto; // ✅ Căn giữa
-      display: block;
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1); // ✅ Thêm shadow
-      transition: transform 0.3s ease; // ✅ Hiệu ứng hover
-      
-      &:hover {
-        transform: scale(1.02); // ✅ Phóng to nhẹ khi hover
-        box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
-      }
-      
-      @media (max-width: 768px) {
-        margin: 20px auto;
-        border-radius: 8px;
-      }
-    }
-
-    // Blockquote
-    blockquote {
-      border-left: 4px solid #3b82f6;
-      padding: 20px 30px;
-      margin: 30px 0;
-      background: #f8f9fa;
-      border-radius: 0 8px 8px 0;
-      font-style: italic;
-      color: #555;
-    }
-
-    // Code
-    code {
-      background: #f1f5f9;
-      padding: 2px 8px;
-      border-radius: 4px;
-      font-family: 'Courier New', monospace;
-      font-size: 0.9em;
-      color: #e11d48;
-    }
-
-    pre {
-      background: #1e293b;
-      color: #e2e8f0;
-      padding: 20px;
-      border-radius: 8px;
-      overflow-x: auto;
-      margin: 30px 0;
-
-      code {
-        background: none;
-        padding: 0;
-        color: inherit;
-      }
-    }
-
-    // Tables
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      margin: 30px 0;
-
-      th, td {
-        padding: 12px;
-        text-align: left;
-        border: 1px solid #e0e0e0;
-      }
-
-      th {
-        background: #f8f9fa;
-        font-weight: 600;
-        color: #1a1a1a;
-      }
-
-      tr:nth-child(even) {
-        background: #f8f9fa;
-      }
-    }
-
-    // HR
-    hr {
-      border: none;
-      border-top: 2px solid #e0e0e0;
-      margin: 40px 0;
-    }
-  }
-
-  // Tags
-  .post-tags {
-    margin-top: 60px;
-    padding-top: 40px;
-    border-top: 2px solid #f0f0f0;
-
-    h3 {
-      font-size: 1.2rem;
-      color: #1a1a1a;
-      margin-bottom: 16px;
-    }
-
-    .tags-list {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 10px;
-
-      .tag {
-        display: inline-block;
-        padding: 8px 16px;
-        background: #f1f5f9;
-        color: #475569;
-        border-radius: 20px;
-        font-size: 0.9rem;
-        font-weight: 500;
-        transition: all 0.2s;
-
-        &:hover {
-          background: #2c3e50;
-          color: white;
-        }
-      }
-    }
-  }
-
-  // Actions
-  .post-actions {
-    margin-top: 60px;
-    text-align: center;
-
-    .btn-back {
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      padding: 14px 32px;
-      background: #2c3e50;
-      color: white;
-      text-decoration: none;
-      border-radius: 10px;
-      font-size: 1rem;
-      font-weight: 600;
-      transition: all 0.3s ease;
-
-      svg {
-        width: 20px;
-        height: 20px;
-      }
-
-      &:hover {
-        background: #1a252f;
-        transform: translateY(-2px);
-        box-shadow: 0 4px 12px rgba(44, 62, 80, 0.3);
-      }
-    }
-  }
-}
-
-// ==================== RELATED POSTS SECTION ====================
-.related-posts-section {
-  padding: 60px 0;
-  background: #f8f9fa;
-  margin-top: 40px;
-
-  .container {
-    max-width: 1200px; // ✅ TĂNG TỪ 900px LÊN 1200px
+  &__wrap {
+    max-width: 780px;
     margin: 0 auto;
-    padding: 0 20px;
-    
-    @media (min-width: 1400px) {
-      max-width: 1400px;
-    }
-  }
-
-  // Section Header
-  .section-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 40px;
-    padding-bottom: 15px;
-    border-bottom: 3px solid #2c3e50;
-
-    .section-title {
-      font-size: 28px;
-      font-weight: bold;
-      color: #1a1a1a;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-      position: relative;
-      margin: 0;
-    }
-
-    .view-all {
-      display: flex;
-      align-items: center;
-      gap: 5px;
-      color: #2c3e50;
-      font-weight: 600;
-      font-size: 15px;
-      text-decoration: none;
-      transition: all 0.3s;
-      padding: 8px 16px;
-      border-radius: 6px;
-      border: 1px solid #2c3e50;
-
-      &:hover {
-        background: #2c3e50;
-        color: white;
-        gap: 8px;
-        box-shadow: 0 4px 12px rgba(44, 62, 80, 0.3);
-      }
-
-      svg {
-        transition: transform 0.3s;
-      }
-
-      &:hover svg {
-        transform: translateX(3px);
-      }
-    }
-
-    @media (max-width: 768px) {
-      flex-direction: column;
-      align-items: flex-start;
-      gap: 16px;
-
-      .section-title {
-        font-size: 22px;
-      }
-
-      .view-all {
-        font-size: 13px;
-        padding: 6px 12px;
-      }
-    }
-  }
-
-  // Posts Grid
-  .posts-grid-mini {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 25px;
-
-    @media (max-width: 1024px) {
-      grid-template-columns: repeat(3, 1fr);
-      gap: 20px;
-    }
-
-    @media (max-width: 768px) {
-      grid-template-columns: repeat(2, 1fr);
-      gap: 16px;
-    }
-
-    @media (max-width: 480px) {
-      grid-template-columns: 1fr;
-      gap: 16px;
-    }
-  }
-
-  // Post Card Mini
-  .post-card-mini {
-    background: white;
-    border-radius: 12px;
-    overflow: hidden;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
-    transition: all 0.3s ease;
-    text-decoration: none;
-    color: inherit;
+    padding: 32px 18px;
     display: flex;
     flex-direction: column;
+    gap: 16px;
+  }
 
-    &:hover {
-      transform: translateY(-8px);
-      box-shadow: 0 12px 32px rgba(0, 0, 0, 0.12);
+  &__pill  { @extend %shimmer; width: 90px; height: 24px; border-radius: 100px; }
+  &__title { @extend %shimmer; height: 32px; }
+  &__meta  { @extend %shimmer; height: 16px; width: 200px; }
+  &__desc  { @extend %shimmer; height: 16px; }
+  &__img   { @extend %shimmer; height: 300px; border-radius: $radius; margin: 8px 0; }
+  &__line  { @extend %shimmer; height: 15px; }
+
+  .w70 { width: 70%; }
+  .w80 { width: 80%; }
+  .w85 { width: 85%; }
+}
+
+// =====================================================================
+// RELATED POSTS SECTION
+// =====================================================================
+.pd-related {
+  background: $warm;
+  border-top: 1px solid $line;
+  padding: 52px 0 72px;
+
+  &__wrap {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 18px;
+
+    @media (min-width: 768px) { padding: 0 32px; }
+  }
+
+  &__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 32px;
+    padding-bottom: 16px;
+    border-bottom: 2px solid $line;
+
+    h2 {
+      font-size: clamp(1.15rem, 3vw, 1.5rem);
+      font-weight: 700;
+      color: $dark;
+      margin: 0;
     }
+  }
 
-    // Card Image
-    .post-card-image {
-      position: relative;
-      width: 100%;
-      padding-top: 75%;
-      overflow: hidden;
-      background: #f8f8f8;
+  &__all {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 13px;
+    font-weight: 700;
+    color: $navy;
+    font-family: system-ui, sans-serif;
+    text-decoration: none;
+    transition: gap 0.2s, color 0.2s;
 
-      img {
-        position: absolute;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        object-fit: cover;
-        transition: transform 0.4s ease;
-      }
+    &:hover { color: $gold-deep; gap: 7px; }
+  }
 
-      .post-card-category {
-        position: absolute;
-        top: 12px;
-        left: 12px;
-        background: rgba(44, 62, 80, 0.9);
-        color: white;
-        padding: 4px 12px;
-        border-radius: 20px;
-        font-size: 0.75rem;
-        font-weight: 600;
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
-        z-index: 2;
-      }
-    }
+  &__grid {
+    display: grid;
+    gap: 18px;
+    grid-template-columns: 1fr;
 
-    &:hover .post-card-image img {
-      transform: scale(1.08);
-    }
-
-    // Card Content
-    .post-card-content {
-      padding: 16px;
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-
-      .post-card-date {
-        font-size: 0.8rem;
-        color: #999;
-        display: block;
-      }
-
-      .post-card-title {
-        font-size: 1rem;
-        font-weight: 700;
-        color: #1a1a1a;
-        line-height: 1.4;
-        display: -webkit-box;
-        -webkit-line-clamp: 2;
-        -webkit-box-orient: vertical;
-        overflow: hidden;
-        min-height: 42px;
-        margin: 0;
-        transition: color 0.3s;
-      }
-
-      .post-card-description {
-        font-size: 0.85rem;
-        color: #666;
-        line-height: 1.5;
-        display: -webkit-box;
-        -webkit-line-clamp: 2;
-        -webkit-box-orient: vertical;
-        overflow: hidden;
-        margin: 0;
-        flex: 1;
-      }
-    }
-
-    &:hover .post-card-title {
-      color: #2c3e50;
-    }
-
-    @media (max-width: 768px) {
-      .post-card-content {
-        padding: 14px;
-
-        .post-card-title {
-          font-size: 0.95rem;
-          min-height: 38px;
-        }
-
-        .post-card-description {
-          font-size: 0.8rem;
-        }
-      }
-    }
+    @media (min-width: 480px)  { grid-template-columns: repeat(2, 1fr); }
+    @media (min-width: 768px)  { grid-template-columns: repeat(3, 1fr); gap: 22px; }
+    @media (min-width: 1100px) { grid-template-columns: repeat(4, 1fr); }
   }
 }
 
-// Responsive
-@media (max-width: 768px) {
-  .post-detail {
-    padding: 30px 0 60px;
+// =====================================================================
+// RELATED POST CARD
+// =====================================================================
+.pd-rcard {
+  background: $white;
+  border-radius: $radius;
+  border: 1px solid $line;
+  overflow: hidden;
+  text-decoration: none;
+  color: inherit;
+  display: flex;
+  flex-direction: column;
+  animation: cardIn 0.4s ease both;
+  transition: transform 0.25s, box-shadow 0.25s, border-color 0.25s;
 
-    .post-header {
-      .post-title {
-        font-size: 1.8rem;
-      }
+  &:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 10px 32px rgba($navy, 0.11);
+    border-color: rgba($gold, 0.35);
 
-      .post-description {
-        font-size: 1rem;
-      }
-    }
+    .pd-rcard__img-wrap img { transform: scale(1.06); }
+  }
 
-    .post-content {
-      font-size: 1rem;
+  &__img-wrap {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 4/3;
+    overflow: hidden;
+    background: $line;
+    flex-shrink: 0;
 
-      h1 { font-size: 1.8rem; }
-      h2 { font-size: 1.5rem; }
-      h3 { font-size: 1.3rem; }
-      h4 { font-size: 1.2rem; }
+    img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+      transition: transform 0.45s ease;
     }
   }
 
-  .related-posts-section {
-    padding: 40px 0;
+  &__badge {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    background: rgba($white, 0.92);
+    color: $navy;
+    padding: 3px 10px;
+    border-radius: 100px;
+    font-size: 11px;
+    font-weight: 700;
+    font-family: system-ui, sans-serif;
+    backdrop-filter: blur(4px);
+  }
+
+  &__body {
+    padding: 14px 16px 18px;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  &__date {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 11.5px;
+    color: $soft;
+    font-family: system-ui, sans-serif;
+    font-style: normal;
+
+    svg { color: $gold; }
+  }
+
+  &__title {
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: $dark;
+    line-height: 1.45;
+    margin: 0;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    transition: color 0.2s;
+
+    .pd-rcard:hover & { color: $gold-deep; }
+  }
+
+  &__desc {
+    font-size: 12.5px;
+    color: $mid;
+    line-height: 1.6;
+    margin: 0;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    font-family: system-ui, sans-serif;
+  }
+}
+
+// =====================================================================
+// MOBILE TOUCH IMPROVEMENTS
+// =====================================================================
+@media (max-width: 480px) {
+  .pd-article__wrap {
+    padding: 0 14px 60px;
+  }
+
+  .pd-title {
+    font-size: 1.45rem;
+  }
+
+  .pd-lead {
+    font-size: 0.97rem;
+  }
+
+  .pd-content {
+    font-size: 0.97rem;
+
+    h2 { font-size: 1.25rem; }
+    h3 { font-size: 1.1rem; }
+
+    blockquote {
+      font-size: 0.97rem;
+    }
+  }
+
+  .pd-related {
+    padding: 40px 0 56px;
+
+    &__grid {
+      gap: 14px;
+    }
+  }
+
+  .pd-tags {
+    margin-top: 36px;
+    padding-top: 24px;
+  }
+
+  .pd-footer-nav {
+    margin-top: 40px;
   }
 }
