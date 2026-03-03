@@ -42,7 +42,7 @@ $radius-sm: 8px;
 .posts-page {
   background: $cream;
   min-height: 100vh;
-  font-family: 'Georgia', 'Times New Roman', serif;
+  // ✅ Kế thừa Roboto từ body { font-family: var(--font-main) } trong home.scss
 }
 
 // ===================================================================
@@ -54,7 +54,6 @@ $radius-sm: 8px;
   overflow: hidden;
   padding: clamp(52px, 9vw, 90px) 20px clamp(44px, 7vw, 70px);
 
-  // Subtle diagonal texture
   &::before {
     content: '';
     position: absolute;
@@ -91,7 +90,6 @@ $radius-sm: 8px;
     border-radius: 100px;
     padding: 5px 15px;
     margin-bottom: 22px;
-    font-family: system-ui, sans-serif;
 
     svg { font-size: 11px; }
   }
@@ -110,7 +108,6 @@ $radius-sm: 8px;
     color: rgba($white, 0.65);
     margin: 0;
     line-height: 1.7;
-    font-family: system-ui, sans-serif;
   }
 }
 
@@ -134,7 +131,6 @@ $radius-sm: 8px;
   margin-bottom: 36px;
   position: relative;
 
-  // Fade hints on mobile overflow
   &::after {
     content: '';
     position: absolute;
@@ -174,7 +170,6 @@ $radius-sm: 8px;
   font-weight: 600;
   color: $mid;
   cursor: pointer;
-  font-family: system-ui, sans-serif;
   white-space: nowrap;
   transition: all 0.2s;
   flex-shrink: 0;
@@ -222,9 +217,7 @@ $radius-sm: 8px;
     overflow: hidden;
     min-height: 320px;
 
-    @media (max-width: 780px) {
-      min-height: 240px;
-    }
+    @media (max-width: 780px) { min-height: 240px; }
 
     img {
       width: 100%;
@@ -249,7 +242,6 @@ $radius-sm: 8px;
     letter-spacing: 0.2em;
     text-transform: uppercase;
     color: $gold;
-    font-family: system-ui, sans-serif;
   }
 
   .ps-featured-title {
@@ -270,7 +262,6 @@ $radius-sm: 8px;
     -webkit-line-clamp: 3;
     -webkit-box-orient: vertical;
     overflow: hidden;
-    font-family: system-ui, sans-serif;
   }
 
   .ps-featured-meta {
@@ -279,11 +270,9 @@ $radius-sm: 8px;
     gap: 8px;
     font-size: 13px;
     color: $soft;
-    font-family: system-ui, sans-serif;
     margin-top: 4px;
 
     .meta-icon { font-size: 12px; color: $gold; }
-
     time { flex: 1; }
   }
 
@@ -295,7 +284,6 @@ $radius-sm: 8px;
     font-weight: 700;
     color: $navy;
     transition: gap 0.2s;
-    font-family: system-ui, sans-serif;
   }
 }
 
@@ -312,7 +300,6 @@ $radius-sm: 8px;
   border-radius: 100px;
   font-size: 11.5px;
   font-weight: 700;
-  font-family: system-ui, sans-serif;
   letter-spacing: 0.04em;
   backdrop-filter: blur(4px);
   box-shadow: 0 2px 8px rgba(0,0,0,0.1);
@@ -385,7 +372,6 @@ $radius-sm: 8px;
     gap: 6px;
     font-size: 12px;
     color: $soft;
-    font-family: system-ui, sans-serif;
     font-style: normal;
 
     svg { font-size: 11px; color: $gold; }
@@ -420,7 +406,6 @@ $radius-sm: 8px;
     -webkit-line-clamp: 3;
     -webkit-box-orient: vertical;
     overflow: hidden;
-    font-family: system-ui, sans-serif;
   }
 
   .ps-card-more {
@@ -431,12 +416,10 @@ $radius-sm: 8px;
     font-weight: 700;
     color: $navy;
     text-decoration: none;
-    font-family: system-ui, sans-serif;
     transition: gap 0.2s, color 0.2s;
     margin-top: 4px;
 
     &:hover { color: $gold-deep; }
-
     svg { font-size: 11px; }
   }
 }
@@ -496,7 +479,6 @@ $radius-sm: 8px;
   }
 }
 
-// Shared skeleton line
 .skeleton-line {
   @extend %shimmer;
   height: 14px;
@@ -520,11 +502,7 @@ $radius-sm: 8px;
     opacity: 0.5;
   }
 
-  p {
-    font-size: 1.05rem;
-    color: $soft;
-    font-family: system-ui, sans-serif;
-  }
+  p { font-size: 1.05rem; color: $soft; }
 }
 
 // ===================================================================
@@ -557,7 +535,6 @@ $radius-sm: 8px;
   font-weight: 700;
   color: $mid;
   cursor: pointer;
-  font-family: system-ui, sans-serif;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -579,14 +556,10 @@ $radius-sm: 8px;
   &.arrow {
     width: 40px;
     color: $mid;
-
     svg { font-size: 13px; }
   }
 
-  &:disabled {
-    opacity: 0.35;
-    cursor: not-allowed;
-  }
+  &:disabled { opacity: 0.35; cursor: not-allowed; }
 }
 
 .ps-pg-ellipsis {
@@ -599,5 +572,4 @@ $radius-sm: 8px;
   font-size: 18px;
   font-weight: 700;
   color: $soft;
-  font-family: system-ui, sans-serif;
 }

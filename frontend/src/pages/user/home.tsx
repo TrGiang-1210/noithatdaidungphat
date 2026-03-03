@@ -11,7 +11,7 @@ import { getFirstImageUrl } from "../../utils/imageUrl";
 import { useLanguage } from "../../context/LanguageContext";
 import "@/styles/pages/user/home.scss";
 import { ChevronRight, ChevronLeft } from "lucide-react";
-import SEO from "@/components/SEO";
+import SEO from "../../components/SEO";
 
 import banner1 from "@/assets/banner/banner1.jpg";
 import banner2 from "@/assets/banner/banner2.jpg";

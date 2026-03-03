@@ -1,8 +1,7 @@
-// Google Fonts: Roboto — hỗ trợ tiếng Việt tốt, đồng bộ với home
-@import url('https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,400;0,500;0,600;0,700;0,800;0,900;1,400&display=swap');
-
 // ===================================================================
 // productDetail.scss — Nội thất Đại Dũng Phát
+// ✅ Font kế thừa từ body { font-family: var(--font-main) } trong home.scss
+// KHÔNG @import Google Fonts ở đây nữa — tránh block render
 // ===================================================================
 
 $gold:        #d6a041;
@@ -23,8 +22,7 @@ $radius-sm:   8px;
 // ── Shared container ──────────────────────────────────────────────
 .pd-page {
   background: $bg;
-  font-family: 'Roboto', 'Segoe UI', Arial, sans-serif;
-  padding-bottom: 80px; // room for sticky bar on mobile
+  padding-bottom: 80px;
 
   .container {
     max-width: 1200px;
@@ -111,7 +109,6 @@ $radius-sm:   8px;
     }
 
     &:hover img { transform: scale(1.04); }
-
     &:hover .pd-gallery__zoom-hint { opacity: 1; }
   }
 
@@ -250,7 +247,6 @@ $radius-sm:   8px;
     margin: 0 0 18px;
   }
 
-  // ── Price ──
   &__price {
     display: flex;
     align-items: flex-end;
@@ -311,9 +307,7 @@ $radius-sm:   8px;
 .pd-attrs {
   margin-bottom: 22px;
 
-  &__group {
-    margin-bottom: 18px;
-  }
+  &__group { margin-bottom: 18px; }
 
   &__label {
     display: flex;
@@ -498,7 +492,7 @@ $radius-sm:   8px;
 
     &:hover { opacity: 0.85; }
 
-    &--blue { background: #e3f2fd; color: #1565c0; border: 1px solid #bbdefb; }
+    &--blue  { background: #e3f2fd; color: #1565c0; border: 1px solid #bbdefb; }
     &--green { background: #e8f5e9; color: #2e7d32; border: 1px solid #c8e6c9; }
   }
 }
@@ -535,10 +529,7 @@ $radius-sm:   8px;
     }
   }
 
-  &__icon {
-    color: $gold;
-    display: flex;
-  }
+  &__icon { color: $gold; display: flex; }
 }
 
 // ── Delivery ─────────────────────────────────────────────────────
@@ -581,11 +572,10 @@ $radius-sm:   8px;
   margin-top: 20px;
   padding: 28px 28px 24px;
 
-  // Mobile version rendered outside layout
   &--mobile { display: none; }
 
   @media (max-width: 992px) {
-    display: none; // hide inside gallery on mobile
+    display: none;
     &--mobile {
       display: block;
       border-radius: 0;
@@ -617,10 +607,7 @@ $radius-sm:   8px;
       border-radius: $radius-sm;
       margin: 16px 0;
     }
-    h2, h3, h4 {
-      color: $dark;
-      margin: 20px 0 10px;
-    }
+    h2, h3, h4 { color: $dark; margin: 20px 0 10px; }
   }
 }
 
@@ -632,10 +619,7 @@ $radius-sm:   8px;
   margin-top: 32px;
   padding: 40px 0;
 
-  @media (max-width: 768px) {
-    margin-top: 8px;
-    padding: 28px 0;
-  }
+  @media (max-width: 768px) { margin-top: 8px; padding: 28px 0; }
 
   &__header {
     display: flex;
@@ -690,7 +674,6 @@ $radius-sm:   8px;
   }
 }
 
-// ── Related card ─────────────────────────────────────────────────
 .pd-related-card {
   background: $white;
   border-radius: $radius;
@@ -729,8 +712,7 @@ $radius-sm:   8px;
 
   &__oos {
     position: absolute;
-    top: 8px;
-    right: 8px;
+    top: 8px; right: 8px;
     background: #393939;
     color: $white;
     font-size: 12px;
@@ -742,8 +724,7 @@ $radius-sm:   8px;
 
   &__disc {
     position: absolute;
-    top: 8px;
-    left: 8px;
+    top: 8px; left: 8px;
     background: $red;
     color: $white;
     font-size: 12px;
@@ -784,17 +765,8 @@ $radius-sm:   8px;
     flex-wrap: wrap;
   }
 
-  &__sale {
-    font-size: 18px;
-    font-weight: 800;
-    color: $red;
-  }
-
-  &__ori {
-    font-size: 13px;
-    color: $soft;
-    text-decoration: line-through;
-  }
+  &__sale { font-size: 18px; font-weight: 800; color: $red; }
+  &__ori  { font-size: 13px; color: $soft; text-decoration: line-through; }
 }
 
 // ===================================================================
@@ -807,9 +779,7 @@ $radius-sm:   8px;
     display: flex;
     align-items: center;
     position: fixed;
-    bottom: 0;
-    left: 0;
-    right: 0;
+    bottom: 0; left: 0; right: 0;
     z-index: 500;
     background: $white;
     border-top: 1px solid $border;
@@ -845,21 +815,13 @@ $radius-sm:   8px;
       cursor: pointer;
       transition: opacity 0.2s;
 
-      &:active { opacity: 0.8; }
+      &:active   { opacity: 0.8; }
       &:disabled { opacity: 0.5; cursor: not-allowed; }
     }
   }
 
-  &__cart {
-    background: $white;
-    color: $gold;
-    border: 2px solid $gold !important;
-  }
-
-  &__buy {
-    background: $red;
-    color: $white;
-  }
+  &__cart { background: $white; color: $gold; border: 2px solid $gold !important; }
+  &__buy  { background: $red; color: $white; }
 }
 
 // ===================================================================
@@ -877,13 +839,11 @@ $radius-sm:   8px;
 
   &__close {
     position: fixed;
-    top: 16px;
-    right: 16px;
+    top: 16px; right: 16px;
     background: rgba(255,255,255,0.12);
     border: 2px solid rgba(255,255,255,0.25);
     color: $white;
-    width: 48px;
-    height: 48px;
+    width: 48px; height: 48px;
     border-radius: 50%;
     cursor: pointer;
     display: flex;
@@ -901,8 +861,7 @@ $radius-sm:   8px;
     background: rgba(255,255,255,0.1);
     border: 2px solid rgba(255,255,255,0.25);
     color: $white;
-    width: 56px;
-    height: 56px;
+    width: 56px; height: 56px;
     border-radius: 50%;
     cursor: pointer;
     display: flex;
@@ -912,14 +871,13 @@ $radius-sm:   8px;
     transition: background 0.2s, transform 0.2s;
 
     &:hover { background: rgba(255,255,255,0.2); }
-    &--prev { left: 20px; &:hover { transform: translateY(-50%) scale(1.1); } }
+    &--prev { left: 20px;   &:hover { transform: translateY(-50%) scale(1.1); } }
     &--next { right: 200px; &:hover { transform: translateY(-50%) scale(1.1); }
       @media (max-width: 768px) { right: 16px; }
     }
 
     @media (max-width: 480px) {
-      width: 44px;
-      height: 44px;
+      width: 44px; height: 44px;
       &--prev { left: 8px; }
       &--next { right: 8px; }
     }
@@ -934,11 +892,7 @@ $radius-sm:   8px;
     justify-content: center;
     margin-right: 180px;
 
-    @media (max-width: 768px) {
-      max-width: 100%;
-      margin-right: 0;
-      margin-bottom: 90px;
-    }
+    @media (max-width: 768px) { max-width: 100%; margin-right: 0; margin-bottom: 90px; }
 
     img {
       max-width: 100%;
@@ -982,22 +936,17 @@ $radius-sm:   8px;
     scrollbar-color: rgba(255,255,255,0.3) transparent;
 
     @media (max-width: 768px) {
-      right: auto;
-      left: 50%;
-      top: auto;
-      bottom: 12px;
+      right: auto; left: 50%;
+      top: auto; bottom: 12px;
       transform: translateX(-50%);
       flex-direction: row;
-      max-height: none;
-      max-width: 92vw;
-      overflow-x: auto;
-      overflow-y: hidden;
+      max-height: none; max-width: 92vw;
+      overflow-x: auto; overflow-y: hidden;
     }
   }
 
   &__thumb {
-    width: 72px;
-    height: 72px;
+    width: 72px; height: 72px;
     border: 3px solid transparent;
     border-radius: $radius-sm;
     overflow: hidden;
@@ -1009,21 +958,16 @@ $radius-sm:   8px;
 
     img { width: 100%; height: 100%; object-fit: cover; display: block; }
 
-    &:hover { border-color: rgba(255,255,255,0.5); transform: scale(1.06); }
+    &:hover   { border-color: rgba(255,255,255,0.5); transform: scale(1.06); }
     &.is-active { border-color: $gold; box-shadow: 0 0 16px rgba($gold, 0.5); transform: scale(1.06); }
 
-    @media (max-width: 768px) {
-      width: 60px;
-      height: 60px;
-    }
+    @media (max-width: 768px) { width: 60px; height: 60px; }
   }
 }
 
 // ===================================================================
 // SKELETON LOADER
 // ===================================================================
-
-// Placeholder khai báo trước khi dùng
 %skeleton-pulse {
   background: linear-gradient(90deg, #ebebeb 25%, #f5f5f5 50%, #ebebeb 75%);
   background-size: 200% 100%;
@@ -1037,36 +981,22 @@ $radius-sm:   8px;
     display: grid;
     grid-template-columns: 1fr 420px;
     gap: 28px;
-
     @media (max-width: 992px) { grid-template-columns: 1fr; }
   }
 
-  &__img {
-    aspect-ratio: 1;
-    border-radius: $radius;
-    @extend %skeleton-pulse;
-  }
-
+  &__img { aspect-ratio: 1; border-radius: $radius; @extend %skeleton-pulse; }
   &__info { display: flex; flex-direction: column; gap: 16px; }
 
   &__line {
-    height: 16px;
-    border-radius: 8px;
-    width: 100%;
+    height: 16px; border-radius: 8px; width: 100%;
     @extend %skeleton-pulse;
-
     &--title { height: 28px; width: 85%; }
     &--price { height: 44px; width: 55%; }
     &--short { width: 40%; }
   }
 
   &__btns { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 8px; }
-
-  &__btn {
-    height: 52px;
-    border-radius: $radius;
-    @extend %skeleton-pulse;
-  }
+  &__btn  { height: 52px; border-radius: $radius; @extend %skeleton-pulse; }
 }
 
 // ===================================================================
