@@ -41,7 +41,7 @@ $radius-lg:   18px;
 // =====================================================================
 // READING PROGRESS BAR
 // =====================================================================
-.pd-progress {
+.post-progress {
   position: fixed;
   top: 0;
   left: 0;
@@ -56,7 +56,7 @@ $radius-lg:   18px;
 // =====================================================================
 // PAGE WRAPPER
 // =====================================================================
-.pd-page {
+.post-page {
   background: $cream;
   min-height: 100vh;
   font-family: 'Georgia', 'Times New Roman', serif;
@@ -65,7 +65,7 @@ $radius-lg:   18px;
 // =====================================================================
 // HERO IMAGE
 // =====================================================================
-.pd-hero {
+.post-hero {
   position: relative;
   width: 100%;
   height: clamp(240px, 45vw, 540px);
@@ -129,7 +129,7 @@ $radius-lg:   18px;
 // =====================================================================
 // ARTICLE WRAPPER
 // =====================================================================
-.pd-article {
+.post-article {
   &__wrap {
     max-width: 780px;
     margin: 0 auto;
@@ -145,7 +145,7 @@ $radius-lg:   18px;
 // =====================================================================
 // HEADER
 // =====================================================================
-.pd-back-link {
+.post-back-link {
   display: inline-flex;
   align-items: center;
   gap: 5px;
@@ -162,12 +162,12 @@ $radius-lg:   18px;
   @media (min-width: 768px) { margin: 40px 0 32px; }
 }
 
-.pd-header {
+.post-header {
   margin-bottom: 36px;
   animation: fadeUp 0.5s ease both;
 }
 
-.pd-title {
+.post-title {
   font-size: clamp(1.6rem, 5vw, 2.6rem);
   font-weight: 700;
   color: $dark;
@@ -176,7 +176,7 @@ $radius-lg:   18px;
   margin: 0 0 18px;
 }
 
-.pd-meta {
+.post-meta {
   display: flex;
   align-items: center;
   gap: 10px;
@@ -212,7 +212,7 @@ $radius-lg:   18px;
   }
 }
 
-.pd-lead {
+.post-lead {
   font-size: clamp(1rem, 2.5vw, 1.15rem);
   color: $mid;
   line-height: 1.8;
@@ -239,7 +239,7 @@ $radius-lg:   18px;
 // =====================================================================
 // TABLE OF CONTENTS (sticky sidebar)
 // =====================================================================
-.pd-sidebar {
+.post-sidebar {
   display: none;
 
   @media (min-width: 1100px) {
@@ -249,7 +249,7 @@ $radius-lg:   18px;
   }
 }
 
-.pd-toc {
+.post-toc {
   background: $white;
   border: 1px solid $line;
   border-radius: $radius;
@@ -301,7 +301,7 @@ $radius-lg:   18px;
 // =====================================================================
 // ARTICLE CONTENT (rich text)
 // =====================================================================
-.pd-content {
+.post-content {
   font-size: clamp(1rem, 2.2vw, 1.08rem);
   line-height: 1.95;
   color: #2d2d2d;
@@ -359,7 +359,7 @@ $radius-lg:   18px;
     }
   }
 
-  figure.pd-img-wrap {
+  figure.post-img-wrap {
     margin: 32px 0;
     padding: 0;
     width: 100%;
@@ -397,7 +397,7 @@ $radius-lg:   18px;
     }
   }
 
-  .pd-img-row {
+  .post-img-row {
     display: grid;
     gap: 14px;
     margin: 32px 0;
@@ -411,7 +411,7 @@ $radius-lg:   18px;
 
     grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
 
-    figure.pd-img-wrap {
+    figure.post-img-wrap {
       margin: 0;
 
       img {
@@ -506,7 +506,7 @@ $radius-lg:   18px;
 // =====================================================================
 // TAGS
 // =====================================================================
-.pd-tags {
+.post-tags {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
@@ -515,7 +515,7 @@ $radius-lg:   18px;
   border-top: 1px solid $line;
 }
 
-.pd-tag {
+.post-tag {
   display: inline-block;
   padding: 6px 14px;
   background: $white;
@@ -534,12 +534,12 @@ $radius-lg:   18px;
 // =====================================================================
 // FOOTER NAV
 // =====================================================================
-.pd-footer-nav {
+.post-footer-nav {
   margin-top: 52px;
   text-align: center;
 }
 
-.pd-btn-back {
+.post-btn-back {
   display: inline-flex;
   align-items: center;
   gap: 8px;
@@ -565,7 +565,7 @@ $radius-lg:   18px;
 // =====================================================================
 // ERROR STATE
 // =====================================================================
-.pd-error {
+.post-error {
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -590,7 +590,7 @@ $radius-lg:   18px;
 // =====================================================================
 // SKELETON
 // =====================================================================
-.pd-skeleton {
+.post-skeleton {
   &__hero {
     @extend %shimmer;
     border-radius: 0;
@@ -622,7 +622,7 @@ $radius-lg:   18px;
 // =====================================================================
 // RELATED POSTS SECTION
 // =====================================================================
-.pd-related {
+.post-related {
   background: $warm;
   border-top: 1px solid $line;
   padding: 52px 0 72px;
@@ -679,7 +679,7 @@ $radius-lg:   18px;
 // =====================================================================
 // RELATED POST CARD
 // =====================================================================
-.pd-rcard {
+.post-rcard {
   background: $white;
   border-radius: $radius;
   border: 1px solid $line;
@@ -696,7 +696,7 @@ $radius-lg:   18px;
     box-shadow: 0 10px 32px rgba($navy, 0.11);
     border-color: rgba($gold, 0.35);
 
-    .pd-rcard__img-wrap img { transform: scale(1.06); }
+    .post-rcard__img-wrap img { transform: scale(1.06); }
   }
 
   &__img-wrap {
@@ -762,7 +762,7 @@ $radius-lg:   18px;
     overflow: hidden;
     transition: color 0.2s;
 
-    .pd-rcard:hover & { color: $gold-deep; }
+    .post-rcard:hover & { color: $gold-deep; }
   }
 
   &__desc {
@@ -782,19 +782,19 @@ $radius-lg:   18px;
 // MOBILE TOUCH IMPROVEMENTS
 // =====================================================================
 @media (max-width: 480px) {
-  .pd-article__wrap {
+  .post-article__wrap {
     padding: 0 14px 60px;
   }
 
-  .pd-title {
+  .post-title {
     font-size: 1.45rem;
   }
 
-  .pd-lead {
+  .post-lead {
     font-size: 0.97rem;
   }
 
-  .pd-content {
+  .post-content {
     font-size: 0.97rem;
 
     h2 { font-size: 1.25rem; }
@@ -805,7 +805,7 @@ $radius-lg:   18px;
     }
   }
 
-  .pd-related {
+  .post-related {
     padding: 40px 0 56px;
 
     &__grid {
@@ -813,12 +813,12 @@ $radius-lg:   18px;
     }
   }
 
-  .pd-tags {
+  .post-tags {
     margin-top: 36px;
     padding-top: 24px;
   }
 
-  .pd-footer-nav {
+  .post-footer-nav {
     margin-top: 40px;
   }
 }
