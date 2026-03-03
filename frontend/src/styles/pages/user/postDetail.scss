@@ -223,9 +223,9 @@ $radius-lg:   18px;
 }
 
 // =====================================================================
-// LAYOUT: CONTENT + SIDEBAR (desktop)
+// ✅ FIX: Đổi .pd-layout → .post-layout để tránh conflict với productDetail
 // =====================================================================
-.pd-layout {
+.post-layout {
   display: block;
 
   @media (min-width: 1100px) {
@@ -306,7 +306,7 @@ $radius-lg:   18px;
   line-height: 1.95;
   color: #2d2d2d;
   animation: fadeUp 0.55s 0.1s ease both;
-  min-width: 0; // critical for grid overflow
+  min-width: 0;
 
   h1, h2, h3, h4, h5, h6 {
     font-weight: 700;
@@ -342,13 +342,11 @@ $radius-lg:   18px;
     &:hover { color: $navy; text-decoration-color: $navy; }
   }
 
-  // ── Images ──
-  // Raw <img> that still appear inline (e.g. inside text paragraphs)
   img {
     max-width: 100%;
-    width: 100% !important;       // override any editor-injected width
+    width: 100% !important;
     height: auto !important;
-    float: none !important;       // override any editor-injected float
+    float: none !important;
     display: block;
     margin: 24px auto;
     border-radius: $radius;
@@ -361,7 +359,6 @@ $radius-lg:   18px;
     }
   }
 
-  // ── Figure wrapper (single image, lifted out of <p>) ──
   figure.pd-img-wrap {
     margin: 32px 0;
     padding: 0;
@@ -400,13 +397,11 @@ $radius-lg:   18px;
     }
   }
 
-  // ── Multiple images side-by-side row ──
   .pd-img-row {
     display: grid;
     gap: 14px;
     margin: 32px 0;
 
-    // 2 images → 2 columns; 3+ → 3 columns (capped)
     &:has(> figure:nth-child(2):last-child) {
       grid-template-columns: 1fr 1fr;
     }
@@ -414,7 +409,6 @@ $radius-lg:   18px;
       grid-template-columns: repeat(3, 1fr);
     }
 
-    // Fallback for browsers without :has() — use auto-fill
     grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
 
     figure.pd-img-wrap {
@@ -434,7 +428,6 @@ $radius-lg:   18px;
     }
   }
 
-  // ── Blockquote ──
   blockquote {
     margin: 32px 0;
     padding: 20px 24px 20px 28px;
@@ -451,7 +444,6 @@ $radius-lg:   18px;
     }
   }
 
-  // ── Lists ──
   ul, ol {
     margin: 0 0 1.4em 1.4em;
     padding: 0;
@@ -462,7 +454,6 @@ $radius-lg:   18px;
     }
   }
 
-  // ── Code ──
   code {
     background: $line;
     padding: 2px 7px;
@@ -485,7 +476,6 @@ $radius-lg:   18px;
     code { background: none; color: inherit; padding: 0; }
   }
 
-  // ── Table ──
   table {
     width: 100%;
     border-collapse: collapse;
