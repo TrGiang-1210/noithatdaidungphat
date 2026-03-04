@@ -560,13 +560,15 @@ const handleSubmit = async (e: React.FormEvent) => {
       name: { vi: attr.name, zh: "" },
       options: attr.options.map((opt, optIdx) => {
         const key = `${attrIdx}_${optIdx}`;
-        const imgFile = attributeImages.get(key);
+        const imgEntry = attributeImages.get(key);
         return {
           label: { vi: opt.label, zh: "" },
           value: opt.value || opt.label.toLowerCase().replace(/\s+/g, "-"),
           isDefault: opt.isDefault || false,
-          imageKey: imgFile instanceof File ? key : undefined,
-          existingImage: typeof imgFile === "string" ? imgFile : opt.image,
+          // Giữ ảnh cũ nếu không upload file mới
+          image: imgEntry instanceof File
+            ? undefined  // backend sẽ gán từ file upload
+            : (typeof imgEntry === "string" ? imgEntry : (opt.image || undefined)),
         };
       }),
     }));
@@ -581,9 +583,10 @@ const handleSubmit = async (e: React.FormEvent) => {
     // ==========================================
 
     // 5. Xử lý Ảnh của thuộc tính (nếu có)
+    // Field name phải là "attribute_${attrIdx}_${optIdx}" để backend nhận đúng
     attributeImages.forEach((img, key) => {
       if (img instanceof File) {
-        form.append(`attributeImages[${key}]`, img);
+        form.append(`attribute_${key}`, img);
       }
     });
 
@@ -1159,64 +1162,88 @@ const handleSubmit = async (e: React.FormEvent) => {
                           />
 
                           <div className="option-image-upload">
+                            {/* Input ẩn — chỉ trigger qua nút bên dưới */}
                             <input
                               type="file"
                               accept="image/*"
-                              onChange={(e) =>
-                                handleAttributeImageChange(
-                                  attrIdx,
-                                  optIdx,
-                                  e.target.files?.[0] || null,
-                                )
-                              }
+                              style={{ display: "none" }}
                               id={`attr-img-${attrIdx}-${optIdx}`}
+                              onChange={(e) => {
+                                const file = e.target.files?.[0] || null;
+                                if (!file) return;
+                                const newAttrImgMap = new Map(attributeImages);
+                                newAttrImgMap.set(`${attrIdx}_${optIdx}`, file);
+                                setAttributeImages(newAttrImgMap);
+                                // Reset input để có thể chọn lại cùng file
+                                e.target.value = "";
+                              }}
                             />
-                            <label
-                              htmlFor={`attr-img-${attrIdx}-${optIdx}`}
+                            <button
+                              type="button"
                               className="file-label-small"
+                              onClick={() =>
+                                document
+                                  .getElementById(`attr-img-${attrIdx}-${optIdx}`)
+                                  ?.click()
+                              }
                             >
-                              Chọn ảnh
-                            </label>
-                            {attributeImages.has(`${attrIdx}_${optIdx}`) && (
-                              <span className="file-selected">✓</span>
-                            )}
-                            {(attributeImages.get(`${attrIdx}_${optIdx}`) ||
-                              opt.image) && (
-                              <img
-                                src={(() => {
-                                  const img = attributeImages.get(
-                                    `${attrIdx}_${optIdx}`,
-                                  );
-                                  if (img instanceof File) {
-                                    return URL.createObjectURL(img);
-                                  }
-                                  if (typeof img === "string") {
-                                    return getImageUrl(img);
-                                  }
-                                  if (opt.image) {
-                                    return getImageUrl(opt.image);
-                                  }
-                                  return "";
-                                })()}
-                                alt="preview"
-                                className="attr-img-preview"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  const img = attributeImages.get(
-                                    `${attrIdx}_${optIdx}`,
-                                  );
-                                  let imgUrl = "";
-                                  if (img instanceof File) {
-                                    imgUrl = URL.createObjectURL(img);
-                                  } else if (typeof img === "string") {
-                                    imgUrl = getImageUrl(img);
-                                  } else if (opt.image) {
-                                    imgUrl = getImageUrl(opt.image);
-                                  }
-                                  if (imgUrl) setPreviewImage(imgUrl);
-                                }}
-                              />
-                            )}
+                              {attributeImages.has(`${attrIdx}_${optIdx}`) || opt.image
+                                ? "Đổi ảnh"
+                                : "Chọn ảnh"}
+                            </button>
+
+                            {/* Preview + nút xóa */}
+                            {(() => {
+                              const imgEntry = attributeImages.get(`${attrIdx}_${optIdx}`);
+                              let previewSrc = "";
+                              if (imgEntry instanceof File) {
+                                previewSrc = URL.createObjectURL(imgEntry);
+                              } else if (typeof imgEntry === "string") {
+                                previewSrc = getImageUrl(imgEntry);
+                              } else if (opt.image) {
+                                previewSrc = getImageUrl(opt.image);
+                              }
+                              if (!previewSrc) return null;
+                              return (
+                                <div style={{ position: "relative", display: "inline-flex" }}>
+                                  <img
+                                    src={previewSrc}
+                                    alt="preview"
+                                    className="attr-img-preview"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setPreviewImage(previewSrc);
+                                    }}
+                                  />
+                                  <button
+                                    type="button"
+                                    title="Xóa ảnh"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      const newMap = new Map(attributeImages);
+                                      newMap.delete(`${attrIdx}_${optIdx}`);
+                                      setAttributeImages(newMap);
+                                      // Xóa opt.image trong formData luôn
+                                      const newAttrs = [...formData.attributes];
+                                      newAttrs[attrIdx].options[optIdx] = {
+                                        ...newAttrs[attrIdx].options[optIdx],
+                                        image: undefined,
+                                      };
+                                      setFormData({ ...formData, attributes: newAttrs });
+                                    }}
+                                    style={{
+                                      position: "absolute", top: -6, right: -6,
+                                      background: "#ef4444", color: "white",
+                                      border: "none", borderRadius: "50%",
+                                      width: 18, height: 18, fontSize: 11,
+                                      display: "flex", alignItems: "center",
+                                      justifyContent: "center", cursor: "pointer",
+                                      lineHeight: 1,
+                                    }}
+                                  >×</button>
+                                </div>
+                              );
+                            })()}
                           </div>
 
                           <label className="option-default">

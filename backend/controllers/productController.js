@@ -4,6 +4,12 @@ const Category = require("../models/Category");
 const Joi = require("joi");
 const mongoose = require("mongoose");
 
+// ⚠️ QUAN TRỌNG: Route cần dùng upload.any() hoặc upload.fields() để nhận cả
+// field "images" (ảnh chính) lẫn "attribute_${attrIdx}_${optIdx}" (ảnh thuộc tính)
+// Ví dụ trong router:
+//   router.post('/', upload.any(), createProduct)
+//   router.put('/:id', upload.any(), updateProduct)
+
 /**
  * Helper: Transform product data theo language
  */
@@ -520,8 +526,10 @@ exports.createProduct = async (req, res) => {
               const fieldName = `attribute_${attrIdx}_${optIdx}`;
               const file = req.files.find((f) => f.fieldname === fieldName);
               if (file) {
+                // File mới → ghi đè
                 opt.image = `/uploads/products/${file.filename}`;
               }
+              // Nếu không có file mới, giữ nguyên opt.image đã có từ JSON
             });
           });
         }
@@ -663,8 +671,10 @@ exports.updateProduct = async (req, res) => {
               const fieldName = `attribute_${attrIdx}_${optIdx}`;
               const file = req.files.find((f) => f.fieldname === fieldName);
               if (file) {
+                // File mới → ghi đè
                 opt.image = `/uploads/products/${file.filename}`;
               }
+              // Nếu không có file mới, giữ nguyên opt.image đã có từ JSON
             });
           });
         }

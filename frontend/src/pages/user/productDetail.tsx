@@ -87,6 +87,7 @@ const ProductDetail: React.FC = () => {
   const [isAdding, setIsAdding] = useState(false);
   const [addedFeedback, setAddedFeedback] = useState<"cart" | "buy" | null>(null);
   const thumbnailRowRef = useRef<HTMLDivElement>(null);
+  const [attributeOverrideImage, setAttributeOverrideImage] = useState<string | null>(null);
 
   // ✅ Helper function
   const safeGetText = (field: any, lang: string = "vi"): string => {
@@ -181,15 +182,18 @@ const ProductDetail: React.FC = () => {
 
   useEffect(() => {
     if (!showLightbox || !product) return;
-    const productImages = product.images?.length > 0 ? product.images.map((img) => getImageUrl(img)) : [getImageUrl(null)];
+    const imgs = product.images?.length > 0 ? product.images.map((img) => getImageUrl(img)) : [getImageUrl(null)];
+    const allImgs = attributeOverrideImage && !imgs.includes(attributeOverrideImage)
+      ? [attributeOverrideImage, ...imgs]
+      : imgs;
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Escape") { setShowLightbox(false); document.body.style.overflow = "auto"; }
-      else if (e.key === "ArrowRight") setLightboxIndex((prev) => (prev + 1) % productImages.length);
-      else if (e.key === "ArrowLeft") setLightboxIndex((prev) => (prev - 1 + productImages.length) % productImages.length);
+      else if (e.key === "ArrowRight") setLightboxIndex((prev) => (prev + 1) % allImgs.length);
+      else if (e.key === "ArrowLeft") setLightboxIndex((prev) => (prev - 1 + allImgs.length) % allImgs.length);
     };
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [showLightbox, product]);
+  }, [showLightbox, product, attributeOverrideImage]);
 
   useEffect(() => {
     if (!product?.attributes) return;
@@ -201,10 +205,35 @@ const ProductDetail: React.FC = () => {
       else if (attr.options.length > 0) defaults[attrName] = attr.options[0].value;
     });
     setSelectedAttributes(defaults);
+    setAttributeOverrideImage(null);
   }, [product, language]);
 
   const handleAttributeSelect = (attrName: string, optionValue: string) => {
     setSelectedAttributes((prev) => ({ ...prev, [attrName]: optionValue }));
+
+    if (!product?.attributes) return;
+    const attr = product.attributes.find(
+      (a) => safeGetText(a.name, language) === attrName
+    );
+    const selectedOpt = attr?.options.find((o) => o.value === optionValue);
+
+    if (selectedOpt?.image) {
+      const getFilename = (path: string) => path?.split("/").pop()?.split("?")[0] ?? path;
+      const optFilename = getFilename(selectedOpt.image);
+      if (product.images?.length > 0) {
+        const matchIdx = product.images.findIndex(
+          (img) => getFilename(img) === optFilename
+        );
+        if (matchIdx !== -1) {
+          setSelectedImageIndex(matchIdx);
+          setAttributeOverrideImage(null);
+          return;
+        }
+      }
+      setAttributeOverrideImage(getImageUrl(selectedOpt.image));
+    } else {
+      setAttributeOverrideImage(null);
+    }
   };
 
   const activeVariant = useMemo(() => {
@@ -268,7 +297,10 @@ const ProductDetail: React.FC = () => {
   if (!product) return <div className="pd-error"><p>{t("product.noData") || "Không có dữ liệu"}</p></div>;
 
   const productImages = product.images?.length > 0 ? product.images.map((img) => getImageUrl(img)) : [getImageUrl(null)];
-  const currentImage = productImages[selectedImageIndex];
+  const lightboxImages = attributeOverrideImage && !productImages.includes(attributeOverrideImage)
+    ? [attributeOverrideImage, ...productImages]
+    : productImages;
+  const currentImage = attributeOverrideImage ?? productImages[selectedImageIndex];
   const productDescription = safeGetText(product.description, language);
   const displayPriceSale = activeVariant ? activeVariant.priceSale : product.priceSale || 0;
   const displayPriceOriginal = activeVariant ? activeVariant.priceOriginal : product.priceOriginal || 0;
@@ -278,7 +310,8 @@ const ProductDetail: React.FC = () => {
     ? Math.round(((displayPriceOriginal - displayPriceSale) / displayPriceOriginal) * 100) : 0;
 
   const openLightbox = (index: number) => {
-    setLightboxIndex(index);
+    // Nếu đang có ảnh override → mở lightbox tại index 0 (ảnh override ở đầu)
+    setLightboxIndex(attributeOverrideImage ? 0 : index);
     setShowLightbox(true);
     document.body.style.overflow = "hidden";
   };
@@ -286,8 +319,8 @@ const ProductDetail: React.FC = () => {
     setShowLightbox(false);
     document.body.style.overflow = "auto";
   };
-  const nextImage = () => setLightboxIndex((prev) => (prev + 1) % productImages.length);
-  const prevImage = () => setLightboxIndex((prev) => (prev - 1 + productImages.length) % productImages.length);
+  const nextImage = () => setLightboxIndex((prev) => (prev + 1) % lightboxImages.length);
+  const prevImage = () => setLightboxIndex((prev) => (prev - 1 + lightboxImages.length) % lightboxImages.length);
 
   // ✅ FIX: handleAdd nhận buyNow boolean, dùng setIsAdding đúng cách
   const handleAdd = (qty: number, buyNow: boolean = false) => {
@@ -365,11 +398,18 @@ const ProductDetail: React.FC = () => {
                 onError={(e) => { e.currentTarget.src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="600" height="600"%3E%3Crect fill="%23f0f0f0" width="600" height="600"/%3E%3C/svg%3E'; }} />
             </div>
 
-            {productImages.length > 1 && (
+            {(productImages.length > 1 || attributeOverrideImage) && (
               <div className="pd-gallery__thumbs" ref={thumbnailRowRef}>
+                {attributeOverrideImage && !productImages.includes(attributeOverrideImage) && (
+                  <button className="pd-gallery__thumb is-active" aria-label="Ảnh thuộc tính đã chọn">
+                    <img src={attributeOverrideImage} alt="Ảnh thuộc tính" />
+                  </button>
+                )}
                 {productImages.map((img, i) => (
-                  <button key={i} className={`pd-gallery__thumb ${selectedImageIndex === i ? "is-active" : ""}`}
-                    onClick={() => setSelectedImageIndex(i)} aria-label={`Ảnh ${i + 1}`}>
+                  <button key={i}
+                    className={`pd-gallery__thumb ${!attributeOverrideImage && selectedImageIndex === i ? "is-active" : ""}`}
+                    onClick={() => { setSelectedImageIndex(i); setAttributeOverrideImage(null); }}
+                    aria-label={`Ảnh ${i + 1}`}>
                     <img src={img} alt={`${safeGetText(product.name, language)} ${i + 1}`} />
                   </button>
                 ))}
@@ -558,23 +598,23 @@ const ProductDetail: React.FC = () => {
       {showLightbox && (
         <div className="pd-lightbox" onClick={closeLightbox}>
           <button className="pd-lightbox__close" onClick={closeLightbox}><X size={24} /></button>
-          {productImages.length > 1 && (
+          {lightboxImages.length > 1 && (
             <button className="pd-lightbox__nav pd-lightbox__nav--prev" onClick={(e) => { e.stopPropagation(); prevImage(); }}>
               <ChevronLeft size={32} />
             </button>
           )}
           <div className="pd-lightbox__content" onClick={(e) => e.stopPropagation()}>
-            <img src={productImages[lightboxIndex]} alt={`${safeGetText(product.name, language)} - ${lightboxIndex + 1}`} />
-            <div className="pd-lightbox__counter">{lightboxIndex + 1} / {productImages.length}</div>
+            <img src={lightboxImages[lightboxIndex]} alt={`${safeGetText(product.name, language)} - ${lightboxIndex + 1}`} />
+            <div className="pd-lightbox__counter">{lightboxIndex + 1} / {lightboxImages.length}</div>
           </div>
-          {productImages.length > 1 && (
+          {lightboxImages.length > 1 && (
             <button className="pd-lightbox__nav pd-lightbox__nav--next" onClick={(e) => { e.stopPropagation(); nextImage(); }}>
               <ChevronRightIcon size={32} />
             </button>
           )}
-          {productImages.length > 1 && (
+          {lightboxImages.length > 1 && (
             <div className="pd-lightbox__thumbs" onClick={(e) => e.stopPropagation()}>
-              {productImages.map((img, i) => (
+              {lightboxImages.map((img, i) => (
                 <button key={i} className={`pd-lightbox__thumb ${lightboxIndex === i ? "is-active" : ""}`} onClick={() => setLightboxIndex(i)}>
                   <img src={img} alt={`Thumbnail ${i + 1}`} />
                 </button>
