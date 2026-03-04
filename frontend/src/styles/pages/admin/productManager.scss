@@ -734,7 +734,6 @@
     z-index: 999;
     backdrop-filter: blur(4px);
     animation: fadeIn 0.2s ease;
-    // Đẩy modal ra khỏi vùng sidebar (sidebar thường ~250px)
     padding-left: 260px;
 
     @media (max-width: 768px) {
@@ -754,7 +753,6 @@
   .modal {
     background: white;
     border-radius: 16px;
-    // Mặc định modal thường (xác nhận xóa, v.v.)
     width: min(640px, 90vw);
     max-height: 90vh;
     box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
@@ -1394,35 +1392,47 @@
           }
         }
 
+        // ── Khu vực upload ảnh cho từng option ──
         .option-image-upload {
           display: flex;
           align-items: center;
           gap: 8px;
 
+          // Input file bị ẩn hoàn toàn — trigger qua button
           input[type="file"] {
             display: none;
           }
 
+          // Button "Chọn ảnh" / "Đổi ảnh" — dùng <button> thay vì <label>
           .file-label-small {
             padding: 6px 12px;
             background: #6366f1;
             color: white;
+            border: none;
             border-radius: 4px;
             font-size: 12px;
             font-weight: 500;
             cursor: pointer;
             transition: all 0.2s;
             white-space: nowrap;
+            font-family: inherit;
+            line-height: 1.4;
 
             &:hover {
               background: #4f46e5;
+              transform: translateY(-1px);
+            }
+
+            &:active {
+              transform: translateY(0);
             }
           }
 
-          .file-selected {
-            color: #10b981;
-            font-weight: 600;
-            font-size: 16px;
+          // Wrapper preview + nút xóa
+          > div {
+            position: relative;
+            display: inline-flex;
+            flex-shrink: 0;
           }
 
           .attr-img-preview {
@@ -1434,8 +1444,7 @@
             box-shadow: 0 2px 8px rgba(16, 185, 129, 0.2);
             cursor: pointer;
             transition: all 0.2s;
-            position: relative;
-            z-index: 1;
+            display: block;
 
             &:hover {
               transform: scale(1.15);
@@ -1445,6 +1454,33 @@
 
             &:active {
               transform: scale(1.05);
+            }
+          }
+
+          // Nút × xóa ảnh (inline style trong TSX, style này là fallback)
+          button[title="Xóa ảnh"] {
+            position: absolute;
+            top: -6px;
+            right: -6px;
+            background: #ef4444;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 18px;
+            height: 18px;
+            font-size: 11px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            line-height: 1;
+            padding: 0;
+            transition: all 0.2s;
+            z-index: 11;
+
+            &:hover {
+              background: #dc2626;
+              transform: scale(1.2);
             }
           }
         }
@@ -1508,16 +1544,12 @@
 
 // ==================== MODAL LARGE (form thêm/sửa sản phẩm) ====================
 .modal-large {
-  // Rộng hơn để hiển thị đủ thông tin biến thể
-  // padding-left trong overlay đã đẩy sang phải để tránh sidebar
   width: min(1100px, 92vw) !important;
 
   form {
     max-height: 72vh;
-    // 3 cột cho các field cơ bản để tận dụng không gian rộng
     grid-template-columns: 1fr 1fr 1fr;
 
-    // Override: các field cần full width
     textarea,
     .category-select-wrapper,
     .checkbox-group,
@@ -1529,7 +1561,6 @@
       grid-column: 1 / -1;
     }
 
-    // 2 cột cho Tên & SKU
     input[placeholder="Tên sản phẩm"] {
       grid-column: 1 / 3;
     }
@@ -1610,30 +1641,13 @@
           border-bottom: 1px solid #f1f5f9;
           vertical-align: middle;
 
-          // Tỉ lệ cột cân đối hơn khi modal rộng
-          &:nth-child(1) {
-            width: 22%;
-          } // Phân loại
-          &:nth-child(2) {
-            width: 18%;
-          } // Giá gốc (VNĐ)  ← MỚI
-          &:nth-child(3) {
-            width: 18%;
-          } // Giá bán (VNĐ)
-          &:nth-child(4) {
-            width: 8%;
-            text-align: center;
-          } // % Giảm  ← MỚI
-          &:nth-child(5) {
-            width: 12%;
-          } // Kho hàng
-          &:nth-child(6) {
-            width: 14%;
-          } // SKU
-          &:nth-child(7) {
-            width: 8%;
-            text-align: center;
-          } // Xóa
+          &:nth-child(1) { width: 22%; }
+          &:nth-child(2) { width: 18%; }
+          &:nth-child(3) { width: 18%; }
+          &:nth-child(4) { width: 8%; text-align: center; }
+          &:nth-child(5) { width: 12%; }
+          &:nth-child(6) { width: 14%; }
+          &:nth-child(7) { width: 8%; text-align: center; }
 
           .variant-label {
             display: block;
@@ -1729,6 +1743,7 @@
 
       .option-image-upload {
         justify-content: flex-start;
+        flex-wrap: wrap;
       }
     }
   }

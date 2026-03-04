@@ -611,8 +611,9 @@
 // ==================== MOBILE HEADER ========================
 // ============================================================
 
+// ── FIX: Tăng duration + dùng easing mượt hơn để tránh giật khi scroll chậm
 $ease: cubic-bezier(0.4, 0, 0.2, 1);
-$dur: 0.28s;
+$dur: 0.32s; // tăng từ 0.28s → 0.32s cho cảm giác mượt hơn
 
 .mobile-header {
   position: sticky;
@@ -621,12 +622,18 @@ $dur: 0.28s;
   background: #fff;
   font-family: "Roboto", sans-serif;
   box-shadow: 0 2px 8px rgba(0,0,0,0.12);
-  transform: none; // luôn hiển thị, không ẩn
+  // FIX: GPU compositing layer — browser render header trên layer riêng,
+  // tránh repaint toàn trang mỗi khi max-height thay đổi
+  transform: translateZ(0);
+  -webkit-transform: translateZ(0);
 
   // Các vùng có thể collapse
   .mobile-search-always,
   .mobile-category-section {
     overflow: hidden;
+    // FIX: Báo trước cho browser biết sẽ animate max-height + opacity
+    // → browser chuẩn bị GPU layer trước, tránh jank frame đầu tiên
+    will-change: max-height, opacity;
     transition:
       max-height $dur $ease,
       opacity    $dur $ease,
@@ -815,18 +822,23 @@ $dur: 0.28s;
   }
 
   .mobile-suggestions {
-    position: absolute;
-    left: 12px; right: 12px;
-    top: calc(100% - 2px);
+    // FIX: dùng position: fixed để thoát khỏi overflow:hidden của .mobile-search-always
+    // Dropdown hiện ra ngay bên dưới search bar, phủ lên nội dung trang
+    position: fixed;
+    left: 12px;
+    right: 12px;
+    // top được gán động qua JS nếu cần, fallback là 130px (sau header)
+    top: 130px;
     background: white;
     border-radius: 0 0 10px 10px;
     border: 1px solid #e0e0e0;
     border-top: none;
-    box-shadow: 0 8px 20px rgba(0,0,0,0.12);
+    box-shadow: 0 8px 20px rgba(0,0,0,0.15);
     overflow: hidden;
     max-height: 340px;
     overflow-y: auto;
     z-index: 9999;
+    animation: fadeInDown 0.2s ease-out;
   }
 
   .mobile-suggestion-item {
@@ -901,7 +913,6 @@ $dur: 0.28s;
 
   // ══════════════════════════════════════
   // CHIPS — 6 cột × 2 hàng (12 items)
-  // Ẩn khi scrolled, hiện khi về đầu trang
   // ══════════════════════════════════════
   .mobile-cat-chips {
     display: grid;
@@ -913,6 +924,7 @@ $dur: 0.28s;
     max-height: 200px;
     overflow: hidden;
     opacity: 1;
+    will-change: max-height, opacity; // FIX: GPU hint cho chip collapse
     transition:
       max-height $dur $ease,
       opacity 0.22s ease,

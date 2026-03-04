@@ -44,6 +44,8 @@ const Header: React.FC = () => {
   const [loadingSuggestions, setLoadingSuggestions] = useState(false);
   const suggestionsRef = useRef<HTMLDivElement>(null);
   const searchTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const mobileSearchFormRef = useRef<HTMLFormElement>(null);
+
   const [hoveredParent, setHoveredParent] = useState<string | null>(null);
   const [hoveredChild, setHoveredChild] = useState<string | null>(null);
 
@@ -79,6 +81,14 @@ const Header: React.FC = () => {
     setMobileMenuOpen(false);
     setMobileSearchOpen(false);
   }, [location.pathname]);
+
+  // Tính toán vị trí top cho mobile suggestions dropdown (fixed positioning)
+  // Phải đặt SAU tất cả useState/useRef để không vi phạm Rules of Hooks
+  useEffect(() => {
+    if (!showSuggestions || !isMobile || !mobileSearchFormRef.current || !suggestionsRef.current) return;
+    const rect = mobileSearchFormRef.current.getBoundingClientRect();
+    suggestionsRef.current.style.top = `${rect.bottom + 2}px`;
+  }, [showSuggestions, isMobile, mobileCompact]);
 
   // Mobile scroll — Shopee/Lazada pattern:
   // • scroll xuống > 60px  → compact (ẩn search, category bar, chips; giữ lại logo+cart+lang)
@@ -338,7 +348,7 @@ const Header: React.FC = () => {
 
           {/* SEARCH BAR */}
           <div className="mobile-search-always">
-            <form onSubmit={handleSearch} className="mobile-search-form">
+            <form onSubmit={handleSearch} className="mobile-search-form" ref={mobileSearchFormRef}>
               <input
                 type="text"
                 placeholder={t('header.searchPlaceholder') || "Bạn cần tìm gì?"}
@@ -351,53 +361,54 @@ const Header: React.FC = () => {
                 <FaSearch />
               </button>
             </form>
+          </div>
 
-            {showSuggestions && suggestions.length > 0 && (
-              <div className="mobile-suggestions" ref={suggestionsRef}>
-                {suggestions.map((product) => (
-                  <Link
-                    key={product._id}
-                    to={`/san-pham/${product.slug}`}
-                    className="mobile-suggestion-item"
-                    onClick={() => {
-                      setSearchQuery("");
-                      setShowSuggestions(false);
-                    }}
-                  >
-                    <img
-                      src={getFirstImageUrl(product.images)}
-                      alt={product.name}
-                      className="mobile-suggestion-img"
-                      onError={(e) => { e.currentTarget.src = "https://via.placeholder.com/50?text=Err"; }}
-                    />
-                    <div className="mobile-suggestion-info">
-                      <div className="mobile-suggestion-name">{product.name}</div>
-                      <div className="mobile-suggestion-price">
-                        {new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(product.priceSale)}
-                      </div>
-                    </div>
-                  </Link>
-                ))}
-                <div className="mobile-suggestion-footer">
-                  Nhấn Enter để tìm "<strong>{searchQuery}</strong>"
-                </div>
-              </div>
-            )}
-
-            {showSuggestions && loadingSuggestions && (
-              <div className="mobile-suggestions">
-                {[1, 2, 3].map((i) => (
-                  <div key={i} className="mobile-suggestion-item skeleton">
-                    <div className="skeleton-img"></div>
-                    <div className="skeleton-lines">
-                      <div className="skeleton-line"></div>
-                      <div className="skeleton-line short"></div>
+          {/* MOBILE SUGGESTIONS — nằm ngoài mobile-search-always để tránh bị overflow:hidden clip */}
+          {showSuggestions && suggestions.length > 0 && (
+            <div className="mobile-suggestions" ref={suggestionsRef}>
+              {suggestions.map((product) => (
+                <Link
+                  key={product._id}
+                  to={`/san-pham/${product.slug}`}
+                  className="mobile-suggestion-item"
+                  onClick={() => {
+                    setSearchQuery("");
+                    setShowSuggestions(false);
+                  }}
+                >
+                  <img
+                    src={getFirstImageUrl(product.images)}
+                    alt={product.name}
+                    className="mobile-suggestion-img"
+                    onError={(e) => { e.currentTarget.src = "https://via.placeholder.com/50?text=Err"; }}
+                  />
+                  <div className="mobile-suggestion-info">
+                    <div className="mobile-suggestion-name">{product.name}</div>
+                    <div className="mobile-suggestion-price">
+                      {new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(product.priceSale)}
                     </div>
                   </div>
-                ))}
+                </Link>
+              ))}
+              <div className="mobile-suggestion-footer">
+                Nhấn Enter để tìm "<strong>{searchQuery}</strong>"
               </div>
-            )}
-          </div>
+            </div>
+          )}
+
+          {showSuggestions && loadingSuggestions && (
+            <div className="mobile-suggestions">
+              {[1, 2, 3].map((i) => (
+                <div key={i} className="mobile-suggestion-item skeleton">
+                  <div className="skeleton-img"></div>
+                  <div className="skeleton-lines">
+                    <div className="skeleton-line"></div>
+                    <div className="skeleton-line short"></div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
 
           {/* MOBILE CATEGORY TRIGGER BAR + CHIP GRID */}
           <div className="mobile-category-section">
