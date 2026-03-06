@@ -45,3 +45,8 @@ coverage
 uploads
 storage
 tmp
+
+# --- PHẦN CẬP NHẬT MỚI ---
+# WordPress (Bảo vệ thư mục tin tức để không bị GitHub ghi đè)
+/tin-tuc/
+/tin=tuc

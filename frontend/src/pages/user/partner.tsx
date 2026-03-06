@@ -7,7 +7,6 @@ import {
   FaHandshake, FaStar,
 } from 'react-icons/fa';
 import { Link } from 'react-router-dom';
-import SEO from '../../components/SEO';
 
 const BENEFITS = [
   {
@@ -153,7 +152,6 @@ const FaqItem: React.FC<{ q: string; a: string }> = ({ q, a }) => {
 const Partner: React.FC = () => {
   return (
     <div className="partner-page">
-      <SEO title="Đối Tác" url="/doi-tac" />
       {/* ── HERO ── */}
       <section className="pt-hero">
         <div className="pt-hero-bg" />
