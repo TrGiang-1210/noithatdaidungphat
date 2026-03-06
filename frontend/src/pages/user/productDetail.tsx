@@ -7,7 +7,6 @@ import { AuthContext } from "@/context/AuthContext";
 import { getFirstImageUrl, getImageUrl } from "../../utils/imageUrl";
 import { ChevronRight, ShoppingCart, Zap, Shield, Truck, RotateCcw, ChevronLeft, ChevronRight as ChevronRightIcon, X, ZoomIn } from "lucide-react";
 import { useLanguage } from "@/context/LanguageContext";
-import SEO from "../../components/SEO";
 
 const API_URL =
   import.meta.env.VITE_API_URL || "https://tongkhonoithattayninh.vn/api";
@@ -368,7 +367,6 @@ const ProductDetail: React.FC = () => {
 
   return (
     <div className="pd-page">
-      <SEO title={product?.name} description={product?.description} url={`/san-pham/${slug}`} />
       {/* ── Breadcrumb ── */}
       <div className="pd-breadcrumb">
         <div className="container">

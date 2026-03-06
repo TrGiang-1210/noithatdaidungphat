@@ -11,7 +11,6 @@ import { getFirstImageUrl } from "../../utils/imageUrl";
 import { useLanguage } from "../../context/LanguageContext";
 import "@/styles/pages/user/home.scss";
 import { ChevronRight, ChevronLeft } from "lucide-react";
-import SEO from "../../components/SEO";
 
 import banner1 from "@/assets/banner/banner1.jpg";
 import banner2 from "@/assets/banner/banner2.jpg";
@@ -398,11 +397,6 @@ const Home: React.FC = () => {
 
   return (
     <div className="home-page">
-      <SEO
-      title="Trang Chủ"
-      description="Chuyên sản xuất nội thất gia đình, văn phòng chất lượng cao tại Tây Ninh"
-      url="/"
-    />
       {/* ── BANNER ── */}
       <section className="banner-section">
         <div className="container banner-container">

@@ -581,7 +581,7 @@ const Header: React.FC = () => {
                 <Link to="/theo-doi-don-hang" className="drawer-nav-item" onClick={() => setMobileMenuOpen(false)}>
                   <FaBoxOpen className="drawer-nav-icon" /> Theo dõi đơn hàng
                 </Link>
-                <Link to="/posts" className="drawer-nav-item" onClick={() => setMobileMenuOpen(false)}>
+                <Link to="/tin-tuc" className="drawer-nav-item" onClick={() => setMobileMenuOpen(false)}>
                   <FaNewspaper className="drawer-nav-icon" /> Tin tức
                 </Link>
                 <Link to="/gioi-thieu" className="drawer-nav-item" onClick={() => setMobileMenuOpen(false)}>
