@@ -581,9 +581,9 @@ const Header: React.FC = () => {
                 <Link to="/theo-doi-don-hang" className="drawer-nav-item" onClick={() => setMobileMenuOpen(false)}>
                   <FaBoxOpen className="drawer-nav-icon" /> Theo dõi đơn hàng
                 </Link>
-                <Link to="/tin-tuc" className="drawer-nav-item" onClick={() => setMobileMenuOpen(false)}>
+                <a href="/tin-tuc/" className="drawer-nav-item" onClick={() => setMobileMenuOpen(false)}>
                   <FaNewspaper className="drawer-nav-icon" /> Tin tức
-                </Link>
+                </a>
                 <Link to="/gioi-thieu" className="drawer-nav-item" onClick={() => setMobileMenuOpen(false)}>
                   <FaInfoCircle className="drawer-nav-icon" /> Giới thiệu
                 </Link>
@@ -952,7 +952,9 @@ const Header: React.FC = () => {
 
           <div className="main-menu-items">
             <Link to="/theo-doi-don-hang" className="menu-item">{t('header.trackOrder')}</Link>
-            <Link to="/tin-tuc" className="menu-item">{t('header.news')}</Link>
+            <a href="/tin-tuc/" className="menu-item">
+              {t('header.news')}
+            </a>
             <Link to="/gioi-thieu" className="menu-item">{t('header.about')}</Link>
             <Link to="/mau-mau" className="menu-item">{t('header.color')}</Link>
             <Link to="/doi-tac" className="menu-item">{t('header.partners')}</Link>
