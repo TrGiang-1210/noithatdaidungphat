@@ -12,6 +12,7 @@ import { useLanguage } from "../../context/LanguageContext";
 import "@/styles/pages/user/home.scss";
 import { ChevronRight, ChevronLeft } from "lucide-react";
 
+import banner0 from "@/assets/banner/banner_ntddp.jpg";
 import banner1 from "@/assets/banner/banner1.jpg";
 import banner2 from "@/assets/banner/banner2.jpg";
 import banner3 from "@/assets/banner/banner3.jpg";
@@ -71,6 +72,7 @@ const fetchCached = async (url: string): Promise<any> => {
 };
 
 const BANNERS = [
+  { src: banner0, alt: "Banner 0" },
   { src: banner1, alt: "Banner 1" },
   { src: banner2, alt: "Banner 2" },
   { src: banner3, alt: "Banner 3" },
