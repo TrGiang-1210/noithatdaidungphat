@@ -637,6 +637,86 @@ const handleSubmit = async (e: React.FormEvent) => {
     );
   }
 
+  // ✅ Recursive component để render cây danh mục đa cấp
+  const CategoryTreeNode = ({
+    cat,
+    depth = 0,
+  }: {
+    cat: Category;
+    depth?: number;
+  }) => {
+    const hasChildren = cat.children && cat.children.length > 0;
+    const isExpanded = expandedCategories.has(cat._id);
+    const count = getCategoryProductCount(cat._id);
+    const isRoot = depth === 0;
+
+    return (
+      <div
+        className={`category-tree-item ${hasChildren ? "has-children" : "no-children"}`}
+        style={depth > 0 ? { marginBottom: 2 } : undefined}
+      >
+        <div
+          className={isRoot ? "category-parent" : "category-child"}
+          style={
+            depth > 1
+              ? { paddingLeft: `${depth * 8}px` }
+              : undefined
+          }
+          onClick={() =>
+            !hasChildren && handleCategoryFilterChange(cat._id)
+          }
+        >
+          {hasChildren ? (
+            <div
+              className={`expand-icon ${isExpanded ? "expanded" : ""}`}
+              onClick={(e) => {
+                e.stopPropagation();
+                toggleExpandCategory(cat._id);
+              }}
+            >
+              <ChevronRight size={16} />
+            </div>
+          ) : (
+            <div className="expand-icon" style={{ opacity: 0, pointerEvents: "none" }} />
+          )}
+
+          {isRoot ? (
+            <div className="category-checkbox-wrapper">
+              <input
+                type="checkbox"
+                checked={selectedCategories.includes(cat._id)}
+                onChange={() => handleCategoryFilterChange(cat._id)}
+                onClick={(e) => e.stopPropagation()}
+              />
+              <span className="category-label">{getName(cat.name)}</span>
+              <span className="category-count">{count}</span>
+            </div>
+          ) : (
+            <>
+              <input
+                type="checkbox"
+                checked={selectedCategories.includes(cat._id)}
+                onChange={() => handleCategoryFilterChange(cat._id)}
+                onClick={(e) => e.stopPropagation()}
+                style={{ width: 16, height: 16, cursor: "pointer", accentColor: "#3b82f6", marginRight: 8, flexShrink: 0 }}
+              />
+              <span className="child-label">{getName(cat.name)}</span>
+              <span className="child-count">{count}</span>
+            </>
+          )}
+        </div>
+
+        {hasChildren && isExpanded && (
+          <div className="category-children">
+            {cat.children!.map((child) => (
+              <CategoryTreeNode key={child._id} cat={child} depth={depth + 1} />
+            ))}
+          </div>
+        )}
+      </div>
+    );
+  };
+
   return (
     <div className="product-manager">
       <div className="page-header">
@@ -684,80 +764,9 @@ const handleSubmit = async (e: React.FormEvent) => {
             {categoryTree.length === 0 ? (
               <div className="empty-categories">Chưa có danh mục nào</div>
             ) : (
-              categoryTree.map((parentCat) => {
-                const hasChildren =
-                  parentCat.children && parentCat.children.length > 0;
-                const isExpanded = expandedCategories.has(parentCat._id);
-                const parentCount = getCategoryProductCount(parentCat._id);
-
-                return (
-                  <div
-                    key={parentCat._id}
-                    className={`category-tree-item ${hasChildren ? "has-children" : "no-children"}`}
-                  >
-                    <div className="category-parent">
-                      {hasChildren && (
-                        <div
-                          className={`expand-icon ${isExpanded ? "expanded" : ""}`}
-                          onClick={() => toggleExpandCategory(parentCat._id)}
-                        >
-                          <ChevronRight size={16} />
-                        </div>
-                      )}
-                      {!hasChildren && <div className="expand-icon" />}
-
-                      <div className="category-checkbox-wrapper">
-                        <input
-                          type="checkbox"
-                          checked={selectedCategories.includes(parentCat._id)}
-                          onChange={() =>
-                            handleCategoryFilterChange(parentCat._id)
-                          }
-                          onClick={(e) => e.stopPropagation()}
-                        />
-                        <span className="category-label">
-                          {getName(parentCat.name)}
-                        </span>
-                        <span className="category-count">{parentCount}</span>
-                      </div>
-                    </div>
-
-                    {hasChildren && isExpanded && (
-                      <div className="category-children">
-                        {parentCat.children!.map((childCat) => {
-                          const childCount = getCategoryProductCount(
-                            childCat._id,
-                          );
-                          return (
-                            <div
-                              key={childCat._id}
-                              className="category-child"
-                              onClick={() =>
-                                handleCategoryFilterChange(childCat._id)
-                              }
-                            >
-                              <input
-                                type="checkbox"
-                                checked={selectedCategories.includes(
-                                  childCat._id,
-                                )}
-                                onChange={() =>
-                                  handleCategoryFilterChange(childCat._id)
-                                }
-                                onClick={(e) => e.stopPropagation()}
-                              />
-                              <span className="child-label">
-                                {getName(childCat.name)}
-                              </span>
-                              <span className="child-count">{childCount}</span>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    )}
-                  </div>
-                );
-              })
+              categoryTree.map((rootCat) => (
+                <CategoryTreeNode key={rootCat._id} cat={rootCat} depth={0} />
+              ))
             )}
           </div>
 
