@@ -58,11 +58,7 @@ const Header: React.FC = () => {
   const [mobileCatGridOpen, setMobileCatGridOpen] = useState(false);
   const [megaActiveParent, setMegaActiveParent] = useState<Category | null>(null);
 
-  // Mobile scroll states — pattern: compact on scroll-down, full on scroll-up / at-top
-  const [mobileScrolled, setMobileScrolled] = useState(false);   // đã rời khỏi top
-  const [mobileCompact, setMobileCompact] = useState(false);     // thu gọn (scroll xuống)
-  const lastScrollY = useRef(0);
-  const scrollTicking = useRef(false);
+  // Mobile scroll — DISABLED, header is static (no sticky/compact behavior)
 
   const navigate = useNavigate();
   const location = useLocation();
@@ -88,46 +84,9 @@ const Header: React.FC = () => {
     if (!showSuggestions || !isMobile || !mobileSearchFormRef.current || !suggestionsRef.current) return;
     const rect = mobileSearchFormRef.current.getBoundingClientRect();
     suggestionsRef.current.style.top = `${rect.bottom + 2}px`;
-  }, [showSuggestions, isMobile, mobileCompact]);
+  }, [showSuggestions, isMobile]);
 
-  // Mobile scroll — Shopee/Lazada pattern:
-  // • scroll xuống > 60px  → compact (ẩn search, category bar, chips; giữ lại logo+cart+lang)
-  // • scroll lên bất kỳ    → full header hiện lại
-  // • về đầu trang (< 10px) → full + chips
-  useEffect(() => {
-    if (!isMobile) return;
 
-    const handleMobileScroll = () => {
-      if (scrollTicking.current) return;
-      scrollTicking.current = true;
-
-      window.requestAnimationFrame(() => {
-        const currentY = window.scrollY;
-        const diff = currentY - lastScrollY.current;
-        const atTop = currentY < 10;
-
-        if (atTop) {
-          // Đầu trang — full header + chips
-          setMobileScrolled(false);
-          setMobileCompact(false);
-        } else if (diff > 5) {
-          // Scroll xuống — compact
-          setMobileScrolled(true);
-          setMobileCompact(true);
-        } else if (diff < -5) {
-          // Scroll lên — hiện full (trừ chips vẫn ẩn cho đến khi về top)
-          setMobileScrolled(true);
-          setMobileCompact(false);
-        }
-
-        lastScrollY.current = currentY;
-        scrollTicking.current = false;
-      });
-    };
-
-    window.addEventListener("scroll", handleMobileScroll, { passive: true });
-    return () => window.removeEventListener("scroll", handleMobileScroll);
-  }, [isMobile]);
 
   // Fetch categories + desktop scroll handler
   useEffect(() => {
@@ -301,7 +260,7 @@ const Header: React.FC = () => {
     return (
       <>
         {/* MOBILE TOP HEADER - always sticky, never hides */}
-        <header className={`mobile-header${mobileCompact ? " mobile-header--compact" : ""}`}>
+        <header className={"mobile-header"}>
           <div className="mobile-header-top">
             <button
               className="mobile-menu-btn"
@@ -422,7 +381,7 @@ const Header: React.FC = () => {
             </div>
 
           {/* CATEGORY CHIP GRID — 12 danh mục cố định, 6 cột × 2 hàng */}
-          <div className={`mobile-cat-chips${mobileScrolled ? " mobile-cat-chips--hidden" : ""}`}>
+          <div className={"mobile-cat-chips"}>
             {[
               { name: "Giường", slug: "giuong-ngu" },
               { name: "Tủ Áo", slug: "tu-quan-ao" },

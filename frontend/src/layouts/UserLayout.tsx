@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 import { Outlet } from "react-router-dom";
 import Footer from "@/components/user/Footer";
 import Header from "@/components/user/Header";
+import OnTop from "../components/user/onTop";
 import ChatWidget from "@/components/user/ChatWidget";
 import LanguageSwitcher from "@/components/user/LanguageSwitcher";
 import ContactButtons from "@/components/user/ContactButtons";
@@ -74,6 +75,8 @@ const UserLayout = () => {
 
       {/* Contact buttons — đã ẩn trên mobile qua CSS */}
       <ContactButtons />
+
+        <OnTop />
 
       {/* Chat AI góc dưới bên phải */}
       <ChatWidget 
