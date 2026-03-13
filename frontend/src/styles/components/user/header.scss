@@ -611,68 +611,11 @@
 // ==================== MOBILE HEADER ========================
 // ============================================================
 
-// ── FIX: Tăng duration + dùng easing mượt hơn để tránh giật khi scroll chậm
-$ease: cubic-bezier(0.4, 0, 0.2, 1);
-$dur: 0.32s; // tăng từ 0.28s → 0.32s cho cảm giác mượt hơn
-
 .mobile-header {
-  position: sticky;
-  top: 0;
-  z-index: 1000;
+  position: relative;
   background: #fff;
   font-family: "Roboto", sans-serif;
   box-shadow: 0 2px 8px rgba(0,0,0,0.12);
-  // FIX: GPU compositing layer — browser render header trên layer riêng,
-  // tránh repaint toàn trang mỗi khi max-height thay đổi
-  transform: translateZ(0);
-  -webkit-transform: translateZ(0);
-
-  // Các vùng có thể collapse
-  .mobile-search-always,
-  .mobile-category-section {
-    overflow: hidden;
-    // FIX: Báo trước cho browser biết sẽ animate max-height + opacity
-    // → browser chuẩn bị GPU layer trước, tránh jank frame đầu tiên
-    will-change: max-height, opacity;
-    transition:
-      max-height $dur $ease,
-      opacity    $dur $ease,
-      padding    $dur $ease,
-      border-color $dur $ease;
-  }
-
-  .mobile-search-always  { max-height: 70px;  opacity: 1; }
-  .mobile-category-section { max-height: 120px; opacity: 1; }
-
-  // ══════════════════════════════════════
-  // COMPACT MODE — scroll xuống
-  // ══════════════════════════════════════
-  &.mobile-header--compact {
-    box-shadow: 0 1px 5px rgba(0,0,0,0.14);
-
-    .mobile-header-top {
-      padding-top: 5px;
-      padding-bottom: 5px;
-    }
-
-    .mobile-logo img {
-      height: 26px; // logo nhỏ lại nhẹ
-    }
-
-    // Ẩn search
-    .mobile-search-always {
-      max-height: 0;
-      opacity: 0;
-      padding-top: 0 !important;
-      padding-bottom: 0 !important;
-    }
-
-    // Ẩn category bar + chips
-    .mobile-category-section {
-      max-height: 0;
-      opacity: 0;
-    }
-  }
 
   // ══════════════════════════════════════
   // TOP BAR
@@ -684,7 +627,7 @@ $dur: 0.32s; // tăng từ 0.28s → 0.32s cho cảm giác mượt hơn
     padding: 7px 10px;
     background: #fff;
     gap: 6px;
-    transition: padding $dur $ease;
+    // ❌ ĐÃ XÓA: transition padding
   }
 
   .mobile-menu-btn {
@@ -710,7 +653,7 @@ $dur: 0.32s; // tăng từ 0.28s → 0.32s cho cảm giác mượt hơn
       height: 32px;
       width: auto;
       object-fit: contain;
-      transition: height $dur $ease;
+      // ❌ ĐÃ XÓA: transition height
     }
   }
 
@@ -822,12 +765,9 @@ $dur: 0.32s; // tăng từ 0.28s → 0.32s cho cảm giác mượt hơn
   }
 
   .mobile-suggestions {
-    // FIX: dùng position: fixed để thoát khỏi overflow:hidden của .mobile-search-always
-    // Dropdown hiện ra ngay bên dưới search bar, phủ lên nội dung trang
     position: fixed;
     left: 12px;
     right: 12px;
-    // top được gán động qua JS nếu cần, fallback là 130px (sau header)
     top: 130px;
     background: white;
     border-radius: 0 0 10px 10px;
@@ -924,11 +864,7 @@ $dur: 0.32s; // tăng từ 0.28s → 0.32s cho cảm giác mượt hơn
     max-height: 200px;
     overflow: hidden;
     opacity: 1;
-    will-change: max-height, opacity; // FIX: GPU hint cho chip collapse
-    transition:
-      max-height $dur $ease,
-      opacity 0.22s ease,
-      padding $dur $ease;
+    // ❌ ĐÃ XÓA: will-change, transition max-height/opacity/padding
 
     &.mobile-cat-chips--hidden {
       max-height: 0;
